@@ -1,0 +1,22 @@
+Billing Month,Consumer No.,Supply Source,Units Drawn (MU),Demand (KVA),Amount (Rs),Section
+Jan-26,CSPDCL/HT/44127,CSPDCL Grid (HT),19.96,"28,500","17,05,71,179",Melt Shop (IF/EAF)
+Jan-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.97,"28,500","1,43,42,111",Rolling Mill
+Jan-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.69,-,"80,60,344",Melt Shop (IF/EAF)
+Feb-26,CSPDCL/HT/44127,CSPDCL Grid (HT),20.45,"28,500","16,11,58,148",Melt Shop (IF/EAF)
+Feb-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.81,"28,500","1,56,33,653",Rolling Mill
+Feb-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.24,-,"76,71,473",Melt Shop (IF/EAF)
+Mar-26,CSPDCL/HT/44127,CSPDCL Grid (HT),20.94,"28,500","16,91,56,387",Melt Shop (IF/EAF)
+Mar-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.75,"28,500","1,35,39,042",Rolling Mill
+Mar-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.34,-,"94,88,498",Melt Shop (IF/EAF)
+May-26,CSPDCL/HT/44127,CSPDCL Grid (HT),20.87,"28,500","16,24,16,407",Melt Shop (IF/EAF)
+May-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.75,"28,500","1,38,94,362",Rolling Mill
+May-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.55,-,"70,46,767",Melt Shop (IF/EAF)
+Jun-26,CSPDCL/HT/44127,CSPDCL Grid (HT),21.39,"28,500","17,78,11,793",Melt Shop (IF/EAF)
+Jun-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.75,"28,500","1,43,00,070",Rolling Mill
+Jun-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.24,-,"75,07,324",Melt Shop (IF/EAF)
+Jul-26,CSPDCL/HT/44127,CSPDCL Grid (HT),20.05,"28,500","16,19,78,861",Melt Shop (IF/EAF)
+Jul-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.97,"28,500","1,38,77,168",Rolling Mill
+Jul-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.26,-,"71,05,560",Melt Shop (IF/EAF)
+Aug-26,CSPDCL/HT/44127,CSPDCL Grid (HT),22.52,"28,500","16,71,55,129",Melt Shop (IF/EAF)
+Aug-26,CSPDCL/HT/44127,CSPDCL Grid (HT),1.85,"28,500","1,35,29,882",Rolling Mill
+Aug-26,PPA/SOLAR/RG-22,Solar PPA (open access),1.18,-,"97,56,648",Melt Shop (IF/EAF)

@@ -1,0 +1,41 @@
+{
+  "name": "carbonpass-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-native CBAM compliance for Indian exporters. Messy production data in, defensible emissions declaration out.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval": "tsx src/evals/run.ts",
+    "seed": "tsx scripts/generate-fixtures.ts",
+    "screenshots": "node scripts/screenshot.mjs",
+    "check": "npm run typecheck && npm run test && npm run eval",
+    "eval:model": "tsx src/evals/run.ts --model"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "next": "^16.3.4",
+    "papaparse": "^5.5.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.10.2",
+    "@types/papaparse": "^5.3.16",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "playwright": "^1.63.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.0"
+  }
+}

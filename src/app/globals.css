@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/*
+ * CarbonPass design tokens.
+ *
+ * A dark instrument panel, committed to deliberately rather than themed: this
+ * is a tool someone stares at for an hour reconciling a furnace log, and the
+ * chrome should disappear behind the data.
+ *
+ * The four series colours are the validated dark categorical steps, checked
+ * against this exact surface (#131519) for the lightness band, chroma floor,
+ * adjacent-pair CVD separation, normal-vision separation and 3:1 contrast.
+ * Do not substitute a hue here without re-running that check - the palette
+ * order is the colourblind-safety mechanism, not decoration.
+ */
+@theme {
+  --color-plane: #0b0c0e;
+  --color-surface: #131519;
+  --color-surface-2: #181b20;
+  --color-surface-3: #1e222a;
+  --color-line: #23262c;
+  --color-line-strong: #2f333b;
+
+  --color-ink: #f2f4f7;
+  --color-ink-2: #a7aeb9;
+  --color-muted: #6e7682;
+
+  /* Categorical series - fixed order, never cycled. */
+  --color-series-1: #d95926; /* direct / combustion */
+  --color-series-2: #3987e5; /* indirect / electricity */
+  --color-series-3: #199e70; /* precursors */
+  --color-series-4: #c98500; /* other */
+
+  /* Status - reserved, never reused as a series colour. */
+  --color-good: #0ca30c;
+  --color-warning: #fab219;
+  --color-serious: #ec835a;
+  --color-critical: #d03b3b;
+
+  --color-accent: #3987e5;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-plane);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv05", "ss01";
+  }
+
+  /* Columns of numbers must align; standalone display figures must not, because
+     tabular figures give every digit the width of a zero and look loose. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 999px;
+    border: 3px solid var(--color-plane);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3d424c;
+  }
+}
+
+@layer components {
+  /* A hairline that reads as a ruled line on paper rather than a border. */
+  .rule {
+    border-color: var(--color-line);
+  }
+
+  .grain {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in oklab, var(--color-ink) 6%, transparent) 1px,
+      transparent 0
+    );
+    background-size: 4px 4px;
+  }
+}
