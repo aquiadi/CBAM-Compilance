@@ -213,9 +213,9 @@ export function FindingsPanel({
 
               {excluded ? (
                 <p className="mt-3 text-[11px] text-warning">
-                  {f.alreadyExcluded.length} record{f.alreadyExcluded.length > 1 ? "s" : ""} excluded
-                  from the calculation. They remain in the audit trail with this finding as the
-                  reason.
+                  {f.alreadyExcluded.length} record{f.alreadyExcluded.length > 1 ? "s" : ""}{" "}
+                  excluded from the calculation. They remain in the audit trail with this finding as
+                  the reason.
                 </p>
               ) : null}
             </div>

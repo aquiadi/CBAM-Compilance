@@ -258,7 +258,11 @@ export function computeProcessEmissions(
   const precursors = mine.filter((a): a is PrecursorActivity => a.kind === "precursor");
   const precursor = precursors.map(precursorContribution);
 
-  const sum = (c: Contribution[]) => round(c.reduce((s, x) => s + x.emissionsT, 0), 4);
+  const sum = (c: Contribution[]) =>
+    round(
+      c.reduce((s, x) => s + x.emissionsT, 0),
+      4,
+    );
 
   const heatImportedT = sum(heat.filter((h) => h.emissionsT > 0));
   const heatExportedT = -sum(heat.filter((h) => h.emissionsT < 0));
@@ -403,7 +407,9 @@ export function buildDeclarationLines(
     }
   }
 
-  return lines.sort((a, b) => b.embeddedEuT - a.embeddedEuT || b.embeddedForObligationT - a.embeddedForObligationT);
+  return lines.sort(
+    (a, b) => b.embeddedEuT - a.embeddedEuT || b.embeddedForObligationT - a.embeddedForObligationT,
+  );
 }
 
 export { getFactor };

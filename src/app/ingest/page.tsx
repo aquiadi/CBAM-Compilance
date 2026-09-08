@@ -75,9 +75,7 @@ export default function IngestPage() {
             return (
               <Card
                 key={ds.id}
-                title={
-                  <span className="font-mono text-[12.5px]">{ds.fileName}</span>
-                }
+                title={<span className="font-mono text-[12.5px]">{ds.fileName}</span>}
                 subtitle={
                   <>
                     Detected as <span className="text-ink-2">{schema.label}</span> ·{" "}
@@ -89,7 +87,7 @@ export default function IngestPage() {
                   <div className="flex items-center gap-2">
                     <Badge tone={ds.mapping.producedBy === "model" ? "accent" : "neutral"}>
                       {ds.mapping.producedBy === "model"
-                        ? ds.mapping.model ?? "AI model"
+                        ? (ds.mapping.model ?? "AI model")
                         : "Deterministic"}
                     </Badge>
                     <RemapButton datasetId={ds.id} enabled={isAiAvailable()} />
@@ -211,7 +209,7 @@ export default function IngestPage() {
                   </div>
                 </div>
 
-                {(ds.mapping.warnings.length > 0 || lowConfidence.length > 0) ? (
+                {ds.mapping.warnings.length > 0 || lowConfidence.length > 0 ? (
                   <div className="space-y-2 border-t border-line px-5 py-3.5">
                     {lowConfidence.length > 0 ? (
                       <Note tone="warning">
@@ -271,7 +269,9 @@ export default function IngestPage() {
                 {unmapped.length > 0 ? (
                   <div className="border-t border-line px-5 py-2.5 text-[11px] text-muted">
                     Ignored as not needed by the engine:{" "}
-                    <span className="font-mono">{unmapped.map((c) => c.sourceColumn).join(", ")}</span>
+                    <span className="font-mono">
+                      {unmapped.map((c) => c.sourceColumn).join(", ")}
+                    </span>
                   </div>
                 ) : null}
               </Card>

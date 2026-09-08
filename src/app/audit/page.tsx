@@ -1,6 +1,6 @@
 import { getDeclaration, getState } from "@/lib/store";
 import { tryGetFactor } from "@/lib/cbam/factors";
-import { Badge, Card, fmt, Page, PageHeader, Note } from "@/components/ui";
+import { Card, fmt, Page, PageHeader, Note } from "@/components/ui";
 import { AuditTable } from "./audit-table";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,10 @@ export default function AuditPage() {
   const rows = state.datasets.flatMap((ds) =>
     ds.activities.map((a) => {
       const factorId =
-        a.kind === "fuel" || a.kind === "process_material" || a.kind === "electricity" || a.kind === "heat"
+        a.kind === "fuel" ||
+        a.kind === "process_material" ||
+        a.kind === "electricity" ||
+        a.kind === "heat"
           ? a.factorId
           : null;
       const factor = factorId ? tryGetFactor(factorId) : undefined;
@@ -95,9 +98,15 @@ export default function AuditPage() {
         <div className="mb-5 grid grid-cols-4 gap-4">
           {[
             { label: "Activity records", value: fmt(rows.length) },
-            { label: "Traced to a source row", value: `${rows.filter((r) => r.row > 0).length === rows.length ? "100" : Math.round((rows.filter((r) => r.row > 0).length / Math.max(1, rows.length)) * 100)}%` },
+            {
+              label: "Traced to a source row",
+              value: `${rows.filter((r) => r.row > 0).length === rows.length ? "100" : Math.round((rows.filter((r) => r.row > 0).length / Math.max(1, rows.length)) * 100)}%`,
+            },
             { label: "Excluded on review", value: fmt(state.exclusions.length) },
-            { label: "Rows not imported", value: fmt(state.datasets.reduce((s, x) => s + x.rejected.length, 0)) },
+            {
+              label: "Rows not imported",
+              value: fmt(state.datasets.reduce((s, x) => s + x.rejected.length, 0)),
+            },
           ].map((m) => (
             <div key={m.label} className="rounded-lg border border-line bg-surface px-4 py-3">
               <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">

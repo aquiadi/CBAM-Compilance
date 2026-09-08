@@ -91,9 +91,7 @@ export function parseCsv(fileName: string, content: string, datasetId: string): 
         distinct.size <= 25 && distinct.size > 0 ? [...distinct].slice(0, 25) : undefined,
       distinctCount: distinct.size,
       emptyRate: values.length ? (values.length - nonEmpty.length) / values.length : 0,
-      numericRate: nonEmpty.length
-        ? nonEmpty.filter(looksNumeric).length / nonEmpty.length
-        : 0,
+      numericRate: nonEmpty.length ? nonEmpty.filter(looksNumeric).length / nonEmpty.length : 0,
       dateRate: nonEmpty.length ? nonEmpty.filter(looksLikeDate).length / nonEmpty.length : 0,
     };
   });
@@ -137,8 +135,19 @@ export function normalisePeriod(raw: string): string | null {
   if (m) return `${m[1]}-${String(Number(m[2])).padStart(2, "0")}`;
 
   const MONTHS: Record<string, string> = {
-    jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-    jul: "07", aug: "08", sep: "09", sept: "09", oct: "10", nov: "11", dec: "12",
+    jan: "01",
+    feb: "02",
+    mar: "03",
+    apr: "04",
+    may: "05",
+    jun: "06",
+    jul: "07",
+    aug: "08",
+    sep: "09",
+    sept: "09",
+    oct: "10",
+    nov: "11",
+    dec: "12",
   };
 
   m = v.match(/^([A-Za-z]{3,9})[-\s]?(\d{2,4})$/);

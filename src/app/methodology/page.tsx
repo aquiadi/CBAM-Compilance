@@ -33,7 +33,10 @@ export default function MethodologyPage() {
 
       <Page>
         <div className="space-y-5">
-          <Card title="How a number is produced" subtitle="The division of labour between the engine and the model.">
+          <Card
+            title="How a number is produced"
+            subtitle="The division of labour between the engine and the model."
+          >
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
@@ -98,10 +101,15 @@ export default function MethodologyPage() {
                       ) : null}
                     </Td>
                     <Td align="right" numeric className="whitespace-nowrap">
-                      {f.value} <span className="text-muted">{f.unit.replace("tCO2e", "tCO₂e")}</span>
+                      {f.value}{" "}
+                      <span className="text-muted">{f.unit.replace("tCO2e", "tCO₂e")}</span>
                     </Td>
                     <Td align="right" numeric className="whitespace-nowrap">
-                      {f.ncvGJPerTonne ? `${f.ncvGJPerTonne} GJ/t` : <span className="text-muted">—</span>}
+                      {f.ncvGJPerTonne ? (
+                        `${f.ncvGJPerTonne} GJ/t`
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
                     </Td>
                     <Td align="right" numeric>
                       {(f.uncertainty * 100).toFixed(0)}%

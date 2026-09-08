@@ -120,7 +120,9 @@ export function assessReadiness(
       weight: 0.15,
       detail: `${primary} of ${activities.length} records are measured or calculated from primary activity data.`,
       nextAction:
-        primaryData < 90 ? "Chase suppliers for actual precursor data to displace defaults." : undefined,
+        primaryData < 90
+          ? "Chase suppliers for actual precursor data to displace defaults."
+          : undefined,
     },
     {
       id: "plausibility",
@@ -144,7 +146,13 @@ export function assessReadiness(
   const score = Math.round(components.reduce((s, c) => s + c.score * c.weight, 0));
 
   const band: ReadinessResult["band"] =
-    blockers > 0 ? "not_filable" : score >= 85 ? "verification_ready" : score >= 70 ? "defensible" : "needs_work";
+    blockers > 0
+      ? "not_filable"
+      : score >= 85
+        ? "verification_ready"
+        : score >= 70
+          ? "defensible"
+          : "needs_work";
 
   return { score, band, components, blockers, warnings };
 }

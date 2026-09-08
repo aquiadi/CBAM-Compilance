@@ -160,8 +160,28 @@ describe("computeProcessEmissions", () => {
 
   it("takes the lowest tier across all inputs", () => {
     const activities: ActivityRecord[] = [
-      { ...base, id: "a1", kind: "fuel", processId: "p_eaf", factorId: "coal_bituminous_in", quantity: 1, unit: "t", tier: 3, lineage: lineage(1) },
-      { ...base, id: "a2", kind: "fuel", processId: "p_eaf", factorId: "diesel", quantity: 1, unit: "m3", tier: 1, lineage: lineage(2) },
+      {
+        ...base,
+        id: "a1",
+        kind: "fuel",
+        processId: "p_eaf",
+        factorId: "coal_bituminous_in",
+        quantity: 1,
+        unit: "t",
+        tier: 3,
+        lineage: lineage(1),
+      },
+      {
+        ...base,
+        id: "a2",
+        kind: "fuel",
+        processId: "p_eaf",
+        factorId: "diesel",
+        quantity: 1,
+        unit: "m3",
+        tier: 1,
+        lineage: lineage(2),
+      },
     ];
     expect(computeProcessEmissions(eaf, activities).lowestTier).toBe(1);
   });
@@ -170,11 +190,38 @@ describe("computeProcessEmissions", () => {
 describe("specific embedded emissions (Annex IV)", () => {
   const activities: ActivityRecord[] = [
     // 1,000 t coal -> 1,702.8 tCO2e direct
-    { ...base, id: "f1", kind: "fuel", processId: "p_eaf", factorId: "coal_bituminous_in", quantity: 1000, unit: "t", lineage: lineage(1) },
+    {
+      ...base,
+      id: "f1",
+      kind: "fuel",
+      processId: "p_eaf",
+      factorId: "coal_bituminous_in",
+      quantity: 1000,
+      unit: "t",
+      lineage: lineage(1),
+    },
     // 10,000 MWh -> 7,160 tCO2e indirect
-    { ...base, id: "e1", kind: "electricity", processId: "p_eaf", quantityMWh: 10000, supply: "grid", factorId: "grid_in_national", lineage: lineage(2) },
+    {
+      ...base,
+      id: "e1",
+      kind: "electricity",
+      processId: "p_eaf",
+      quantityMWh: 10000,
+      supply: "grid",
+      factorId: "grid_in_national",
+      lineage: lineage(2),
+    },
     // 10,000 t of crude steel
-    { ...base, id: "pr1", kind: "production", processId: "p_eaf", cnCode: "72071100", quantityT: 10000, destination: "eu_export", lineage: lineage(3) },
+    {
+      ...base,
+      id: "pr1",
+      kind: "production",
+      processId: "p_eaf",
+      cnCode: "72071100",
+      quantityT: 10000,
+      destination: "eu_export",
+      lineage: lineage(3),
+    },
   ];
 
   it("divides attributed emissions by the activity level", () => {
@@ -201,9 +248,35 @@ describe("specific embedded emissions (Annex IV)", () => {
     const cementProcess: ProductionProcess = { id: "p_kiln", name: "Kiln", category: "cement" };
     const cementInstallation = { ...installation, processes: [cementProcess] };
     const cementActivities: ActivityRecord[] = [
-      { ...base, id: "f1", kind: "fuel", processId: "p_kiln", factorId: "coal_bituminous_in", quantity: 1000, unit: "t", lineage: lineage(1) },
-      { ...base, id: "e1", kind: "electricity", processId: "p_kiln", quantityMWh: 10000, supply: "grid", factorId: "grid_in_national", lineage: lineage(2) },
-      { ...base, id: "pr1", kind: "production", processId: "p_kiln", cnCode: "25232900", quantityT: 10000, lineage: lineage(3) },
+      {
+        ...base,
+        id: "f1",
+        kind: "fuel",
+        processId: "p_kiln",
+        factorId: "coal_bituminous_in",
+        quantity: 1000,
+        unit: "t",
+        lineage: lineage(1),
+      },
+      {
+        ...base,
+        id: "e1",
+        kind: "electricity",
+        processId: "p_kiln",
+        quantityMWh: 10000,
+        supply: "grid",
+        factorId: "grid_in_national",
+        lineage: lineage(2),
+      },
+      {
+        ...base,
+        id: "pr1",
+        kind: "production",
+        processId: "p_kiln",
+        cnCode: "25232900",
+        quantityT: 10000,
+        lineage: lineage(3),
+      },
     ];
     const em = [computeProcessEmissions(cementProcess, cementActivities)];
     const [line] = buildDeclarationLines(cementInstallation, cementActivities, em);
@@ -237,9 +310,34 @@ describe("specific embedded emissions (Annex IV)", () => {
 
   it("allocates a shared process across CN codes by mass", () => {
     const twoProducts: ActivityRecord[] = [
-      { ...base, id: "f1", kind: "fuel", processId: "p_eaf", factorId: "coal_bituminous_in", quantity: 1000, unit: "t", lineage: lineage(1) },
-      { ...base, id: "pr1", kind: "production", processId: "p_eaf", cnCode: "72071100", quantityT: 7500, lineage: lineage(2) },
-      { ...base, id: "pr2", kind: "production", processId: "p_eaf", cnCode: "72071900", quantityT: 2500, lineage: lineage(3) },
+      {
+        ...base,
+        id: "f1",
+        kind: "fuel",
+        processId: "p_eaf",
+        factorId: "coal_bituminous_in",
+        quantity: 1000,
+        unit: "t",
+        lineage: lineage(1),
+      },
+      {
+        ...base,
+        id: "pr1",
+        kind: "production",
+        processId: "p_eaf",
+        cnCode: "72071100",
+        quantityT: 7500,
+        lineage: lineage(2),
+      },
+      {
+        ...base,
+        id: "pr2",
+        kind: "production",
+        processId: "p_eaf",
+        cnCode: "72071900",
+        quantityT: 2500,
+        lineage: lineage(3),
+      },
     ];
     const em = [computeProcessEmissions(eaf, twoProducts)];
     const lines = buildDeclarationLines(installation, twoProducts, em);
@@ -260,8 +358,25 @@ describe("specific embedded emissions (Annex IV)", () => {
 describe("buildDeclaration", () => {
   it("is deterministic: identical inputs give identical figures", () => {
     const activities: ActivityRecord[] = [
-      { ...base, id: "f1", kind: "fuel", processId: "p_eaf", factorId: "coal_bituminous_in", quantity: 1000, unit: "t", lineage: lineage(1) },
-      { ...base, id: "pr1", kind: "production", processId: "p_eaf", cnCode: "72071100", quantityT: 10000, lineage: lineage(2) },
+      {
+        ...base,
+        id: "f1",
+        kind: "fuel",
+        processId: "p_eaf",
+        factorId: "coal_bituminous_in",
+        quantity: 1000,
+        unit: "t",
+        lineage: lineage(1),
+      },
+      {
+        ...base,
+        id: "pr1",
+        kind: "production",
+        processId: "p_eaf",
+        cnCode: "72071100",
+        quantityT: 10000,
+        lineage: lineage(2),
+      },
     ];
     const a = buildDeclaration(installation, period, activities);
     const b = buildDeclaration(installation, period, activities);

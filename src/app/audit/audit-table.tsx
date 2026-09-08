@@ -75,7 +75,9 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
               }}
               className={cn(
                 "rounded-md px-2 py-1 text-[11px] font-medium capitalize transition-colors",
-                kind === k ? "bg-surface-3 text-ink" : "text-muted hover:bg-surface-2 hover:text-ink-2",
+                kind === k
+                  ? "bg-surface-3 text-ink"
+                  : "text-muted hover:bg-surface-2 hover:text-ink-2",
               )}
             >
               {k.replace(/_/g, " ")}
@@ -118,9 +120,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
                 </Td>
                 <Td className="whitespace-nowrap text-[11px] capitalize">
                   {r.kind.replace(/_/g, " ")}
-                  {r.detail ? (
-                    <div className="text-[10px] text-muted">{r.detail}</div>
-                  ) : null}
+                  {r.detail ? <div className="text-[10px] text-muted">{r.detail}</div> : null}
                 </Td>
                 <Td className="whitespace-nowrap text-[11px]">{r.processName}</Td>
                 <Td className="whitespace-nowrap font-mono text-[10.5px] text-muted">
@@ -141,9 +141,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
                     T{r.tier} · {r.provenance}
                   </Badge>
                 </Td>
-                <Td align="right">
-                  {r.excluded ? <Badge tone="critical">excluded</Badge> : null}
-                </Td>
+                <Td align="right">{r.excluded ? <Badge tone="critical">excluded</Badge> : null}</Td>
               </tr>
               {open === r.id ? (
                 <tr className="bg-surface-2">

@@ -1,6 +1,6 @@
 import { getDeclaration } from "@/lib/store";
-import { getFactor } from "@/lib/cbam/factors";
-import { Card, fmt, Note, Page, PageHeader, Table, Td, Th, Badge } from "@/components/ui";
+import { tryGetFactor } from "@/lib/cbam/factors";
+import { Card, fmt, Note, Page, PageHeader, Table, Td, Th } from "@/components/ui";
 import { StackBar } from "@/components/charts";
 import { SERIES } from "@/lib/palette";
 
@@ -45,12 +45,42 @@ export default function CalculatePage() {
         <div className="space-y-6">
           {d.emissions.map((e) => {
             const groups = [
-              { key: "fuel", label: "Fuel combustion", items: e.contributions.fuel, color: SERIES.direct },
-              { key: "processMaterial", label: "Process materials", items: e.contributions.processMaterial, color: SERIES.other },
-              { key: "electricity", label: "Electricity", items: e.contributions.electricity, color: SERIES.indirect },
-              { key: "heat", label: "Measurable heat", items: e.contributions.heat, color: SERIES.other },
-              { key: "precursor", label: "Bought-in precursors", items: e.contributions.precursor, color: SERIES.precursor },
-              { key: "internalPrecursor", label: "On-site precursors", items: e.contributions.internalPrecursor, color: SERIES.precursor },
+              {
+                key: "fuel",
+                label: "Fuel combustion",
+                items: e.contributions.fuel,
+                color: SERIES.direct,
+              },
+              {
+                key: "processMaterial",
+                label: "Process materials",
+                items: e.contributions.processMaterial,
+                color: SERIES.other,
+              },
+              {
+                key: "electricity",
+                label: "Electricity",
+                items: e.contributions.electricity,
+                color: SERIES.indirect,
+              },
+              {
+                key: "heat",
+                label: "Measurable heat",
+                items: e.contributions.heat,
+                color: SERIES.other,
+              },
+              {
+                key: "precursor",
+                label: "Bought-in precursors",
+                items: e.contributions.precursor,
+                color: SERIES.precursor,
+              },
+              {
+                key: "internalPrecursor",
+                label: "On-site precursors",
+                items: e.contributions.internalPrecursor,
+                color: SERIES.precursor,
+              },
             ].filter((g) => g.items.length > 0);
 
             const seeDirect =
@@ -59,7 +89,8 @@ export default function CalculatePage() {
                 : 0;
             const seeIndirect =
               e.activityLevelT > 0
-                ? (e.indirectT + e.precursorIndirectT + e.internalPrecursorIndirectT) / e.activityLevelT
+                ? (e.indirectT + e.precursorIndirectT + e.internalPrecursorIndirectT) /
+                  e.activityLevelT
                 : 0;
 
             return (
@@ -81,7 +112,11 @@ export default function CalculatePage() {
                     { label: "Indirect", value: e.indirectT, unit: "tCO₂e" },
                     {
                       label: "Precursors",
-                      value: e.precursorDirectT + e.precursorIndirectT + e.internalPrecursorDirectT + e.internalPrecursorIndirectT,
+                      value:
+                        e.precursorDirectT +
+                        e.precursorIndirectT +
+                        e.internalPrecursorDirectT +
+                        e.internalPrecursorIndirectT,
                       unit: "tCO₂e",
                     },
                     { label: "SEE total", value: seeDirect + seeIndirect, unit: "tCO₂e/t", dp: 4 },
@@ -131,17 +166,7 @@ export default function CalculatePage() {
                       </thead>
                       <tbody>
                         {aggregate(g.items).map((c) => {
-                          let source: string | null = null;
-                          try {
-                            const f = getFactor(c.factorId);
-                            source = `${f.source} (${f.vintage})`;
-                          } catch {
-                            source = c.factorId.startsWith("internal:")
-                              ? "Calculated upstream in this installation"
-                              : c.factorId.startsWith("precursor:")
-                                ? "Supplier declaration"
-                                : null;
-                          }
+                          const source = factorSourceLabel(c.factorId);
                           return (
                             <tr key={c.label} className="hover:bg-surface-2">
                               <Td className="text-ink">{c.label}</Td>
@@ -185,7 +210,8 @@ export default function CalculatePage() {
                   <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[11.5px]">
                     <span className="text-muted">Annex IV:</span>
                     <span className="font-mono text-ink-2">
-                      SEE<sub>direct</sub> = ({fmt(e.directT, 0)} + {fmt(e.precursorDirectT + e.internalPrecursorDirectT, 0)}) ÷{" "}
+                      SEE<sub>direct</sub> = ({fmt(e.directT, 0)} +{" "}
+                      {fmt(e.precursorDirectT + e.internalPrecursorDirectT, 0)}) ÷{" "}
                       {fmt(e.activityLevelT, 0)} t ={" "}
                       <span className="text-ink">{seeDirect.toFixed(4)}</span> tCO₂e/t
                     </span>
@@ -240,4 +266,19 @@ function aggregate<
       return n > 1 ? { ...item, formula: `${n} records, summed · ${item.formula}` } : item;
     })
     .sort((a, b) => b.emissionsT - a.emissionsT);
+}
+
+/**
+ * Human-readable provenance for a contribution's factor.
+ *
+ * Not every contribution comes from the factor library: on-site precursors are
+ * calculated upstream in this installation and bought-in ones come from a
+ * supplier declaration, so those ids resolve here rather than throwing.
+ */
+function factorSourceLabel(factorId: string): string | null {
+  const factor = tryGetFactor(factorId);
+  if (factor) return `${factor.source} (${factor.vintage})`;
+  if (factorId.startsWith("internal:")) return "Calculated upstream in this installation";
+  if (factorId.startsWith("precursor:")) return "Supplier declaration";
+  return null;
 }

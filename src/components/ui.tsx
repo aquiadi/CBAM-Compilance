@@ -162,13 +162,18 @@ export function Stat({
   hero?: boolean;
 }) {
   const toneClass = tone
-    ? { good: "text-good", warning: "text-warning", critical: "text-critical", accent: "text-accent" }[
-        tone
-      ]
+    ? {
+        good: "text-good",
+        warning: "text-warning",
+        critical: "text-critical",
+        accent: "text-accent",
+      }[tone]
     : "text-ink";
   return (
     <div className="rounded-lg border border-line bg-surface px-4 py-3.5">
-      <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">{label}</div>
+      <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+        {label}
+      </div>
       <div className="mt-2 flex items-baseline gap-1.5">
         {/* Proportional figures on display values; tabular is for columns. */}
         <span

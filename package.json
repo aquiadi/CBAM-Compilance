@@ -3,20 +3,41 @@
   "version": "0.1.0",
   "private": true,
   "description": "AI-native CBAM compliance for Indian exporters. Messy production data in, defensible emissions declaration out.",
+  "license": "MIT",
+  "keywords": [
+    "cbam",
+    "carbon-border-adjustment",
+    "emissions",
+    "compliance",
+    "esg",
+    "carbon-accounting",
+    "llm",
+    "structured-extraction",
+    "nextjs",
+    "typescript"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx src/evals/run.ts",
     "seed": "tsx scripts/generate-fixtures.ts",
     "screenshots": "node scripts/screenshot.mjs",
-    "check": "npm run typecheck && npm run test && npm run eval",
-    "eval:model": "tsx src/evals/run.ts --model"
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run data:verify && npm run test && npm run eval",
+    "eval:model": "tsx src/evals/run.ts --model",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "data:manifest": "tsx scripts/fixtures.ts write",
+    "data:verify": "tsx scripts/fixtures.ts verify"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
@@ -27,15 +48,22 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.10.2",
     "@types/papaparse": "^5.3.16",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "eslint": "^10.10.0",
+    "eslint-config-next": "^16.3.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "playwright": "^1.63.0",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.0"
   }
 }

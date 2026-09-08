@@ -34,20 +34,48 @@ export const GOODS: GoodsDefinition[] = [
     ["72011000", "Non-alloy pig iron, <=0.5% phosphorus", "pig_iron"],
     ["72031000", "Ferrous products obtained by direct reduction of iron ore (DRI)", "dri"],
     ["72061000", "Iron and non-alloy steel ingots", "crude_steel"],
-    ["72071100", "Semi-finished non-alloy steel, rectangular cross-section, <0.25% C", "crude_steel"],
+    [
+      "72071100",
+      "Semi-finished non-alloy steel, rectangular cross-section, <0.25% C",
+      "crude_steel",
+    ],
     ["72071900", "Other semi-finished products of non-alloy steel", "crude_steel"],
-    ["72081000", "Flat-rolled iron/non-alloy steel, hot-rolled, in coils, with patterns", "iron_or_steel_products"],
-    ["72083900", "Flat-rolled hot-rolled coil, width >=600mm, thickness <3mm", "iron_or_steel_products"],
-    ["72085100", "Flat-rolled hot-rolled plate, width >=600mm, thickness >10mm", "iron_or_steel_products"],
+    [
+      "72081000",
+      "Flat-rolled iron/non-alloy steel, hot-rolled, in coils, with patterns",
+      "iron_or_steel_products",
+    ],
+    [
+      "72083900",
+      "Flat-rolled hot-rolled coil, width >=600mm, thickness <3mm",
+      "iron_or_steel_products",
+    ],
+    [
+      "72085100",
+      "Flat-rolled hot-rolled plate, width >=600mm, thickness >10mm",
+      "iron_or_steel_products",
+    ],
     ["72091700", "Flat-rolled cold-rolled coil, thickness 0.5-1mm", "iron_or_steel_products"],
     ["72104900", "Flat-rolled, plated or coated with zinc (galvanised)", "iron_or_steel_products"],
     ["72131000", "Hot-rolled bars and rods, with indentations (rebar)", "iron_or_steel_products"],
-    ["72139100", "Other hot-rolled bars and rods, circular cross-section <14mm", "iron_or_steel_products"],
+    [
+      "72139100",
+      "Other hot-rolled bars and rods, circular cross-section <14mm",
+      "iron_or_steel_products",
+    ],
     ["72142000", "Bars and rods, with indentations from rolling", "iron_or_steel_products"],
     ["73043900", "Tubes and pipes, seamless, of iron or steel", "iron_or_steel_products"],
-    ["73063000", "Welded tubes and pipes, circular cross-section, of iron/non-alloy steel", "iron_or_steel_products"],
+    [
+      "73063000",
+      "Welded tubes and pipes, circular cross-section, of iron/non-alloy steel",
+      "iron_or_steel_products",
+    ],
     ["73084000", "Equipment for scaffolding, shuttering, propping", "iron_or_steel_products"],
-    ["73089099", "Other structures and parts of structures, of iron or steel", "iron_or_steel_products"],
+    [
+      "73089099",
+      "Other structures and parts of structures, of iron or steel",
+      "iron_or_steel_products",
+    ],
     ["73181500", "Threaded screws and bolts, of iron or steel", "iron_or_steel_products"],
     ["73269098", "Other articles of iron or steel", "iron_or_steel_products"],
     ["72022100", "Ferro-silicon, >55% silicon", "ferro_alloys"],
@@ -58,8 +86,16 @@ export const GOODS: GoodsDefinition[] = [
     ["76012000", "Unwrought aluminium alloys", "unwrought_aluminium"],
     ["76041000", "Bars, rods and profiles of non-alloy aluminium", "aluminium_products"],
     ["76042900", "Bars, rods and profiles of aluminium alloys", "aluminium_products"],
-    ["76061200", "Plates, sheets and strip of aluminium alloys, thickness >0.2mm", "aluminium_products"],
-    ["76071110", "Aluminium foil, rolled but not further worked, thickness <0.021mm", "aluminium_products"],
+    [
+      "76061200",
+      "Plates, sheets and strip of aluminium alloys, thickness >0.2mm",
+      "aluminium_products",
+    ],
+    [
+      "76071110",
+      "Aluminium foil, rolled but not further worked, thickness <0.021mm",
+      "aluminium_products",
+    ],
     ["76109090", "Other aluminium structures and parts", "aluminium_products"],
     ["76169990", "Other articles of aluminium", "aluminium_products"],
   ]),
@@ -134,7 +170,9 @@ export const CATEGORY_LABELS: Record<AggregatedGoodsCategoryId, string> = {
  * Typical precursor relationships, used to check that a declared production
  * route is internally coherent (an EAF with no scrap and no DRI is suspicious).
  */
-export const TYPICAL_PRECURSORS: Partial<Record<AggregatedGoodsCategoryId, AggregatedGoodsCategoryId[]>> = {
+export const TYPICAL_PRECURSORS: Partial<
+  Record<AggregatedGoodsCategoryId, AggregatedGoodsCategoryId[]>
+> = {
   crude_steel: ["pig_iron", "dri", "ferro_alloys"],
   iron_or_steel_products: ["crude_steel"],
   pig_iron: ["sintered_ore"],

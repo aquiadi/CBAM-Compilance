@@ -160,7 +160,8 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Vol. 3 Ch. 2, stoichiometric ratio CO2/CaCO3",
     vintage: "2006",
     uncertainty: 0.03,
-    notes: "Assumes complete calcination; apply the plant's measured calcination fraction if lower.",
+    notes:
+      "Assumes complete calcination; apply the plant's measured calcination fraction if lower.",
   },
   {
     id: "dolomite",

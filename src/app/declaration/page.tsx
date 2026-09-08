@@ -1,7 +1,6 @@
 import { getDeclaration, getState } from "@/lib/store";
 import { isAiAvailable } from "@/lib/ai/client";
 import {
-  Badge,
   Card,
   fmt,
   fmtCompact,
@@ -116,11 +115,7 @@ export default function DeclarationPage() {
                     {fmt(l.quantityT)}
                   </Td>
                   <Td align="right" numeric>
-                    {l.quantityEuT > 0 ? (
-                      fmt(l.quantityEuT)
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
+                    {l.quantityEuT > 0 ? fmt(l.quantityEuT) : <span className="text-muted">—</span>}
                   </Td>
                   <Td align="right" numeric>
                     {l.seeDirect.toFixed(4)}

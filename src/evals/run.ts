@@ -14,9 +14,12 @@ import { mapDataset } from "../lib/ai/mapper";
 import { isAiAvailable, MODEL } from "../lib/ai/client";
 import { CASES, PROCESSES } from "./fixtures/mapping";
 import { formatReport, scoreCase, summarise, type CaseScore, type EvalSummary } from "./score";
+import { formatDelta, previousRun, record, toRun } from "./tracker";
 
 const useModel = process.argv.includes("--model");
 const verbose = process.argv.includes("--verbose");
+// Runs are recorded by default; --no-record keeps a throwaway run out of the log.
+const shouldRecord = !process.argv.includes("--no-record");
 
 async function runHeuristic(): Promise<EvalSummary> {
   const started = Date.now();
@@ -59,6 +62,15 @@ async function main() {
 
   console.log(formatReport(summaries));
 
+  // Record every run and show what moved. A metric printed once and lost is
+  // not a measurement.
+  for (const summary of summaries) {
+    const run = toRun(summary);
+    const delta = formatDelta(run, previousRun(summary.label));
+    if (delta) console.log(`\n${delta}`);
+    if (shouldRecord) record(run);
+  }
+
   for (const summary of summaries) {
     const failures = summary.cases.filter((c) => c.errors.length > 0);
     if (failures.length === 0) continue;
@@ -72,6 +84,9 @@ async function main() {
 
   if (!useModel) {
     console.log("\nRun with --model to compare against the LLM mapper (needs an API key).");
+  }
+  if (shouldRecord) {
+    console.log("Run recorded to artifacts/evals/history.jsonl");
   }
 
   // The gate is the error rate, not accuracy: a miss is recoverable in the UI,

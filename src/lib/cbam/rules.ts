@@ -182,7 +182,8 @@ const periodCoverage: Rule = ({ period, activities }) => {
           `The reporting period runs ${period.start} to ${period.end} but ${kind} records were ` +
           `only found for ${months.size} distinct months. Gaps understate embedded emissions.`,
         activityIds: [],
-        remedy: `Upload the missing ${kind} records, or confirm the installation was not ` +
+        remedy:
+          `Upload the missing ${kind} records, or confirm the installation was not ` +
           `operating in those months.`,
         reference: "IR Art. 3, completeness of monitoring",
       });
@@ -230,7 +231,8 @@ const outliers: Rule = ({ activities }) => {
           activityIds: [r.id],
           processId: r.processId,
           allowExclusion: true,
-          remedy: `Open ${r.lineage.fileName} row ${r.lineage.row} and confirm the unit in the ` +
+          remedy:
+            `Open ${r.lineage.fileName} row ${r.lineage.row} and confirm the unit in the ` +
             `source system.`,
         });
       }
@@ -294,8 +296,11 @@ const precursorDefaults: Rule = ({ activities }) => {
     groups.set(key, [...(groups.get(key) ?? []), a]);
   }
 
-  return [...groups.entries()].map(([key, records]) => {
-    const first = records[0]!;
+  return [...groups.entries()].flatMap(([key, records]) => {
+    const [first] = records;
+    // A group only exists because something was pushed into it, but proving
+    // that to the compiler beats asserting it away.
+    if (!first) return [];
     const tonnes = records.reduce((s, r) => s + r.quantityT, 0);
     const see = first.seeDirect + first.seeIndirect;
     const supplier = key.split("|")[1] ?? "unknown supplier";
@@ -503,7 +508,8 @@ const SEVERITY_ORDER: Record<Severity, number> = { blocker: 0, warning: 1, info:
 
 export function runRules(ctx: RuleContext): Finding[] {
   return RULES.flatMap((rule) => rule(ctx)).sort(
-    (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || a.code.localeCompare(b.code),
+    (a, b) =>
+      SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || a.code.localeCompare(b.code),
   );
 }
 

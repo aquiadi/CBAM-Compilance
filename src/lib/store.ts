@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { buildDeclaration, type DeclarationResult } from "./cbam/declaration";
-import { DEFAULT_ASSUMPTIONS, type CostAssumptions } from "./cbam/cost";
+import type { CostAssumptions } from "./cbam/cost";
 import type { ActivityRecord, Installation, ReportingPeriod } from "./cbam/types";
 import { DEMO_INSTALLATION, DEMO_PERIOD, loadDemoFiles } from "./demo";
 import { heuristicMapping } from "./ingest/heuristic";
@@ -9,6 +9,7 @@ import { parseCsv } from "./ingest/parse";
 import { materialise, type RejectedRow } from "./ingest/materialise";
 import type { DatasetMapping } from "./ingest/schema";
 import type { AiOutcome } from "./ai/client";
+import { env } from "@/config/env";
 
 /**
  * Workspace state.
@@ -45,7 +46,11 @@ export interface WorkspaceState {
   acknowledged: string[];
 }
 
-const DATA_DIR = join(process.cwd(), ".data");
+// `resolve`, not `join`: the container sets an absolute CARBONPASS_DATA_DIR
+// (/app/.data) which is also the volume mount point, and join would nest it
+// under the working directory as /app/app/.data - silently writing state
+// outside the mounted volume, so it would not survive a restart.
+const DATA_DIR = resolve(process.cwd(), env.CARBONPASS_DATA_DIR);
 const STATE_FILE = join(DATA_DIR, "workspace.json");
 
 // Survives HMR in development, where module state is otherwise discarded.
@@ -75,7 +80,13 @@ function seed(): WorkspaceState {
   return {
     installation: DEMO_INSTALLATION,
     period: DEMO_PERIOD,
-    assumptions: DEFAULT_ASSUMPTIONS,
+    // Configuration is injected here rather than read inside the engine, which
+    // must stay pure and deterministic.
+    assumptions: {
+      etsPriceEur: env.CARBONPASS_ETS_PRICE_EUR,
+      inrPerEur: env.CARBONPASS_INR_PER_EUR,
+      year: env.CARBONPASS_YEAR,
+    },
     datasets,
     exclusions: [],
     acknowledged: [],

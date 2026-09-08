@@ -24,7 +24,15 @@ export { SERIES };
 // ------------------------------------------------------------------ tooltip
 
 /** `left` is a CSS length so the tooltip tracks a responsive SVG's geometry. */
-function Tooltip({ left, top, children }: { left: string; top: number; children: React.ReactNode }) {
+function Tooltip({
+  left,
+  top,
+  children,
+}: {
+  left: string;
+  top: number;
+  children: React.ReactNode;
+}) {
   return (
     <div
       className="pointer-events-none absolute z-20 -translate-x-1/2 rounded-md border border-line-strong bg-surface-3 px-2.5 py-1.5 text-[11px] leading-[1.5] text-ink shadow-lg"
@@ -62,14 +70,16 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
 
-  // Running positions.
-  let running = 0;
-  const bars = steps.map((s) => {
+  // Running positions, threaded through a reduce rather than mutating a
+  // closure variable inside map: reassigning during render is exactly the
+  // pattern that breaks under the React compiler's memoisation.
+  const bars = steps.reduce<(WaterfallStep & { start: number; end: number })[]>((acc, s) => {
+    const running = acc.reduce((sum, b) => (b.total ? sum : sum + b.value), 0);
     const start = s.total ? 0 : running;
     const end = s.total ? s.value : running + s.value;
-    if (!s.total) running += s.value;
-    return { ...s, start, end };
-  });
+    acc.push({ ...s, start, end });
+    return acc;
+  }, []);
 
   const max = Math.max(...bars.map((b) => Math.max(b.start, b.end)), 0);
   const min = Math.min(...bars.map((b) => Math.min(b.start, b.end)), 0);
@@ -171,10 +181,7 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
       </svg>
 
       {hover !== null && bars[hover] ? (
-        <Tooltip
-          left={`${((padding.left + band * hover + band / 2) / width) * 100}%`}
-          top={4}
-        >
+        <Tooltip left={`${((padding.left + band * hover + band / 2) / width) * 100}%`} top={4}>
           <div className="font-medium">{bars[hover]!.label}</div>
           <div className="tnum mt-0.5">
             {fmt(bars[hover]!.value)} {unit}
@@ -205,13 +212,7 @@ export interface BenchmarkRow {
  * comparison on one axis and stops the eye reading it as two independent
  * quantities.
  */
-export function BenchmarkBars({
-  rows,
-  unit = "tCO₂e/t",
-}: {
-  rows: BenchmarkRow[];
-  unit?: string;
-}) {
+export function BenchmarkBars({ rows, unit = "tCO₂e/t" }: { rows: BenchmarkRow[]; unit?: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(...rows.flatMap((r) => [r.value, r.benchmark ?? 0]), 0.001) * 1.15;
 
@@ -368,7 +369,14 @@ export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
         ))}
 
         <path d={area} fill={`url(#grad-${id})`} />
-        <path d={path} fill="none" stroke={SERIES.indirect} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <path
+          d={path}
+          fill="none"
+          stroke={SERIES.indirect}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
 
         {points.map((p, i) => (
           <g key={p.year}>
@@ -458,7 +466,10 @@ export function ReadinessMeter({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-[38px] font-semibold leading-none tracking-[-0.02em]" style={{ color }}>
+        <span
+          className="text-[38px] font-semibold leading-none tracking-[-0.02em]"
+          style={{ color }}
+        >
           {score}
         </span>
         <span className="text-[11.5px] font-medium" style={{ color }}>

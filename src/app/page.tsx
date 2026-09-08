@@ -39,13 +39,23 @@ export default function OverviewPage() {
   const waterfall = [
     {
       label: "Combustion",
-      value: Math.round(d.emissions.reduce((s, e) => s + e.contributions.fuel.reduce((a, c) => a + c.emissionsT, 0), 0)),
+      value: Math.round(
+        d.emissions.reduce(
+          (s, e) => s + e.contributions.fuel.reduce((a, c) => a + c.emissionsT, 0),
+          0,
+        ),
+      ),
       color: SERIES.direct,
       detail: "Fuels burned on site, converted through net calorific value.",
     },
     {
       label: "Process",
-      value: Math.round(d.emissions.reduce((s, e) => s + e.contributions.processMaterial.reduce((a, c) => a + c.emissionsT, 0), 0)),
+      value: Math.round(
+        d.emissions.reduce(
+          (s, e) => s + e.contributions.processMaterial.reduce((a, c) => a + c.emissionsT, 0),
+          0,
+        ),
+      ),
       color: SERIES.other,
       detail: "Carbonate calcination and electrode consumption.",
     },
@@ -103,8 +113,8 @@ export default function OverviewPage() {
           <div className="mb-5">
             <Note tone="critical">
               <span className="font-medium text-critical">
-                {blockers.length} blocking finding{blockers.length > 1 ? "s" : ""} —
-                this declaration cannot be filed.
+                {blockers.length} blocking finding{blockers.length > 1 ? "s" : ""} — this
+                declaration cannot be filed.
               </span>{" "}
               {blockers[0]?.title}.{" "}
               <Link href="/review" className="text-accent underline underline-offset-2">
@@ -163,7 +173,8 @@ export default function OverviewPage() {
             >
               <BenchmarkBars
                 rows={d.lines.map((l) => ({
-                  label: l.description.length > 46 ? `${l.description.slice(0, 45)}…` : l.description,
+                  label:
+                    l.description.length > 46 ? `${l.description.slice(0, 45)}…` : l.description,
                   sublabel: `CN ${l.cnCode}`,
                   value: l.seeForObligation,
                   benchmark: l.defaultSee,
@@ -215,8 +226,16 @@ export default function OverviewPage() {
               <StackBar
                 segments={[
                   { label: "Direct", value: Math.round(d.totals.directT), color: SERIES.direct },
-                  { label: "Indirect", value: Math.round(d.totals.indirectT), color: SERIES.indirect },
-                  { label: "Precursors", value: Math.round(d.totals.precursorT), color: SERIES.precursor },
+                  {
+                    label: "Indirect",
+                    value: Math.round(d.totals.indirectT),
+                    color: SERIES.indirect,
+                  },
+                  {
+                    label: "Precursors",
+                    value: Math.round(d.totals.precursorT),
+                    color: SERIES.precursor,
+                  },
                 ]}
               />
               <div className="mt-4 border-t border-line pt-3 text-[11px] leading-[1.6] text-ink-2">
@@ -299,7 +318,7 @@ export default function OverviewPage() {
                     <Td>
                       <Badge tone={ds.mapping.producedBy === "model" ? "accent" : "neutral"}>
                         {ds.mapping.producedBy === "model"
-                          ? ds.mapping.model ?? "AI model"
+                          ? (ds.mapping.model ?? "AI model")
                           : "Deterministic"}
                       </Badge>
                     </Td>

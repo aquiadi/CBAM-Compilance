@@ -34,15 +34,15 @@ function topologicalOrder(
   const adjacency = new Map<string, string[]>(processIds.map((id) => [id, []]));
 
   for (const link of links) {
-    if (!indegree.has(link.toProcessId) || !adjacency.has(link.fromProcessId)) continue;
+    const neighbours = adjacency.get(link.fromProcessId);
+    if (!indegree.has(link.toProcessId) || !neighbours) continue;
     indegree.set(link.toProcessId, (indegree.get(link.toProcessId) ?? 0) + 1);
-    adjacency.get(link.fromProcessId)!.push(link.toProcessId);
+    neighbours.push(link.toProcessId);
   }
 
   const queue = processIds.filter((id) => (indegree.get(id) ?? 0) === 0);
   const order: string[] = [];
-  while (queue.length > 0) {
-    const id = queue.shift()!;
+  for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
     order.push(id);
     for (const next of adjacency.get(id) ?? []) {
       const remaining = (indegree.get(next) ?? 0) - 1;

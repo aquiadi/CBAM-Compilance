@@ -88,7 +88,8 @@ function unitFor(
 ): { unit: string; source: string } | null {
   const unitColumn = columnFor(ctx.mapping, "unit");
   const fromRow = cell(row, unitColumn);
-  if (fromRow && resolveUnit(fromRow)) return { unit: fromRow, source: `unit column "${unitColumn}"` };
+  if (fromRow && resolveUnit(fromRow))
+    return { unit: fromRow, source: `unit column "${unitColumn}"` };
 
   const column = ctx.mapping.columns.find((c) => c.targetField === quantityField);
   if (column?.detectedUnit && resolveUnit(column.detectedUnit)) {

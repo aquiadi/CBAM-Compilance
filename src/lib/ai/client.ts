@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { env, hasModelKey } from "@/config/env";
 
 /**
  * Model client access.
@@ -9,12 +10,12 @@ import Anthropic from "@anthropic-ai/sdk";
  * upstream API is down is not a compliance tool.
  */
 
-export const MODEL = process.env.CARBONPASS_MODEL ?? "claude-opus-5";
+export const MODEL = env.CARBONPASS_MODEL;
 
 let cached: Anthropic | null = null;
 
 export function isAiAvailable(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return hasModelKey();
 }
 
 export function getClient(): Anthropic | null {

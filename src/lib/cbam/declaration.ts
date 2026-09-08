@@ -1,6 +1,11 @@
 import { buildDeclarationLines, computeProcessEmissions, type ProcessEmissions } from "./calc";
 import { resolveInternalPrecursors } from "./internal";
-import { computeExposure, DEFAULT_ASSUMPTIONS, type CostAssumptions, type ExposureResult } from "./cost";
+import {
+  computeExposure,
+  DEFAULT_ASSUMPTIONS,
+  type CostAssumptions,
+  type ExposureResult,
+} from "./cost";
 import { BENCHMARK_DISCLAIMER, getBenchmark } from "./defaults";
 import { runRules, type Finding } from "./rules";
 import { assessReadiness, type ReadinessResult } from "./readiness";
@@ -278,8 +283,9 @@ export function toCsv(result: DeclarationResult): string {
 }
 
 function xmlEscape(s: string): string {
-  return s.replace(/[<>&'"]/g, (c) =>
-    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c] ?? c,
+  return s.replace(
+    /[<>&'"]/g,
+    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c] ?? c,
   );
 }
 

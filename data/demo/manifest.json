@@ -1,0 +1,38 @@
+{
+  "description": "Checksums for the seeded demo dataset. Verified in CI so the figures in the README and screenshots always correspond to these exact bytes.",
+  "generator": "scripts/generate-fixtures.ts",
+  "seed": 20260101,
+  "generatedAt": "2026-09-08T20:06:58.069Z",
+  "fixtures": [
+    {
+      "file": "fuel_consumption_register.csv",
+      "sha256": "79027d73ce49f3322b5454e87db521e44ba6093341fa779038677e9bc1a1fb9d",
+      "bytes": 2108,
+      "rows": 26
+    },
+    {
+      "file": "power_bill_register.csv",
+      "sha256": "b4f65b04f5f917659e9e6a61c4a20ad5b59885f4251d0a9a01906443e301d934",
+      "bytes": 1875,
+      "rows": 21
+    },
+    {
+      "file": "precursor_receipts.csv",
+      "sha256": "952749deeaddad29e0a77c216a50f75f922c66cc0404dd938f027194441b9c41",
+      "bytes": 2568,
+      "rows": 24
+    },
+    {
+      "file": "process_materials.csv",
+      "sha256": "63c2c3830089f03cee28f8221f45a0e5765139731d72a6299b7d2a145193a4cd",
+      "bytes": 1827,
+      "rows": 24
+    },
+    {
+      "file": "production_despatch.csv",
+      "sha256": "ee2804981a8ddbcf77d47c1455b00fee205862fde4c8e3981d9758052bef0ca6",
+      "bytes": 2322,
+      "rows": 25
+    }
+  ]
+}

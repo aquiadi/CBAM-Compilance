@@ -8,12 +8,7 @@ import type { Dimension } from "../cbam/units";
  * anything it cannot place is surfaced as unmapped rather than quietly dropped.
  */
 
-export type DatasetKind =
-  | "fuel"
-  | "electricity"
-  | "process_material"
-  | "production"
-  | "precursor";
+export type DatasetKind = "fuel" | "electricity" | "process_material" | "production" | "precursor";
 
 export interface CanonicalField {
   id: string;
@@ -44,7 +39,17 @@ const PROCESS: CanonicalField = {
   type: "text",
   description:
     "The plant section or cost centre the record belongs to. Used to attribute emissions to a production process.",
-  aliases: ["section", "plant", "cost centre", "cost center", "department", "unit", "area", "shop", "division"],
+  aliases: [
+    "section",
+    "plant",
+    "cost centre",
+    "cost center",
+    "department",
+    "unit",
+    "area",
+    "shop",
+    "division",
+  ],
 };
 
 const QUANTITY: CanonicalField = {
@@ -53,7 +58,17 @@ const QUANTITY: CanonicalField = {
   required: true,
   type: "number",
   description: "The amount consumed, produced or received in the period.",
-  aliases: ["qty", "quantity", "consumption", "consumed", "qty consumed", "volume", "weight", "receipt", "drawn"],
+  aliases: [
+    "qty",
+    "quantity",
+    "consumption",
+    "consumed",
+    "qty consumed",
+    "volume",
+    "weight",
+    "receipt",
+    "drawn",
+  ],
 };
 
 const UNIT: CanonicalField = {
@@ -82,7 +97,16 @@ const MATERIAL: CanonicalField = {
   type: "text",
   description:
     "What was consumed, as written in the source system. Resolved to an emission factor in the value-mapping step.",
-  aliases: ["material", "material desc", "item", "item description", "product", "description", "particulars", "fuel"],
+  aliases: [
+    "material",
+    "material desc",
+    "item",
+    "item description",
+    "product",
+    "description",
+    "particulars",
+    "fuel",
+  ],
 };
 
 export const DATASET_SCHEMAS: Record<
@@ -109,9 +133,30 @@ export const DATASET_SCHEMAS: Record<
         type: "text",
         description:
           "Who supplied the power: state grid, captive generation, or a power purchase agreement. Determines the emission factor.",
-        aliases: ["source", "supply", "supply source", "consumer", "connection", "feeder", "discom"],
+        aliases: [
+          "source",
+          "supply",
+          "supply source",
+          "consumer",
+          "connection",
+          "feeder",
+          "discom",
+        ],
       },
-      { ...QUANTITY, dimension: "electricity", aliases: [...QUANTITY.aliases, "units drawn", "energy", "reading", "meter reading", "kwh", "mwh", "mu"] },
+      {
+        ...QUANTITY,
+        dimension: "electricity",
+        aliases: [
+          ...QUANTITY.aliases,
+          "units drawn",
+          "energy",
+          "reading",
+          "meter reading",
+          "kwh",
+          "mwh",
+          "mu",
+        ],
+      },
       UNIT,
       NOTES,
     ],
@@ -135,17 +180,24 @@ export const DATASET_SCHEMAS: Record<
         label: "CN / HS code",
         required: true,
         type: "cn_code",
-        description: "Combined Nomenclature code of the goods. Determines whether they are in CBAM scope at all.",
+        description:
+          "Combined Nomenclature code of the goods. Determines whether they are in CBAM scope at all.",
         aliases: ["cn code", "hs code", "hsn", "tariff", "cn", "itc hs", "commodity code"],
       },
-      { ...QUANTITY, label: "Production quantity", dimension: "mass", aliases: [...QUANTITY.aliases, "production", "output", "produced"] },
+      {
+        ...QUANTITY,
+        label: "Production quantity",
+        dimension: "mass",
+        aliases: [...QUANTITY.aliases, "production", "output", "produced"],
+      },
       {
         id: "quantity_eu",
         label: "Despatched to EU",
         required: false,
         type: "number",
         dimension: "mass",
-        description: "Tonnes shipped to the European Union. Only this share creates a certificate obligation.",
+        description:
+          "Tonnes shipped to the European Union. Only this share creates a certificate obligation.",
         aliases: ["eu", "export to eu", "despatched to eu", "europe", "eu despatch", "export"],
       },
       {
@@ -165,7 +217,13 @@ export const DATASET_SCHEMAS: Record<
         dimension: "mass",
         description:
           "Tonnes consumed on site by a downstream process. Excluded from the obligation so its emissions are not counted twice.",
-        aliases: ["internal", "captive consumption", "transfer", "internal transfer", "self consumption"],
+        aliases: [
+          "internal",
+          "captive consumption",
+          "transfer",
+          "internal transfer",
+          "self consumption",
+        ],
       },
       UNIT,
       NOTES,
@@ -187,7 +245,11 @@ export const DATASET_SCHEMAS: Record<
         description: "CN code of the precursor.",
         aliases: ["cn code", "hs code", "hsn", "tariff", "cn"],
       },
-      { ...QUANTITY, dimension: "mass", aliases: [...QUANTITY.aliases, "qty received", "received", "purchase"] },
+      {
+        ...QUANTITY,
+        dimension: "mass",
+        aliases: [...QUANTITY.aliases, "qty received", "received", "purchase"],
+      },
       {
         id: "supplier",
         label: "Supplier",
@@ -203,14 +265,21 @@ export const DATASET_SCHEMAS: Record<
         type: "number",
         description:
           "Direct specific embedded emissions declared by the supplier, tCO2e per tonne. Blank means a default is applied.",
-        aliases: ["see direct", "specific embedded", "direct emissions", "supplier see", "embedded direct"],
+        aliases: [
+          "see direct",
+          "specific embedded",
+          "direct emissions",
+          "supplier see",
+          "embedded direct",
+        ],
       },
       {
         id: "see_indirect",
         label: "Supplier SEE (indirect)",
         required: false,
         type: "number",
-        description: "Indirect specific embedded emissions declared by the supplier, tCO2e per tonne.",
+        description:
+          "Indirect specific embedded emissions declared by the supplier, tCO2e per tonne.",
         aliases: ["see indirect", "indirect emissions", "embedded indirect"],
       },
       {

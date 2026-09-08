@@ -28,14 +28,50 @@ function proposal(over: Partial<Parameters<typeof validateMapping>[1]> = {}) {
     kind: "fuel" as const,
     kindConfidence: 0.9,
     columns: [
-      { sourceColumn: "Month", targetField: "period", confidence: 0.95, detectedUnit: null, rationale: "" },
-      { sourceColumn: "Section", targetField: "process", confidence: 0.9, detectedUnit: null, rationale: "" },
-      { sourceColumn: "Material", targetField: "material", confidence: 0.9, detectedUnit: null, rationale: "" },
-      { sourceColumn: "Qty", targetField: "quantity", confidence: 0.9, detectedUnit: "MT", rationale: "" },
-      { sourceColumn: "UOM", targetField: "unit", confidence: 0.9, detectedUnit: null, rationale: "" },
+      {
+        sourceColumn: "Month",
+        targetField: "period",
+        confidence: 0.95,
+        detectedUnit: null,
+        rationale: "",
+      },
+      {
+        sourceColumn: "Section",
+        targetField: "process",
+        confidence: 0.9,
+        detectedUnit: null,
+        rationale: "",
+      },
+      {
+        sourceColumn: "Material",
+        targetField: "material",
+        confidence: 0.9,
+        detectedUnit: null,
+        rationale: "",
+      },
+      {
+        sourceColumn: "Qty",
+        targetField: "quantity",
+        confidence: 0.9,
+        detectedUnit: "MT",
+        rationale: "",
+      },
+      {
+        sourceColumn: "UOM",
+        targetField: "unit",
+        confidence: 0.9,
+        detectedUnit: null,
+        rationale: "",
+      },
     ],
     values: [
-      { sourceValue: "COAL", resolvedId: "coal_bituminous_in", target: "factor" as const, confidence: 0.9, rationale: "" },
+      {
+        sourceValue: "COAL",
+        resolvedId: "coal_bituminous_in",
+        target: "factor" as const,
+        confidence: 0.9,
+        rationale: "",
+      },
     ],
     warnings: [],
     ...over,
@@ -56,7 +92,13 @@ describe("validateMapping", () => {
       proposal({
         columns: [
           ...proposal().columns.slice(0, 4),
-          { sourceColumn: "UOM", targetField: "carbon_intensity_factor", confidence: 0.99, detectedUnit: null, rationale: "" },
+          {
+            sourceColumn: "UOM",
+            targetField: "carbon_intensity_factor",
+            confidence: 0.99,
+            detectedUnit: null,
+            rationale: "",
+          },
         ],
       }),
       PROCESSES,
@@ -70,7 +112,13 @@ describe("validateMapping", () => {
       dataset,
       proposal({
         values: [
-          { sourceValue: "COAL", resolvedId: "indian_coal_grade_g11_2024", target: "factor", confidence: 0.97, rationale: "" },
+          {
+            sourceValue: "COAL",
+            resolvedId: "indian_coal_grade_g11_2024",
+            target: "factor",
+            confidence: 0.97,
+            rationale: "",
+          },
         ],
       }),
       PROCESSES,
@@ -83,7 +131,15 @@ describe("validateMapping", () => {
     const result = validateMapping(
       dataset,
       proposal({
-        values: [{ sourceValue: "DRI Kiln", resolvedId: "proc_blast_furnace", target: "process", confidence: 0.95, rationale: "" }],
+        values: [
+          {
+            sourceValue: "DRI Kiln",
+            resolvedId: "proc_blast_furnace",
+            target: "process",
+            confidence: 0.95,
+            rationale: "",
+          },
+        ],
       }),
       PROCESSES,
     );
@@ -94,7 +150,15 @@ describe("validateMapping", () => {
     const result = validateMapping(
       dataset,
       proposal({
-        values: [{ sourceValue: "DOLOCHAR", resolvedId: null, target: "factor", confidence: 0.2, rationale: "no match" }],
+        values: [
+          {
+            sourceValue: "DOLOCHAR",
+            resolvedId: null,
+            target: "factor",
+            confidence: 0.2,
+            rationale: "no match",
+          },
+        ],
       }),
       PROCESSES,
     );
@@ -106,7 +170,16 @@ describe("validateMapping", () => {
     const result = validateMapping(
       dataset,
       proposal({
-        columns: [...proposal().columns, { sourceColumn: "Phantom Column", targetField: "notes", confidence: 0.9, detectedUnit: null, rationale: "" }],
+        columns: [
+          ...proposal().columns,
+          {
+            sourceColumn: "Phantom Column",
+            targetField: "notes",
+            confidence: 0.9,
+            detectedUnit: null,
+            rationale: "",
+          },
+        ],
       }),
       PROCESSES,
     );
@@ -131,8 +204,20 @@ describe("validateMapping", () => {
       proposal({
         columns: [
           ...proposal().columns.slice(0, 3),
-          { sourceColumn: "Qty", targetField: "quantity", confidence: 0.95, detectedUnit: "MT", rationale: "" },
-          { sourceColumn: "UOM", targetField: "quantity", confidence: 0.4, detectedUnit: null, rationale: "" },
+          {
+            sourceColumn: "Qty",
+            targetField: "quantity",
+            confidence: 0.95,
+            detectedUnit: "MT",
+            rationale: "",
+          },
+          {
+            sourceColumn: "UOM",
+            targetField: "quantity",
+            confidence: 0.4,
+            detectedUnit: null,
+            rationale: "",
+          },
         ],
       }),
       PROCESSES,
@@ -167,7 +252,9 @@ describe("triage merge", () => {
 
   it("attaches commentary to the matching finding", () => {
     const merged = merge(findings, [item({ code: "CP-001", plainEnglish: "No output recorded." })]);
-    expect(merged.find((f) => f.code === "CP-001")?.triage?.plainEnglish).toBe("No output recorded.");
+    expect(merged.find((f) => f.code === "CP-001")?.triage?.plainEnglish).toBe(
+      "No output recorded.",
+    );
   });
 
   it("discards triage for a finding the engine never raised", () => {

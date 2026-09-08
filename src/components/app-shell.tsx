@@ -53,15 +53,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <ul className="space-y-0.5">
             {NAV.map((item) => {
-              const active =
-                item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     className={[
                       "group flex items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors",
-                      active ? "bg-surface-3 text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+                      active
+                        ? "bg-surface-3 text-ink"
+                        : "text-ink-2 hover:bg-surface-2 hover:text-ink",
                     ].join(" ")}
                   >
                     <span
@@ -92,8 +93,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="border-t border-line px-4 py-3">
           <p className="text-[10px] leading-[1.5] text-muted">
-            Figures are computed by a deterministic engine. The model maps columns and
-            explains findings; it never produces a number.
+            Figures are computed by a deterministic engine. The model maps columns and explains
+            findings; it never produces a number.
           </p>
         </div>
       </aside>

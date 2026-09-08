@@ -89,7 +89,9 @@ function buildPrompt(
     .map(
       (p) =>
         `    - ${p.id}: ${p.name}${p.route ? ` (route: ${p.route})` : ""}` +
-        (p.aliases?.length ? `\n        also known in plant systems as: ${p.aliases.join(", ")}` : ""),
+        (p.aliases?.length
+          ? `\n        also known in plant systems as: ${p.aliases.join(", ")}`
+          : ""),
     )
     .join("\n");
 

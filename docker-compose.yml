@@ -1,0 +1,20 @@
+services:
+  carbonpass:
+    build: .
+    image: carbonpass-ai:local
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # Optional. Without it every AI step uses its deterministic fallback and
+      # the UI labels the provenance accordingly.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CARBONPASS_MODEL: ${CARBONPASS_MODEL:-claude-opus-5}
+      CARBONPASS_ETS_PRICE_EUR: ${CARBONPASS_ETS_PRICE_EUR:-78}
+      CARBONPASS_YEAR: ${CARBONPASS_YEAR:-2026}
+    volumes:
+      # Workspace state survives a container restart.
+      - carbonpass-data:/app/.data
+    restart: unless-stopped
+
+volumes:
+  carbonpass-data:

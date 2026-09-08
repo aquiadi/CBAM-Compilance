@@ -29,7 +29,12 @@ export interface MappingCase {
 }
 
 export const PROCESSES = [
-  { id: "proc_dri", name: "DRI Kiln #1 & #2", route: "Coal-based rotary kiln", aliases: ["Material Handling"] },
+  {
+    id: "proc_dri",
+    name: "DRI Kiln #1 & #2",
+    route: "Coal-based rotary kiln",
+    aliases: ["Material Handling"],
+  },
   { id: "proc_eaf", name: "Melt Shop (IF/EAF)", route: "DRI-EAF with scrap", aliases: ["SMS"] },
   { id: "proc_rolling", name: "Rolling Mill", route: "Hot rolling, TMT", aliases: ["Bar Mill"] },
 ];

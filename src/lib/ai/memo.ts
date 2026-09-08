@@ -38,7 +38,12 @@ Write in plain professional English, roughly 600-900 words. Use the operator's a
 function buildPrompt(result: DeclarationResult): string {
   const factorsUsed = new Set<string>();
   for (const em of result.emissions) {
-    for (const group of [em.contributions.fuel, em.contributions.processMaterial, em.contributions.electricity, em.contributions.heat]) {
+    for (const group of [
+      em.contributions.fuel,
+      em.contributions.processMaterial,
+      em.contributions.electricity,
+      em.contributions.heat,
+    ]) {
       for (const c of group) factorsUsed.add(c.factorId);
     }
   }
@@ -190,7 +195,9 @@ export function fallbackMemo(result: DeclarationResult): string {
     .join("\n");
 
   const limitations = result.findings.length
-    ? result.findings.map((f) => `- **${f.code}** (${f.severity}) ${f.title}. ${f.detail}`).join("\n")
+    ? result.findings
+        .map((f) => `- **${f.code}** (${f.severity}) ${f.title}. ${f.detail}`)
+        .join("\n")
     : "- No open findings were raised by the rules engine.";
 
   return `## Scope and boundary
@@ -209,7 +216,17 @@ Specific embedded emissions were calculated per Annex IV as attributed emissions
 
 ## Emission factors and data sources
 
-${[...new Set(result.emissions.flatMap((e) => [...e.contributions.fuel, ...e.contributions.processMaterial, ...e.contributions.electricity].map((c) => c.factorId)))]
+${[
+  ...new Set(
+    result.emissions.flatMap((e) =>
+      [
+        ...e.contributions.fuel,
+        ...e.contributions.processMaterial,
+        ...e.contributions.electricity,
+      ].map((c) => c.factorId),
+    ),
+  ),
+]
   .map((id) => {
     try {
       const f = getFactor(id);

@@ -1,7 +1,7 @@
 import { getDeclaration, getState } from "@/lib/store";
 import { BAND_LABELS } from "@/lib/cbam/readiness";
 import { isAiAvailable } from "@/lib/ai/client";
-import { Card, fmt, Page, PageHeader, Note } from "@/components/ui";
+import { Card, fmt, Page, PageHeader } from "@/components/ui";
 import { MiniBar } from "@/components/charts";
 import { FindingsPanel } from "./findings-panel";
 
@@ -32,10 +32,10 @@ export default function ReviewPage() {
         title="Review and data quality"
         description={
           <>
-            {d.findings.length} findings from {fmt(state.datasets.reduce((s, x) => s + x.activities.length, 0))}{" "}
-            records. The rules engine decides what is wrong and how serious it is; the model can
-            explain a finding and rank what to fix first, but it cannot create one, clear one, or
-            change a severity.
+            {d.findings.length} findings from{" "}
+            {fmt(state.datasets.reduce((s, x) => s + x.activities.length, 0))} records. The rules
+            engine decides what is wrong and how serious it is; the model can explain a finding and
+            rank what to fix first, but it cannot create one, clear one, or change a severity.
           </>
         }
       />
@@ -90,7 +90,9 @@ export default function ReviewPage() {
                     return (
                       <li key={e.activityId} className="text-[11px] leading-[1.5]">
                         <div className="font-mono text-[10.5px] text-ink-2">
-                          {a ? `${a.lineage.fileName} row ${a.lineage.row}` : e.activityId.slice(0, 8)}
+                          {a
+                            ? `${a.lineage.fileName} row ${a.lineage.row}`
+                            : e.activityId.slice(0, 8)}
                         </div>
                         <div className="text-muted">{e.reason}</div>
                       </li>

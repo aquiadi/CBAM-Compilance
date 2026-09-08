@@ -41,6 +41,15 @@ export interface CostAssumptions {
   year: number;
 }
 
+/**
+ * Fallback assumptions for callers that supply none.
+ *
+ * Deliberately literal rather than read from the environment: the engine has to
+ * stay pure so that the same activity records always produce the same figures,
+ * whatever machine they are computed on. Deployment-specific values are injected
+ * by the application layer (see `src/lib/store.ts`), which is where
+ * configuration belongs.
+ */
 export const DEFAULT_ASSUMPTIONS: CostAssumptions = {
   etsPriceEur: 78,
   inrPerEur: 92,
@@ -167,10 +176,7 @@ export function computeExposure(
 
   const totalEmbeddedT = lines.reduce((s, l) => s + l.embeddedTotalT, 0);
   const obligationEmissionsT = lines.reduce((s, l) => s + l.embeddedEuT, 0);
-  const nonEuEmissionsT = lines.reduce(
-    (s, l) => s + (l.embeddedForObligationT - l.embeddedEuT),
-    0,
-  );
+  const nonEuEmissionsT = lines.reduce((s, l) => s + (l.embeddedForObligationT - l.embeddedEuT), 0);
   const grossCertificates = obligationEmissionsT * factor;
   const { credit, notes: creditNotes } = carbonPriceCredit(claims, assumptions);
   notes.push(...creditNotes);

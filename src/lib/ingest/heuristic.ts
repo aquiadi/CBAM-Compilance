@@ -59,10 +59,46 @@ export function classifyKind(dataset: ParsedDataset): { kind: DatasetKind; confi
   const all = `${haystack} ${sampleText}`;
 
   const signals: Record<DatasetKind, string[]> = {
-    electricity: ["power", "electricity", "kwh", "mwh", "units drawn", "discom", "billing", "kva", "energy", "mu"],
-    precursor: ["precursor", "receipt", "supplier", "vendor", "cbam communication", "bought out", "purchase"],
-    production: ["production", "despatch", "dispatch", "output", "cn code", "hs code", "produced", "sales"],
-    process_material: ["dolomite", "limestone", "flux", "electrode", "lime", "consumable", "process material"],
+    electricity: [
+      "power",
+      "electricity",
+      "kwh",
+      "mwh",
+      "units drawn",
+      "discom",
+      "billing",
+      "kva",
+      "energy",
+      "mu",
+    ],
+    precursor: [
+      "precursor",
+      "receipt",
+      "supplier",
+      "vendor",
+      "cbam communication",
+      "bought out",
+      "purchase",
+    ],
+    production: [
+      "production",
+      "despatch",
+      "dispatch",
+      "output",
+      "cn code",
+      "hs code",
+      "produced",
+      "sales",
+    ],
+    process_material: [
+      "dolomite",
+      "limestone",
+      "flux",
+      "electrode",
+      "lime",
+      "consumable",
+      "process material",
+    ],
     fuel: ["coal", "fuel", "furnace oil", "diesel", "hsd", "consumption", "lpg", "gas", "coke"],
   };
 
@@ -86,9 +122,7 @@ export function mapColumns(
    *  header wording: "Feeder" is ambiguous, "Rolling Mill aux" is not. */
   const looksLikeProcessColumn = (samples: string[]): boolean => {
     if (processes.length === 0 || samples.length === 0) return false;
-    const hits = samples.filter(
-      (v) => resolveProcess(v, processes).confidence >= 0.8,
-    ).length;
+    const hits = samples.filter((v) => resolveProcess(v, processes).confidence >= 0.8).length;
     return hits / samples.length >= 0.5;
   };
   const claimed = new Set<string>();
@@ -171,22 +205,39 @@ export function mapColumns(
 
 /** Keyword rules for resolving a free-text material to an emission factor. */
 const FACTOR_HINTS: { factorId: string; any: string[]; not?: string[] }[] = [
-  { factorId: "coal_coking", any: ["coking coal", "met coal", "metallurgical coal"], not: ["non coking", "non-coking"] },
-  { factorId: "coke_oven_coke", any: ["coke oven", "lam coke", "met coke", "nut coke", "coke breeze"] },
-  { factorId: "coal_bituminous_in", any: ["non coking", "non-coking", "steam coal", "thermal coal", "coal", "slack coal"] },
+  {
+    factorId: "coal_coking",
+    any: ["coking coal", "met coal", "metallurgical coal"],
+    not: ["non coking", "non-coking"],
+  },
+  {
+    factorId: "coke_oven_coke",
+    any: ["coke oven", "lam coke", "met coke", "nut coke", "coke breeze"],
+  },
+  {
+    factorId: "coal_bituminous_in",
+    any: ["non coking", "non-coking", "steam coal", "thermal coal", "coal", "slack coal"],
+  },
   { factorId: "furnace_oil", any: ["furnace oil", "fo ", "lsho", "residual fuel", "heavy oil"] },
   { factorId: "diesel", any: ["diesel", "hsd", "gas oil", "dg set"] },
   { factorId: "natural_gas", any: ["natural gas", "png", "lng", "rlng", "cng", "producer gas"] },
   { factorId: "lpg", any: ["lpg", "propane", "butane"] },
   { factorId: "petroleum_coke", any: ["pet coke", "petcoke", "petroleum coke"] },
-  { factorId: "biomass_agri_residue", any: ["biomass", "briquette", "husk", "agri residue", "bagasse"] },
+  {
+    factorId: "biomass_agri_residue",
+    any: ["biomass", "briquette", "husk", "agri residue", "bagasse"],
+  },
   { factorId: "limestone", any: ["limestone", "lime", "caco3", "flux"] },
   { factorId: "dolomite", any: ["dolomite", "dolo"] },
   { factorId: "graphite_electrode", any: ["graphite", "electrode"] },
   { factorId: "carbon_anode_paste", any: ["anode", "soderberg", "paste"] },
 ];
 
-export function resolveFactor(value: string): { id: string | null; confidence: number; why: string } {
+export function resolveFactor(value: string): {
+  id: string | null;
+  confidence: number;
+  why: string;
+} {
   const v = ` ${value.toLowerCase()} `;
   for (const hint of FACTOR_HINTS) {
     if (hint.not?.some((n) => v.includes(n))) continue;
@@ -202,17 +253,35 @@ export function resolveFactor(value: string): { id: string | null; confidence: n
   return { id: null, confidence: 0, why: "No emission factor keyword matched this description." };
 }
 
-export function resolveSupply(
-  value: string,
-): { id: "grid" | "captive" | "ppa" | "onsite_renewable"; factorId: string; confidence: number; why: string } {
+export function resolveSupply(value: string): {
+  id: "grid" | "captive" | "ppa" | "onsite_renewable";
+  factorId: string;
+  confidence: number;
+  why: string;
+} {
   const v = value.toLowerCase();
   if (/(solar|wind|renewable|ppa|open access)/.test(v)) {
-    return { id: "ppa", factorId: "ppa_solar", confidence: 0.85, why: "Named as a renewable power purchase agreement." };
+    return {
+      id: "ppa",
+      factorId: "ppa_solar",
+      confidence: 0.85,
+      why: "Named as a renewable power purchase agreement.",
+    };
   }
   if (/(captive|cpp|own generation|dg set|turbine)/.test(v)) {
-    return { id: "captive", factorId: "captive_coal_power", confidence: 0.8, why: "Named as captive generation." };
+    return {
+      id: "captive",
+      factorId: "captive_coal_power",
+      confidence: 0.8,
+      why: "Named as captive generation.",
+    };
   }
-  return { id: "grid", factorId: "grid_in_national", confidence: 0.7, why: "Defaulted to the state grid supply." };
+  return {
+    id: "grid",
+    factorId: "grid_in_national",
+    confidence: 0.7,
+    why: "Defaulted to the state grid supply.",
+  };
 }
 
 /**
@@ -235,10 +304,7 @@ export function resolveProcess(
 
   let best: { id: string; score: number } | null = null;
   for (const p of processes) {
-    const score = Math.max(
-      similarity(value, p.name),
-      p.route ? similarity(value, p.route) : 0,
-    );
+    const score = Math.max(similarity(value, p.name), p.route ? similarity(value, p.route) : 0);
     if (!best || score > best.score) best = { id: p.id, score };
   }
   // Direct keyword rescue for the vocabulary a heuristic would otherwise miss.
@@ -249,14 +315,25 @@ export function resolveProcess(
   ];
   for (const [re, hint] of keywords) {
     if (re.test(v)) {
-      const match = processes.find((p) => p.id.includes(hint) || p.name.toLowerCase().includes(hint));
-      if (match) return { id: match.id, confidence: 0.86, why: `Section name indicates the ${match.name}.` };
+      const match = processes.find(
+        (p) => p.id.includes(hint) || p.name.toLowerCase().includes(hint),
+      );
+      if (match)
+        return { id: match.id, confidence: 0.86, why: `Section name indicates the ${match.name}.` };
     }
   }
   if (best && best.score > 0.4) {
-    return { id: best.id, confidence: Number(best.score.toFixed(2)), why: "Section name overlaps the process name." };
+    return {
+      id: best.id,
+      confidence: Number(best.score.toFixed(2)),
+      why: "Section name overlaps the process name.",
+    };
   }
-  return { id: null, confidence: 0, why: "Section could not be matched to a declared production process." };
+  return {
+    id: null,
+    confidence: 0,
+    why: "Section could not be matched to a declared production process.",
+  };
 }
 
 export function mapValues(
@@ -272,26 +349,46 @@ export function mapValues(
     if (!columnName) return [];
     const profile = dataset.columns.find((c) => c.name === columnName);
     if (profile?.distinctValues) return profile.distinctValues;
-    return [...new Set(dataset.rows.map((r) => String(r[columnName] ?? "").trim()).filter(Boolean))].slice(0, 40);
+    return [
+      ...new Set(dataset.rows.map((r) => String(r[columnName] ?? "").trim()).filter(Boolean)),
+    ].slice(0, 40);
   };
 
   if (kind === "fuel" || kind === "process_material") {
     for (const value of distinct(columnFor("material"))) {
       const r = resolveFactor(value);
-      out.push({ sourceValue: value, resolvedId: r.id, target: "factor", confidence: r.confidence, rationale: r.why });
+      out.push({
+        sourceValue: value,
+        resolvedId: r.id,
+        target: "factor",
+        confidence: r.confidence,
+        rationale: r.why,
+      });
     }
   }
 
   if (kind === "electricity") {
     for (const value of distinct(columnFor("supply_source"))) {
       const r = resolveSupply(value);
-      out.push({ sourceValue: value, resolvedId: r.factorId, target: "supply", confidence: r.confidence, rationale: r.why });
+      out.push({
+        sourceValue: value,
+        resolvedId: r.factorId,
+        target: "supply",
+        confidence: r.confidence,
+        rationale: r.why,
+      });
     }
   }
 
   for (const value of distinct(columnFor("process"))) {
     const r = resolveProcess(value, processes);
-    out.push({ sourceValue: value, resolvedId: r.id, target: "process", confidence: r.confidence, rationale: r.why });
+    out.push({
+      sourceValue: value,
+      resolvedId: r.id,
+      target: "process",
+      confidence: r.confidence,
+      rationale: r.why,
+    });
   }
 
   return out;
@@ -302,9 +399,7 @@ export function heuristicMapping(
   processes: { id: string; name: string; route?: string; aliases?: string[] }[],
   forceKind?: DatasetKind,
 ): DatasetMapping {
-  const classified = forceKind
-    ? { kind: forceKind, confidence: 1 }
-    : classifyKind(dataset);
+  const classified = forceKind ? { kind: forceKind, confidence: 1 } : classifyKind(dataset);
   const columns = mapColumns(dataset, classified.kind, processes);
   const values = mapValues(dataset, classified.kind, columns, processes);
 
@@ -321,7 +416,10 @@ export function heuristicMapping(
   if (unresolved.length > 0) {
     warnings.push(
       `${unresolved.length} source value${unresolved.length > 1 ? "s" : ""} could not be resolved: ` +
-        unresolved.slice(0, 4).map((v) => `"${v.sourceValue}"`).join(", ") +
+        unresolved
+          .slice(0, 4)
+          .map((v) => `"${v.sourceValue}"`)
+          .join(", ") +
         (unresolved.length > 4 ? "..." : ""),
     );
   }

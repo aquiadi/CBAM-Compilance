@@ -79,9 +79,10 @@ export function parseNumeric(input: string | number | null | undefined): number 
 
   if (hasComma && hasDot) {
     // Whichever separator appears last is the decimal mark.
-    s = s.lastIndexOf(",") > s.lastIndexOf(".")
-      ? s.replace(/\./g, "").replace(",", ".")
-      : s.replace(/,/g, "");
+    s =
+      s.lastIndexOf(",") > s.lastIndexOf(".")
+        ? s.replace(/\./g, "").replace(",", ".")
+        : s.replace(/,/g, "");
   } else if (hasComma) {
     // One comma is ambiguous: "1,234" is grouping, "1234,56" is a European
     // decimal mark. Digit grouping - Western or Indian - always leaves exactly

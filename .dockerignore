@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.data
+artifacts
+*.md
+!README.md
+.env
+.env*.local
+Dockerfile
+.dockerignore
+docker-compose.yml
+Makefile
+npm-debug.log*
+*.tsbuildinfo
