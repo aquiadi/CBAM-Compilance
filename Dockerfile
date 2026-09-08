@@ -17,7 +17,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+# Guarantees the directory the runner copies exists even when it holds no
+# tracked files. Git does not track empty directories, so a clean clone can
+# otherwise omit it and fail the runner's COPY.
+RUN mkdir -p public && npm run build
 
 # --------------------------------------------------------------- runner
 FROM node:22-alpine AS runner

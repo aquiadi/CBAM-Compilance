@@ -1,0 +1,7 @@
+Static assets served from the site root are placed here.
+
+This file exists because git does not track empty directories, and the
+container build copies `public/` into the runtime image. Without it a clean
+checkout has no `public/`, and `docker build` fails with "/app/public: not
+found" — which passed locally, where the directory happened to exist, and
+only failed on a fresh clone in CI.
