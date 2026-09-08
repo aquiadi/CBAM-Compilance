@@ -1,6 +1,6 @@
 # CarbonPass AI
 
-[![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml)
+[![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml?query=branch%3Amain)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-3987e5)](.nvmrc)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3987e5)](tsconfig.json)
 [![License](https://img.shields.io/badge/license-MIT-6e7682)](LICENSE)
