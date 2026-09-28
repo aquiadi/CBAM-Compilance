@@ -29,7 +29,7 @@ const MORE = [
   { href: "/evidence", label: "Evidence" },
   { href: "/activity", label: "Activity log" },
   { href: "/methodology", label: "Methodology" },
-  { href: "/regulation", label: "Ask the regulation" },
+  { href: "/settings/account", label: "Your account" },
   { href: "/settings", label: "Installation settings" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/workspaces", label: "Workspaces" },
@@ -133,7 +133,7 @@ function Shell({
 
       <aside
         className={
-          "fixed inset-y-0 left-0 z-50 flex w-[288px] max-w-[85vw] flex-col border-r border-line bg-surface transition-transform duration-300 ease-out lg:w-[272px] lg:translate-x-0 " +
+          "fixed inset-y-0 left-0 z-50 flex w-[288px] max-w-[85vw] flex-col overflow-y-auto border-r border-line bg-surface transition-transform duration-300 ease-out lg:w-[272px] lg:translate-x-0 " +
           (drawer ? "translate-x-0 shadow-[var(--shadow-float)]" : "-translate-x-full")
         }
         aria-label="Main menu"
@@ -179,13 +179,22 @@ function Shell({
           </label>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-4 pb-4">
+        {/* The whole sidebar scrolls on short screens, so nothing below the list is ever out of reach. */}
+        <nav className="flex-1 px-4 pb-4">
           <NavLink href="/overview" active={isActive("/overview")}>
             <span className="flex h-6 w-6 items-center justify-center" aria-hidden>
               <HomeIcon />
             </span>
             <span className="text-[14.5px] font-medium">Overview</span>
           </NavLink>
+          <div className="mt-0.5" data-tour="nav-regulation">
+            <NavLink href="/regulation" active={isActive("/regulation")}>
+              <span className="flex h-6 w-6 items-center justify-center" aria-hidden>
+                <BookIcon />
+              </span>
+              <span className="text-[14.5px] font-medium">Ask the regulation</span>
+            </NavLink>
+          </div>
 
           <div className="mt-6 px-3 text-[11.5px] font-medium uppercase tracking-[0.14em] text-muted">
             Your path
@@ -344,6 +353,21 @@ function MenuIcon() {
         strokeWidth="1.8"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M5 4.5h9.5A2.5 2.5 0 0 1 17 7v12.5H7.5A2.5 2.5 0 0 1 5 17V4.5Zm0 12.5a2.5 2.5 0 0 1 2.5-2.5H17M9 8.5h4.5M9 11h3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M19 7.5v12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }

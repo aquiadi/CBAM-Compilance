@@ -190,6 +190,12 @@ if (freeze) {
     models,
     cassettes: cassetteCount(cassettes),
     metrics,
+    // Read by the README's badges, so they always show the frozen numbers.
+    badges: {
+      lineRecall: pct(metrics.lineRecall),
+      silentErrorRate: pct(metrics.silentErrorRate),
+      documents: String(metrics.documents),
+    },
   };
   writeFileSync(baselinePath, JSON.stringify(frozen, null, 2) + "\n");
   console.log(`\nFroze ${baselinePath}. Review and commit it with the cassettes.`);

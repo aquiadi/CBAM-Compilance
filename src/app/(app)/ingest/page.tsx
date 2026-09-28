@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { env } from "@/config/env";
-import { aiLabel, isAiAvailable, modelMapsColumns, RULE_BASED_ON_GROQ } from "@/lib/ai/client";
+import {
+  aiLabel,
+  aiProcessor,
+  isAiAvailable,
+  modelMapsColumns,
+  RULE_BASED_ON_GROQ,
+} from "@/lib/ai/client";
 import { workspaceContext } from "@/lib/auth/context";
 import { DATASET_SCHEMAS } from "@/lib/ingest/schema";
 import { Badge, Card, Empty, fmt, Note, Page, PageHeader, Table, Td, Th } from "@/components/ui";
@@ -70,7 +76,7 @@ export default async function IngestPage() {
               title="Read a bill, receipt or photo"
               subtitle={
                 isAiAvailable()
-                  ? "Fuel invoices, electricity bills, material receipts and weighbridge slips - as PDFs, scans or phone photos. The AI proposes each figure with the text it read it from; you check every line before it becomes a draft dataset."
+                  ? `Fuel invoices, electricity bills, material receipts and weighbridge slips - as PDFs, scans or phone photos. The AI proposes each figure with the text it read it from; you check every line before it becomes a draft dataset. Documents are sent to ${aiProcessor()} to be read.`
                   : "Fuel invoices, electricity bills, material receipts and weighbridge slips. With an AI key set the figures are read for you; without one you type them in next to the document, which is kept as evidence."
               }
             >

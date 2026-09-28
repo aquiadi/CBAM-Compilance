@@ -14,6 +14,8 @@ import type { User } from "./accounts";
 export const SESSION_COOKIE = "cp_session";
 export const WORKSPACE_COOKIE = "cp_ws";
 export const SESSION_DAYS = 30;
+/** Holds a password-checked sign-in while it waits for the two-factor code. */
+export const CHALLENGE_COOKIE = "cp_2fa";
 
 function cookieOptions(maxAgeSeconds: number, secure: boolean) {
   return {
@@ -58,6 +60,31 @@ export async function sessionUser(q: Queryable): Promise<User | null> {
     [hashToken(token)],
   );
   return rows[0] ?? null;
+}
+
+export async function setChallengeCookie(token: string, request: Request, minutes: number) {
+  const jar = await cookies();
+  jar.set(CHALLENGE_COOKIE, token, {
+    ...cookieOptions(minutes * 60, isHttps(request)),
+    path: "/api/auth",
+  });
+}
+
+export async function takeChallengeCookie(): Promise<string | null> {
+  const jar = await cookies();
+  return jar.get(CHALLENGE_COOKIE)?.value ?? null;
+}
+
+export async function clearChallengeCookie() {
+  const jar = await cookies();
+  jar.delete({ name: CHALLENGE_COOKIE, path: "/api/auth" });
+}
+
+/** The id of this browser's session, to tell it apart from the person's others. */
+export async function currentSessionId(): Promise<string | null> {
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
+  return token ? hashToken(token) : null;
 }
 
 export async function endSession(q: Queryable): Promise<void> {

@@ -1,5 +1,5 @@
 import { env } from "@/config/env";
-import { isAiAvailable } from "@/lib/ai/client";
+import { aiProcessor, isAiAvailable } from "@/lib/ai/client";
 import { workspaceContext } from "@/lib/auth/context";
 import { lookupGoods } from "@/lib/cbam/goods";
 import { listSupplierRequests } from "@/lib/suppliers";
@@ -79,7 +79,7 @@ export default async function SuppliersPage() {
               title="Read a supplier's CBAM communication"
               subtitle={
                 isAiAvailable()
-                  ? "Already have the supplier's communication or verification report? The AI proposes each good's SEE and SEFA with the words it read them from; you check and apply them."
+                  ? `Already have the supplier's communication or verification report? The AI proposes each good's SEE and SEFA with the words it read them from; you check and apply them. Documents are sent to ${aiProcessor()} to be read.`
                   : "Already have the supplier's communication or verification report? Enter its values next to the document, which is kept as evidence. With an AI key set they are read for you."
               }
             >

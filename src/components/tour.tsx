@@ -134,6 +134,13 @@ const STEPS: Step[] = [
   },
   {
     path: "/audit",
+    target: "nav-regulation",
+    placement: "right",
+    title: "Ask the regulation",
+    body: "A question about the rules? Ask it here. Every answer cites the passage of the regulation it rests on, and each citation is checked, so you read the source rather than trust a summary.",
+  },
+  {
+    path: "/audit",
     target: "nav-more",
     placement: "right",
     title: "Everything else lives here",

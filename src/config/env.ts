@@ -104,6 +104,25 @@ const EnvSchema = z.object({
   /** Sent as x-api-key when the evalgate service requires one (its EVALGATE_API_KEY). */
   EVALGATE_API_KEY: z.string().min(1).optional(),
 
+  /**
+   * Encrypts secrets at rest - today, each user's two-factor secret - with
+   * AES-256-GCM. Any long random string (at least 32 characters; e.g.
+   * `openssl rand -base64 48`). Without it those secrets are stored as-is,
+   * relying on the database's own protection.
+   */
+  CARBONPASS_ENCRYPTION_KEY: z
+    .string()
+    .min(32, "must be at least 32 characters - e.g. openssl rand -base64 48")
+    .optional(),
+
+  /**
+   * Who runs this deployment and how to reach them, shown on the privacy and
+   * terms pages - e.g. "Shakti Compliance Services Pvt Ltd" and
+   * "privacy@example.in". Unset, the pages refer to "the operator".
+   */
+  CARBONPASS_OPERATOR: z.string().min(2).max(200).optional(),
+  CARBONPASS_CONTACT_EMAIL: z.string().email("must be an e-mail address").optional(),
+
   /** Set by Vercel on its build and runtime; used to require an external database there. */
   VERCEL: z.string().optional(),
 });

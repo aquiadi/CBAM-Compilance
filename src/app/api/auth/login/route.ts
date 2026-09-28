@@ -3,7 +3,8 @@ import * as z from "zod/v4";
 import { findUserByEmail } from "@/lib/auth/accounts";
 import { jsonError, sameOrigin } from "@/lib/auth/context";
 import { verifyAgainstDecoy, verifyPassword } from "@/lib/auth/password";
-import { startSession } from "@/lib/auth/session";
+import { setChallengeCookie, startSession } from "@/lib/auth/session";
+import { CHALLENGE_MINUTES, createLoginChallenge, twoFactorStatus } from "@/lib/auth/two-factor";
 import { getDb } from "@/lib/db";
 import { errorResponse, parseJson } from "@/lib/http";
 import { clientAddress, rateLimit } from "@/lib/rate-limit";
@@ -31,6 +32,12 @@ export async function POST(request: Request) {
       ? await verifyPassword(body.data.password, user.passwordHash)
       : await verifyAgainstDecoy(body.data.password);
     if (!user || !ok) return jsonError(401, "E-mail or password is incorrect.");
+    if ((await twoFactorStatus(db, user.id)).enabled) {
+      // The password was right; the session waits for the code.
+      const token = await createLoginChallenge(db, user.id);
+      await setChallengeCookie(token, request, CHALLENGE_MINUTES);
+      return NextResponse.json({ ok: true, twoFactor: true });
+    }
     await startSession(db, user, request);
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -40,6 +40,12 @@ jobs:
       - name: Install
         run: npm ci
 
+      # A known high or critical vulnerability in anything the app ships with
+      # fails the build; Dependabot proposes the fix.
+      - name: Audit dependencies
+        if: matrix.node == '22'
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Lint
         run: npm run lint
 

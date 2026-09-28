@@ -1,6 +1,7 @@
 import { orgMembers, pendingInvitations, ROLES } from "@/lib/auth/accounts";
 import { pageContext } from "@/lib/auth/context";
 import { Page, PageHeader } from "@/components/ui";
+import { OrganisationData } from "./organisation-data";
 import { TeamManager } from "./team-manager";
 
 export default async function TeamPage() {
@@ -29,6 +30,11 @@ export default async function TeamPage() {
           invitations={invitations}
           roles={Object.entries(ROLES).map(([id, r]) => ({ id, ...r }))}
         />
+        {ctx.role === "owner" ? (
+          <div className="mt-8">
+            <OrganisationData orgName={ctx.org.name} />
+          </div>
+        ) : null}
       </Page>
     </>
   );

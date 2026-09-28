@@ -13,5 +13,10 @@
     "unitAccuracy": 1,
     "categoryAccuracy": 1,
     "silentErrorRate": 0
+  },
+  "badges": {
+    "lineRecall": "92.3%",
+    "silentErrorRate": "0.0%",
+    "documents": "10"
   }
 }

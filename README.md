@@ -1,12 +1,74 @@
+<div align="center">
+
 # CarbonPass
 
-[![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml?query=branch%3Amain)
-[![Node](https://img.shields.io/badge/node-%3E%3D22-3987e5)](.nvmrc)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3987e5)](tsconfig.json)
-[![License](https://img.shields.io/badge/license-MIT-6e7682)](LICENSE)
+**CBAM compliance for the plants that export to the EU.**<br>
+Plant spreadsheets, bills and phone photos in - specific embedded emissions, the free-allocation
+adjustment, the certificate cost and a verifier-ready evidence pack out.
 
-**CBAM emissions data for non-EU installations. Plant spreadsheets in; specific embedded
-emissions, free-allocation adjustment and a verifier-ready evidence pack out.**
+[![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml?query=branch%3Amain)
+[![Nightly document gate](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/nightly.yml/badge.svg)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/nightly.yml)
+[![CodeQL](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-6e7682)](LICENSE)
+
+[![Figures read exactly](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Faquiadi%2FCBAM-Compilance%2Fmain%2Fevals%2Fdocuments%2Fbaseline.json&query=%24.badges.lineRecall&label=figures%20read%20exactly&color=1baf7a)](#the-document-reading-gate)
+[![Silent errors](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Faquiadi%2FCBAM-Compilance%2Fmain%2Fevals%2Fdocuments%2Fbaseline.json&query=%24.badges.silentErrorRate&label=silent%20errors&color=1baf7a)](#the-document-reading-gate)
+[![Test documents](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Faquiadi%2FCBAM-Compilance%2Fmain%2Fevals%2Fdocuments%2Fbaseline.json&query=%24.badges.documents&label=test%20documents&color=6e7682)](evals/documents/labels.json)
+
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](package.json)
+[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
+[![Node 22+](https://img.shields.io/badge/Node-22%2B-5FA04E?logo=nodedotjs&logoColor=white)](.nvmrc)
+[![Postgres](https://img.shields.io/badge/Postgres-or%20embedded-4169E1?logo=postgresql&logoColor=white)](src/lib/db/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
+[![evalgate](https://img.shields.io/badge/quality%20gate-evalgate-8A2BE2)](https://github.com/aquiadi/CI-harness)
+
+[**Live app**](https://cbam-compilance-production.up.railway.app) ·
+[**Deploy**](#deploy-it) ·
+[**Methodology**](#methodology) ·
+[**Quality gates**](#quality-gates-the-evalgate-way) ·
+[**Security**](SECURITY.md) ·
+[**Limitations**](#limitations-stated-plainly)
+
+</div>
+
+![CarbonPass overview: readiness score, next step, certificates and cost for the demo steel plant](docs/screenshots/overview.png)
+
+## At a glance
+
+|                                             |                                                                                                                                                                                                 |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 📥 **Reads real plant data**                | SAP and Tally exports, DISCOM bills in MU, despatch registers - and PDFs and phone photos of invoices and weighbridge slips, read by AI with every figure shown next to the words it came from. |
+| 🧮 **The EU's method, in tested code**      | Implementing Regulation 2025/2547 for emissions, 2025/2620 for free allocation, 2025/2621 for default values. AI never produces a figure.                                                       |
+| 🚦 **Twenty data-quality rules**            | kg read as tonnes, MU read as MWh, duplicates, gaps, implausible intensities - each with a severity; blockers cannot be waved away.                                                             |
+| 📏 **AI accuracy measured on every change** | A labelled document set replayed in CI; a change that makes reading worse fails the build. Numbers in the badges above.                                                                         |
+| 📖 **Ask the regulation**                   | Plain-language answers from [evalgate](https://github.com/aquiadi/CI-harness), every sentence cited to a passage and every citation checked.                                                    |
+| 🧾 **Verifier-ready evidence**              | Emissions report (.xlsx), communication JSON, monitoring methodology and a verifier pack with SHA-256 checksums for every file.                                                                 |
+| 🔐 **Enterprise basics**                    | Organisations and four roles, two-factor sign-in, an append-only activity log, full export and deletion of an organisation's data.                                                              |
+
+## Verification
+
+| Suite                            | Size               | What it proves                                                                                                                                                                                                     |
+| -------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unit and integration (`vitest`)  | 190 tests          | Engine, SEFA, the 20 rules, regulatory tables, units, AI request handling for Claude and Groq, two-factor (RFC 6238 vectors), exports, and the database flows against a real embedded Postgres                     |
+| End to end (`scripts/smoke.mjs`) | 17 steps           | Sign-up to sign-out over HTTP against the production build: every screen and export, uploads, supplier portal, roles, password reset and two-factor sign-in - on Postgres, the embedded database and the container |
+| Document-reading gate            | 10 documents       | Recorded model answers replayed and scored; fails on any rise in silent errors                                                                                                                                     |
+| Mapping eval                     | 9 cases            | The column mapper against labelled plant files; gated on the column **error** rate                                                                                                                                 |
+| CodeQL, `npm audit`, Dependabot  | every push; weekly | Security analysis of the code, known vulnerabilities in shipped dependencies, update pull requests                                                                                                                 |
+
+<details>
+<summary><b>Contents</b></summary>
+
+- [What it is](#what-it-is)
+- [Finding your way around](#finding-your-way-around)
+- [The demo](#the-demo)
+- [Deploy it](#deploy-it) · [Configuration](#configuration) · [Free AI with Groq](#free-ai-with-groq)
+- [Methodology](#methodology)
+- [Quality gates, the evalgate way](#quality-gates-the-evalgate-way)
+- [Architecture](#architecture) · [Storage and security](#storage-and-security) · [Your data](#your-data) · [Backups](#backups)
+- [Development](#development)
+- [Limitations, stated plainly](#limitations-stated-plainly)
+
+</details>
 
 ---
 
@@ -70,9 +132,12 @@ number traceable to the source file and row it came from.
   [evalgate](https://github.com/aquiadi/CI-harness) service: every claim cites a passage, every
   citation is checked against what was retrieved, and the passages sit under the answer to read.
 - **Teams.** Organisations, several installations and years each, and four roles: owner, editor,
-  viewer and verifier. An append-only activity log records who changed what. Forgotten passwords
-  are reset by e-mail when mail is configured; without mail, an owner creates a one-time reset link
-  for the member and passes it on.
+  viewer and verifier. An append-only activity log records who changed what. Two-factor sign-in
+  with an authenticator app and recovery codes. Forgotten passwords are reset by e-mail when mail
+  is configured; without mail, an owner creates a one-time reset link for the member.
+- **Your data, yours to take or delete.** An owner exports the whole organisation - every
+  workspace as a verifier pack, the members, the activity log - or deletes all of it, from
+  Settings → Team.
 
 ## Finding your way around
 
@@ -192,24 +257,45 @@ Every variable is optional except `DATABASE_URL` on Vercel. [`src/config/env.ts`
 validates them all at startup; a bad value stops the process with the variable named.
 [`.env.example`](.env.example) documents each one.
 
-| Variable                   | Default               | Purpose                                                                     |
-| -------------------------- | --------------------- | --------------------------------------------------------------------------- |
-| `DATABASE_URL`             | embedded database     | Postgres connection string. `POSTGRES_URL` is accepted as well              |
-| `CARBONPASS_DATA_DIR`      | `.data`               | Where the embedded database lives when `DATABASE_URL` is unset              |
-| `CARBONPASS_SIGNUP`        | `open`                | `invite` allows new accounts only through an invitation link                |
-| `APP_URL`                  | from the request      | Base URL for invitation and supplier links                                  |
-| `CARBONPASS_MAX_UPLOAD_MB` | `4`                   | Largest accepted upload                                                     |
-| `ANTHROPIC_API_KEY`        | unset                 | Enables document reading, and the model for mapping, triage, memo           |
-| `CARBONPASS_MODEL`         | `claude-opus-5`       | Model used when a key is set                                                |
-| `GROQ_API_KEY`             | unset                 | The free option, used when `ANTHROPIC_API_KEY` is unset                     |
-| `GROQ_MODEL`               | `openai/gpt-oss-120b` | Groq model for text, PDFs, mapping, triage and memo                         |
-| `GROQ_VISION_MODEL`        | `qwen/qwen3.8-27b`    | Groq model for photos                                                       |
-| `EVALGATE_URL`             | unset                 | An evalgate service for "Ask the regulation"                                |
-| `EVALGATE_API_KEY`         | unset                 | Sent as `x-api-key` when the evalgate service requires one                  |
-| `SMTP_URL`                 | unset                 | `smtps://user:pass@host:465`: e-mails invitations, supplier and reset links |
-| `MAIL_FROM`                | unset                 | Sender, e.g. `CarbonPass <cbam@yourplant.in>`; needed with `SMTP_URL`       |
-| `CARBONPASS_ETS_PRICE_EUR` | `75`                  | Price for quarters not yet published; each workspace can override           |
-| `CARBONPASS_INR_PER_EUR`   | `92`                  | For showing cost in rupees                                                  |
+| Variable                    | Default               | Purpose                                                                     |
+| --------------------------- | --------------------- | --------------------------------------------------------------------------- |
+| `DATABASE_URL`              | embedded database     | Postgres connection string. `POSTGRES_URL` is accepted as well              |
+| `CARBONPASS_DATA_DIR`       | `.data`               | Where the embedded database lives when `DATABASE_URL` is unset              |
+| `CARBONPASS_SIGNUP`         | `open`                | `invite` allows new accounts only through an invitation link                |
+| `APP_URL`                   | from the request      | Base URL for invitation and supplier links                                  |
+| `CARBONPASS_MAX_UPLOAD_MB`  | `4`                   | Largest accepted upload                                                     |
+| `ANTHROPIC_API_KEY`         | unset                 | Enables document reading, and the model for mapping, triage, memo           |
+| `CARBONPASS_MODEL`          | `claude-opus-5`       | Model used when a key is set                                                |
+| `GROQ_API_KEY`              | unset                 | The free option, used when `ANTHROPIC_API_KEY` is unset                     |
+| `GROQ_MODEL`                | `openai/gpt-oss-120b` | Groq model for text, PDFs, mapping, triage and memo                         |
+| `GROQ_VISION_MODEL`         | `qwen/qwen3.8-27b`    | Groq model for photos                                                       |
+| `CARBONPASS_ENCRYPTION_KEY` | unset                 | Encrypts two-factor secrets at rest (AES-256-GCM); set it in production     |
+| `CARBONPASS_OPERATOR`       | unset                 | Who runs the deployment, named on the privacy and terms pages               |
+| `CARBONPASS_CONTACT_EMAIL`  | unset                 | Contact address on the privacy and terms pages                              |
+| `EVALGATE_URL`              | unset                 | An evalgate service for "Ask the regulation"                                |
+| `EVALGATE_API_KEY`          | unset                 | Sent as `x-api-key` when the evalgate service requires one                  |
+| `SMTP_URL`                  | unset                 | `smtps://user:pass@host:465`: e-mails invitations, supplier and reset links |
+| `MAIL_FROM`                 | unset                 | Sender, e.g. `CarbonPass <cbam@yourplant.in>`; needed with `SMTP_URL`       |
+| `CARBONPASS_ETS_PRICE_EUR`  | `75`                  | Price for quarters not yet published; each workspace can override           |
+| `CARBONPASS_INR_PER_EUR`    | `92`                  | For showing cost in rupees                                                  |
+
+### Production checklist
+
+Before real customers' data goes in:
+
+- [ ] **External Postgres with backups**, and one restore actually tried (see [Backups](#backups)).
+- [ ] `CARBONPASS_ENCRYPTION_KEY` set (`openssl rand -base64 48`) and stored somewhere safe.
+- [ ] `APP_URL` set to the public address, served over HTTPS.
+- [ ] `CARBONPASS_SIGNUP=invite` once the first owner account exists.
+- [ ] `CARBONPASS_OPERATOR` and `CARBONPASS_CONTACT_EMAIL` set; `/privacy` and `/terms` reviewed by
+      counsel.
+- [ ] `SMTP_URL` and `MAIL_FROM` set, so resets and invitations arrive by e-mail.
+- [ ] A paid AI tier (or Claude) with a no-retention agreement for customer documents, rather than a
+      free tier.
+- [ ] Two-factor sign-in turned on by every owner.
+- [ ] The `GROQ_API_KEY` repository secret set, so the nightly document gate runs.
+- [ ] Reading accuracy recorded on the customer's own bills (`--private`, see
+      [the document-reading gate](#the-document-reading-gate)).
 
 ### Free AI with Groq
 
@@ -376,6 +462,11 @@ says which one produced each result.
   `Secure` over HTTPS.
 - **Writes** are refused unless they come from the app's own origin.
 - **Sign-in** is rate-limited per IP and per e-mail, and **sign-up** per IP.
+- **Two-factor sign-in** (TOTP, RFC 6238) for every account: secrets encrypted at rest with
+  `CARBONPASS_ENCRYPTION_KEY`, ten hashed single-use recovery codes, a code's time step never
+  accepted twice, five tries per sign-in. A password-reset link alone never gets past it; an owner
+  can reset a locked-out member's two-factor, which is logged. Everyone can see and end their own
+  sessions, and changing a password ends every other one.
 - **Password resets** are one-time tokens stored hashed: an hour when e-mailed, a day when an owner
   issues one. The forgot-password form answers the same whether or not the address has an account.
   Using a reset signs the person out everywhere.
@@ -384,6 +475,23 @@ says which one produced each result.
   change anything.
 - **The supplier portal** needs no account. Each request gets an unguessable link that expires
   and can be revoked. The supplier can correct a submission until you accept or reject it.
+- **Server errors** are logged as one JSON line each, with the digest shown on the error page, so
+  a support request can be matched to its log line. Request bodies are never logged.
+- **CI** runs CodeQL (security-extended), `npm audit` on shipped dependencies, and Dependabot; see
+  [SECURITY.md](SECURITY.md) for reporting a vulnerability.
+
+### Your data
+
+- **Export everything** (owners, Settings → Team): one zip with every workspace as a verifier
+  pack, the workspace state, members, pending invitations and the full activity log. Passwords,
+  sessions and two-factor secrets are never exported.
+- **Delete everything**: the organisation, its workspaces, files, supplier requests, invitations and
+  activity log, after typing its name. Members keep their own accounts.
+- **Privacy and terms pages** (`/privacy`, `/terms`) describe what this deployment stores and who
+  else sees it; the list of other services is read from the configuration, so it names only the
+  AI provider, mail service and regulation service actually in use. They are plain-language
+  templates: the operator named by `CARBONPASS_OPERATOR` should have them reviewed before
+  relying on them.
 
 ### Backups
 
@@ -426,6 +534,8 @@ The gate follows evalgate's design:
 - **A nightly live run** (`.github/workflows/nightly.yml`) holds the real model to the same baseline
   and keeps one issue open while it fails. It needs the `GROQ_API_KEY` repository secret. A
   `freeze` dispatch records a candidate baseline for review; nothing in CI commits one.
+
+![The landing page's "Measured, not claimed" section, reading its numbers from the frozen baseline](docs/screenshots/measured.png)
 
 The headline metric is the **silent error rate**: lines that would be imported by default and are
 wrong (not on the document, wrong unit, wrong category) with nothing on screen to flag them. A
@@ -482,7 +592,7 @@ Methodology page is the reference.
 ## Development
 
 ```bash
-make check       # lint, format, types, fixture checksums, 178 tests, mapping and document gates
+make check       # lint, format, types, fixture checksums, 190 tests, mapping and document gates
 make build && make start          # production build, served the way the container serves it
 make smoke                        # end-to-end over HTTP against the running server
 ```
@@ -560,9 +670,13 @@ src/
 - **E-mail is optional.** With `SMTP_URL` and `MAIL_FROM` set, invitations, supplier requests and password resets
   are e-mailed. Without it, links are shown to copy and send yourself, and "Forgot password" tells
   the person to ask an owner for a reset link.
-- **No single sign-on yet.** Accounts are e-mail and password. SAML or OIDC sign-in (Azure AD,
-  Google Workspace, Okta) is the next step for larger groups; sessions are already separate from
-  sign-in, so it adds a route rather than a rewrite. There is no two-factor authentication yet.
+- **No single sign-on yet.** Accounts are e-mail and password with optional two-factor sign-in.
+  SAML or OIDC sign-in (Azure AD, Google Workspace, Okta) and an organisation-wide "two-factor
+  required" setting are the next steps for larger groups; sessions are already separate from
+  sign-in, so each adds a route rather than a rewrite.
+- **Uploaded files live in the database** (as `bytea`), which keeps a deployment to one app and one
+  database but is not where very large volumes belong; object storage (S3, R2) is the step for
+  that. Document reading runs inside the request, with a 120-second limit, rather than on a queue.
 - **Production route per process is operator-configured** (Settings → Installation), and it selects
   the benchmark. A wrong route gives a wrong SEFA. The full calculation export records the benchmark
   value, column and route indicator used for each good.

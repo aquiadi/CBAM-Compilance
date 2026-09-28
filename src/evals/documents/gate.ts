@@ -27,6 +27,8 @@ export interface Baseline {
   models: string[];
   cassettes: number;
   metrics: DocumentMetrics;
+  /** Formatted copies of the headline numbers for the README badges. */
+  badges?: Record<string, string>;
 }
 
 export interface Check {

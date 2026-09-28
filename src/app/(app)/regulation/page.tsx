@@ -13,7 +13,12 @@ export const dynamic = "force-dynamic";
  * and its answer quality is gated in its own CI. This page relays and renders;
  * it never answers from anything else.
  */
-export default async function RegulationPage() {
+export default async function RegulationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   await pageContext();
   const configured = regulationConfigured();
   const health = configured ? await regulationHealth() : null;
@@ -75,6 +80,7 @@ export default async function RegulationPage() {
               corpusHash={health.corpus_hash.slice(0, 12)}
               model={health.generator_model}
               chunks={health.chunks}
+              initialQuestion={typeof q === "string" ? q.slice(0, 2000) : ""}
             />
           </div>
         )}

@@ -3,6 +3,7 @@ import { Mark } from "@/components/app-shell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { env } from "@/config/env";
 import { optionalUser } from "@/lib/auth/context";
+import readingBaseline from "../../../evals/documents/baseline.json";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ export const dynamic = "force-dynamic";
  * committed demo files (see the README), and are labelled as such.
  */
 export default async function LandingPage() {
+  const reading = readingBaseline.metrics;
+  const pct = (x: number) => `${(x * 100).toFixed(1).replace(/\.0$/, "")}%`;
   const session = await optionalUser().catch(() => null);
   const signedIn = Boolean(session?.user);
   const open = env.CARBONPASS_SIGNUP === "open";
@@ -35,6 +38,9 @@ export default async function LandingPage() {
             </a>
             <a href="#how" className="hover:text-ink">
               How it works
+            </a>
+            <a href="#trust" className="hover:text-ink">
+              Why trust it
             </a>
             <a href="#faq" className="hover:text-ink">
               Questions
@@ -280,6 +286,59 @@ export default async function LandingPage() {
         </div>
       </Section>
 
+      {/* ------------------------------------------------------------ trust */}
+      <Section
+        id="trust"
+        eyebrow="Why trust it"
+        title="Measured, not claimed"
+        lede="AI that reads bills is only as good as its worst silent mistake. So the reading is tested on every change to the code, and the regulation assistant shows its sources."
+        tone="white"
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              value: pct(reading.lineRecall),
+              label: "of figures read exactly",
+              note: `on ${reading.documents} test documents built around real traps: kVA beside kWh, gross beside net weight, crossed-out ink`,
+            },
+            {
+              value: pct(reading.silentErrorRate),
+              label: "silent errors",
+              note: "wrong figures that would be imported with nothing on screen to flag them - the number that matters most",
+            },
+            {
+              value: "Every change",
+              label: "re-tested before it ships",
+              note: "a change that makes reading worse fails the build and cannot be released",
+            },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl border border-line bg-plane p-6">
+              <div className="font-display text-[40px] leading-none">{s.value}</div>
+              <div className="mt-2 text-[15px] font-medium">{s.label}</div>
+              <p className="mt-3 text-[13.5px] leading-[1.6] text-ink-2">{s.note}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-12 grid gap-x-16 gap-y-10 md:grid-cols-2">
+          <div>
+            <h3 className="text-[19px] font-semibold">Ask the regulation, read the source</h3>
+            <p className="mt-3 text-[15.5px] leading-[1.7] text-ink-2">
+              Ask a question about the rules in plain words. Every sentence of the answer cites the
+              passage of the regulation it comes from, each citation is checked against that
+              passage, and the passages sit right under the answer for you to read.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-[19px] font-semibold">Open about its limits</h3>
+            <p className="mt-3 text-[15.5px] leading-[1.7] text-ink-2">
+              The test documents are made up to be hard, but real bills are messier, so each
+              customer&apos;s own bills are measured the same way before the number is quoted. The
+              AI proposes; a person confirms every line; the arithmetic never uses AI.
+            </p>
+          </div>
+        </div>
+      </Section>
+
       {/* ------------------------------------------------------------ faq */}
       <Section id="faq" eyebrow="Questions" title="Straight answers">
         <div className="mx-auto max-w-[820px] divide-y divide-line rounded-2xl border border-line bg-surface">
@@ -295,6 +354,14 @@ export default async function LandingPage() {
             {
               q: "What files can I upload?",
               a: "CSV and Excel (.xlsx) exports from SAP, Tally, your electricity board's portal or your despatch register - and PDFs or photos of bills, invoices, receipts and weighbridge slips. With an AI key those documents are read for you, each figure shown with the words it came from; you confirm every line.",
+            },
+            {
+              q: "How accurate is the AI reading?",
+              a: `On our test set of ${reading.documents} documents built around the traps real bills contain, the AI reads ${pct(reading.lineRecall)} of figures exactly, and ${pct(reading.silentErrorRate)} of the lines it proposes are wrong without being flagged. Every change to the product is re-tested against that set and blocked if it gets worse. You still confirm every line before it counts.`,
+            },
+            {
+              q: "Can I ask questions about the regulation?",
+              a: 'Yes - "Ask the regulation" in the app answers in plain words and cites the exact passage of the regulation behind each sentence, with every citation checked. It explains the rules; it does not replace them or legal advice.',
             },
             {
               q: "Where does my data live?",
@@ -349,7 +416,18 @@ export default async function LandingPage() {
             <Mark size={22} />
             <span>CarbonPass · open source (MIT)</span>
           </div>
-          <p className="max-w-[70ch]">
+          <nav className="flex items-center gap-5">
+            <Link href="/privacy" className="hover:text-ink">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-ink">
+              Terms
+            </Link>
+            <a href="https://github.com/aquiadi/CBAM-Compilance" className="hover:text-ink">
+              Source
+            </a>
+          </nav>
+          <p className="w-full max-w-[70ch]">
             Implements Regulation (EU) 2023/956 and Implementing Regulations 2025/2547, 2025/2620
             and 2025/2621. A calculation aid, not legal advice.
           </p>

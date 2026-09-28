@@ -28,6 +28,17 @@ export default async function SignupPage() {
       subtitle="One account per person; your organisation holds the data."
     >
       <SignupForm />
+      <p className="mt-4 text-center text-[12.5px] leading-[1.6] text-muted">
+        By creating an account you accept the{" "}
+        <Link href="/terms" className="text-accent hover:underline">
+          terms
+        </Link>{" "}
+        and the{" "}
+        <Link href="/privacy" className="text-accent hover:underline">
+          privacy notice
+        </Link>
+        .
+      </p>
     </Card>
   );
 }

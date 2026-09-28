@@ -56,6 +56,29 @@ function assert(condition, message) {
 }
 
 const step = (name) => console.log(`- ${name}`);
+
+/** An authenticator app's code for a base32 secret and 30-second step (RFC 6238). */
+async function totp(secret, stepOffset = 0) {
+  const { createHmac } = await import("node:crypto");
+  const { Buffer } = await import("node:buffer");
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = 0;
+  let value = 0;
+  const bytes = [];
+  for (const ch of secret) {
+    value = (value << 5) | alphabet.indexOf(ch);
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000) + stepOffset));
+  const mac = createHmac("sha1", Buffer.from(bytes)).update(counter).digest();
+  const offset = mac[mac.length - 1] & 15;
+  return String((mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
+}
 const stamp = Date.now().toString(36);
 
 async function main() {
@@ -121,6 +144,7 @@ async function main() {
     "/settings",
     "/settings/team",
     "/settings/workspaces",
+    "/settings/account",
   ]) {
     await owner.request(path);
   }
@@ -366,6 +390,40 @@ async function main() {
     json: { email: `viewer-${stamp}@example.com`, password: "a new password after reset" },
   });
   step("owner-issued reset link: new password works, old sessions end, link works once");
+
+  // Two-factor sign-in: set it up, then a password alone no longer signs in.
+  const setup = await owner.json("/api/account/two-factor", {
+    method: "POST",
+    json: { action: "begin" },
+  });
+  const enabled = await owner.json("/api/account/two-factor", {
+    method: "POST",
+    json: { action: "confirm", code: await totp(setup.secret) },
+  });
+  assert(enabled.recoveryCodes?.length === 10, "ten recovery codes issued");
+  const second = new Client();
+  const half = await second.json("/api/auth/login", {
+    method: "POST",
+    json: { email, password: "correct horse battery" },
+  });
+  assert(half.twoFactor === true, "password alone asks for the code");
+  await second.request("/api/export?format=json", { expect: [401] });
+  await second.request("/api/auth/login/verify", {
+    method: "POST",
+    json: { code: "000000" },
+    expect: [400],
+  });
+  // The confirming code's step is spent, so use the next one.
+  await second.json("/api/auth/login/verify", {
+    method: "POST",
+    json: { code: await totp(setup.secret, 1) },
+  });
+  await second.json("/api/export?format=json");
+  await owner.json("/api/account/two-factor", {
+    method: "POST",
+    json: { action: "disable", code: enabled.recoveryCodes[0] },
+  });
+  step("two-factor: password alone refused, code signs in, recovery code turns it off");
 
   const log = await owner.request("/activity");
   const html = await log.text();

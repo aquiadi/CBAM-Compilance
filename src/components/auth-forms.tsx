@@ -7,19 +7,88 @@ import { Button, Field, FormError, Input, useRequest } from "./forms";
 
 export function LoginForm({ next }: { next?: string }) {
   const router = useRouter();
-  const { send, pending, error } = useRequest();
+  const { send, pending, error, setError } = useRequest();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [needsCode, setNeedsCode] = useState(false);
+  const [code, setCode] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
+
+  function done() {
+    router.push(next && next.startsWith("/") && next !== "/" ? next : "/overview");
+    router.refresh();
+  }
+
+  if (needsCode) {
+    return (
+      <form
+        className="space-y-4"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const r = await send("/api/auth/login/verify", { json: { code } });
+          if (r) done();
+          else setCode("");
+        }}
+      >
+        <p className="text-[14px] leading-[1.6] text-ink-2">
+          {useRecovery
+            ? "Enter one of the recovery codes you saved when you turned on two-factor sign-in. Each works once."
+            : "Enter the six-digit code from your authenticator app."}
+        </p>
+        <Field label={useRecovery ? "Recovery code" : "Code"}>
+          <Input
+            autoFocus
+            required
+            inputMode={useRecovery ? "text" : "numeric"}
+            autoComplete="one-time-code"
+            maxLength={useRecovery ? 20 : 6}
+            placeholder={useRecovery ? "xxxxx-xxxxx" : "123456"}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+        </Field>
+        <FormError>{error}</FormError>
+        <Button type="submit" variant="primary" disabled={pending} className="w-full py-2">
+          {pending ? "Checking…" : "Sign in"}
+        </Button>
+        <div className="flex justify-between text-[13px]">
+          <button
+            type="button"
+            className="text-accent hover:underline"
+            onClick={() => {
+              setUseRecovery((r) => !r);
+              setCode("");
+              setError(null);
+            }}
+          >
+            {useRecovery ? "Use the authenticator app" : "Use a recovery code"}
+          </button>
+          <button
+            type="button"
+            className="text-muted hover:text-ink"
+            onClick={() => {
+              setNeedsCode(false);
+              setPassword("");
+              setError(null);
+            }}
+          >
+            Start again
+          </button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form
       className="space-y-4"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (await send("/api/auth/login", { json: { email, password } })) {
-          router.push(next && next.startsWith("/") && next !== "/" ? next : "/overview");
-          router.refresh();
-        }
+        const r = await send<{ twoFactor?: boolean }>("/api/auth/login", {
+          json: { email, password },
+        });
+        if (r?.twoFactor) setNeedsCode(true);
+        else if (r) done();
       }}
     >
       <Field label="E-mail">
@@ -111,8 +180,11 @@ export function ResetForm({ token }: { token: string }) {
       onSubmit={async (e) => {
         e.preventDefault();
         if (password !== again) return setError("The two passwords are different.");
-        if (await send("/api/auth/reset", { json: { token, password } })) {
-          router.push("/overview");
+        const r = await send<{ signIn?: boolean }>("/api/auth/reset", {
+          json: { token, password },
+        });
+        if (r) {
+          router.push(r.signIn ? "/login?reset=1" : "/overview");
           router.refresh();
         }
       }}

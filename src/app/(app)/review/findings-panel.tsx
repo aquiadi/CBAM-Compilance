@@ -32,10 +32,13 @@ export function FindingsPanel({
   findings,
   aiAvailable,
   canWrite,
+  regulationAvailable = false,
 }: {
   findings: PanelFinding[];
   aiAvailable: boolean;
   canWrite: boolean;
+  /** An evalgate service is connected, so each finding can link to a cited answer. */
+  regulationAvailable?: boolean;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "blocker" | "warning" | "info">("all");
@@ -245,6 +248,14 @@ export function FindingsPanel({
                 <span className="font-medium text-ink">What to do: </span>
                 {f.remedy}
               </div>
+              {regulationAvailable ? (
+                <a
+                  href={`/regulation?q=${encodeURIComponent(`What does the CBAM regulation say about this: ${f.title}?`)}`}
+                  className="mt-2 inline-block text-[13px] text-accent hover:underline"
+                >
+                  Ask the regulation about this →
+                </a>
+              ) : null}
 
               {t ? (
                 <div className="mt-3 rounded-lg border border-accent/25 bg-accent/[0.06] p-3">

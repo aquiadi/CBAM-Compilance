@@ -145,4 +145,29 @@ export const MIGRATIONS: { version: number; name: string; sql: string }[] = [
       CREATE INDEX password_resets_user_idx ON password_resets(user_id);
     `,
   },
+  {
+    version: 3,
+    name: "two-factor sign-in",
+    sql: `
+      ALTER TABLE users ADD COLUMN totp_secret text;
+      ALTER TABLE users ADD COLUMN totp_enabled_at timestamptz;
+      ALTER TABLE users ADD COLUMN totp_last_step bigint;
+
+      CREATE TABLE recovery_codes (
+        id text PRIMARY KEY,
+        user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        code_hash text NOT NULL UNIQUE,
+        used_at timestamptz
+      );
+      CREATE INDEX recovery_codes_user_idx ON recovery_codes(user_id);
+
+      CREATE TABLE login_challenges (
+        id text PRIMARY KEY,
+        user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        expires_at timestamptz NOT NULL,
+        attempts integer NOT NULL DEFAULT 0
+      );
+    `,
+  },
 ];

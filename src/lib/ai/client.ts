@@ -32,6 +32,19 @@ export function aiLabel(): string | null {
 }
 
 /**
+ * Who receives documents and data when the AI is used, in words for the
+ * people whose documents they are.
+ */
+export function aiProcessor(): string | null {
+  const provider = aiProvider();
+  return provider === "groq"
+    ? "Groq (GroqCloud)"
+    : provider === "anthropic"
+      ? "Anthropic (Claude API)"
+      : null;
+}
+
+/**
  * Whether the model proposes column mappings. On Groq's free model the
  * mapping eval found the rule-based mapper more accurate on materials - the
  * model filed DOLOCHAR, a fuel, as dolomite - so there the rule-based mapper

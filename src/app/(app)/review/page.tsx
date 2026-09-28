@@ -1,5 +1,6 @@
 import { BAND_LABELS } from "@/lib/cbam/readiness";
 import { isAiAvailable } from "@/lib/ai/client";
+import { regulationConfigured } from "@/lib/regulation";
 import { workspaceContext } from "@/lib/auth/context";
 import { computeDeclaration, findingKey } from "@/lib/workspace/declaration";
 import { Card, fmt, Page, PageHeader } from "@/components/ui";
@@ -67,6 +68,7 @@ export default async function ReviewPage() {
                 acknowledgement: state.acknowledgementNotes?.[findingKey(f.code, f.title)] ?? null,
               }))}
               aiAvailable={isAiAvailable()}
+              regulationAvailable={regulationConfigured()}
               canWrite={ctx.canWrite}
             />
           </div>

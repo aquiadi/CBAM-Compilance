@@ -17,14 +17,17 @@ export function RegulationPanel({
   corpusHash,
   model,
   chunks,
+  initialQuestion = "",
 }: {
   corpus: string;
   corpusHash: string;
   model: string;
   chunks: number;
+  /** Filled in from a link (a finding's "Ask the regulation about this"); asked on a click. */
+  initialQuestion?: string;
 }) {
   const { send, pending, error } = useRequest();
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(initialQuestion);
   const [result, setResult] = useState<(RegulationAnswer & { question: string }) | null>(null);
 
   async function ask(q = question) {

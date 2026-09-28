@@ -120,15 +120,18 @@ export async function membershipsFor(q: Queryable, userId: string): Promise<Memb
 export async function orgMembers(
   q: Queryable,
   orgId: string,
-): Promise<{ userId: string; email: string; name: string; role: Role; since: string }[]> {
+): Promise<
+  { userId: string; email: string; name: string; role: Role; since: string; twoFactor: boolean }[]
+> {
   const { rows } = await q.query<{
     user_id: string;
     email: string;
     name: string;
     role: Role;
     created_at: Date | string;
+    totp_enabled_at: Date | string | null;
   }>(
-    `SELECT m.user_id, u.email, u.name, m.role, m.created_at FROM memberships m
+    `SELECT m.user_id, u.email, u.name, m.role, m.created_at, u.totp_enabled_at FROM memberships m
        JOIN users u ON u.id = m.user_id WHERE m.org_id = $1 ORDER BY m.created_at`,
     [orgId],
   );
@@ -138,6 +141,7 @@ export async function orgMembers(
     name: r.name,
     role: r.role,
     since: new Date(r.created_at).toISOString(),
+    twoFactor: Boolean(r.totp_enabled_at),
   }));
 }
 

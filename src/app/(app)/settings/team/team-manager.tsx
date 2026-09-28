@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, CopyLink, Field, FormError, Input, Select, useRequest } from "@/components/forms";
-import { Card, Table, Td, Th } from "@/components/ui";
+import { Badge, Card, Table, Td, Th } from "@/components/ui";
 
 export function TeamManager({
   isOwner,
@@ -14,7 +14,14 @@ export function TeamManager({
 }: {
   isOwner: boolean;
   currentUserId: string;
-  members: { userId: string; email: string; name: string; role: string; since: string }[];
+  members: {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+    since: string;
+    twoFactor: boolean;
+  }[];
   invitations: { id: string; email: string; role: string; expiresAt: string }[];
   roles: { id: string; label: string; description: string }[];
 }) {
@@ -58,6 +65,7 @@ export function TeamManager({
               <Th>E-mail</Th>
               <Th>Role</Th>
               <Th>Since</Th>
+              <Th>Sign-in</Th>
               <Th />
             </tr>
           </thead>
@@ -93,7 +101,35 @@ export function TeamManager({
                   )}
                 </Td>
                 <Td className="text-[12.5px]">{m.since.slice(0, 10)}</Td>
+                <Td>
+                  <Badge tone={m.twoFactor ? "good" : "neutral"}>
+                    {m.twoFactor ? "Two-factor on" : "Password only"}
+                  </Badge>
+                </Td>
                 <Td align="right">
+                  {isOwner && m.userId !== currentUserId && m.twoFactor ? (
+                    <Button
+                      variant="ghost"
+                      disabled={pending}
+                      title="For someone who has lost their phone and recovery codes"
+                      onClick={async () => {
+                        if (
+                          !confirm(
+                            `Turn off two-factor sign-in for ${m.email}? They will be signed out and can set it up again. This is recorded in the activity log.`,
+                          )
+                        )
+                          return;
+                        if (
+                          await send(`/api/team/members/${m.userId}/two-factor`, {
+                            method: "DELETE",
+                          })
+                        )
+                          router.refresh();
+                      }}
+                    >
+                      Reset two-factor
+                    </Button>
+                  ) : null}
                   {isOwner && m.userId !== currentUserId ? (
                     <Button
                       variant="ghost"
