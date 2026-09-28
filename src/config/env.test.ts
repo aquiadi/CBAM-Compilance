@@ -73,6 +73,17 @@ describe("parseEnv", () => {
     expect(() => parseEnv(vars)).not.toThrow();
   });
 
+  it("reads a bare domain in APP_URL as https", () => {
+    expect(parseEnv({ APP_URL: "cbam.up.railway.app" }).APP_URL).toBe(
+      "https://cbam.up.railway.app",
+    );
+    expect(parseEnv({ APP_URL: " http://localhost:3000 " }).APP_URL).toBe("http://localhost:3000");
+    expect(parseEnv({ RAILWAY_PUBLIC_DOMAIN: "cbam.up.railway.app" }).APP_URL).toBe(
+      "https://cbam.up.railway.app",
+    );
+    expect(() => parseEnv({ APP_URL: "not a url" })).toThrow(/APP_URL/);
+  });
+
   it("accepts a full valid configuration", () => {
     const env = parseEnv({
       NODE_ENV: "production",

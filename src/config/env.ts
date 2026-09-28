@@ -55,8 +55,14 @@ const EnvSchema = z.object({
    */
   CARBONPASS_SIGNUP: z.enum(["open", "invite"]).default("open"),
 
-  /** Public base URL, used in invitation and supplier links. Derived from the request when unset. */
-  APP_URL: z.string().url().optional(),
+  /**
+   * Public base URL, used in invitation and supplier links. A bare domain is
+   * accepted and read as https://. Derived from the request when unset.
+   */
+  APP_URL: z
+    .string()
+    .url("must be a web address such as https://carbonpass.example.com")
+    .optional(),
 
   /** Largest accepted upload. Serverless hosts cap request bodies at about 4.5 MB. */
   CARBONPASS_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(4),
@@ -77,6 +83,15 @@ function withAliases(
   // in a dashboard) means "not set", not "set to nothing".
   for (const key of Object.keys(out)) {
     if (out[key] === "") delete out[key];
+  }
+  // Hosts hand out bare domains (Railway's RAILWAY_PUBLIC_DOMAIN, a copied
+  // address bar without the scheme). A public address is HTTPS, so add it.
+  const appUrl = out.APP_URL?.trim();
+  if (appUrl && !/^[a-z][a-z0-9+.-]*:\/\//i.test(appUrl)) out.APP_URL = `https://${appUrl}`;
+  else if (appUrl) out.APP_URL = appUrl;
+  // On Railway, fall back to the service's public domain when APP_URL is unset.
+  if (!out.APP_URL && out.RAILWAY_PUBLIC_DOMAIN) {
+    out.APP_URL = `https://${out.RAILWAY_PUBLIC_DOMAIN.trim()}`;
   }
   return out;
 }

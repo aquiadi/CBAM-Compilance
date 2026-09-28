@@ -133,7 +133,8 @@ health-checks `/api/health`, which only answers once the database is reachable a
 2. **Add Postgres**: in the project, _+ Create_ → _Database_ → _PostgreSQL_.
 3. **Connect it**: in the app service's _Variables_, add `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`.
 4. **Give it a URL**: under _Settings_ → _Networking_ → _Generate Domain_. Set `APP_URL` to that
-   `https://…` address.
+   address (with or without `https://`), or leave it unset: on Railway the app uses the service's
+   public domain.
 5. **Deploy.** Open the domain, create an account, and open the demo.
 
 **No database service?** The image also runs on its embedded Postgres. Attach a volume mounted at
