@@ -8,7 +8,7 @@ import { optionalUser } from "@/lib/auth/context";
 export default async function SignupPage() {
   const session = await optionalUser();
   if (!session) redirect("/setup");
-  if (session.user) redirect("/");
+  if (session.user) redirect("/overview");
   if (env.CARBONPASS_SIGNUP !== "open") {
     return (
       <Card title="Sign-up is by invitation">

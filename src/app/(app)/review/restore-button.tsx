@@ -25,7 +25,7 @@ export function RestoreButton({ activityId }: { activityId: string }) {
         setBusy(false);
         router.refresh();
       }}
-      className="text-[10.5px] text-accent hover:underline disabled:opacity-40"
+      className="text-[12px] text-accent hover:underline disabled:opacity-40"
     >
       {busy ? "…" : "Restore"}
     </button>

@@ -56,17 +56,17 @@ export default async function MethodologyPage() {
       />
 
       <Page>
-        <div className="space-y-5">
+        <div className="space-y-8">
           <Card
             title="How a number is produced"
             subtitle="The division of labour between the engine and the model."
           >
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+                <h3 className="mb-2 text-[12.5px] font-medium uppercase tracking-[0.12em] text-muted">
                   The model may
                 </h3>
-                <ul className="space-y-1.5 text-[12px] leading-[1.6] text-ink-2">
+                <ul className="space-y-1.5 text-[13.5px] leading-[1.6] text-ink-2">
                   <li>· Map a spreadsheet column to a canonical field</li>
                   <li>· Detect the unit a quantity is expressed in</li>
                   <li>· Resolve a free-text material to a factor id from a fixed list</li>
@@ -75,10 +75,10 @@ export default async function MethodologyPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+                <h3 className="mb-2 text-[12.5px] font-medium uppercase tracking-[0.12em] text-muted">
                   The model may not
                 </h3>
-                <ul className="space-y-1.5 text-[12px] leading-[1.6] text-ink-2">
+                <ul className="space-y-1.5 text-[13.5px] leading-[1.6] text-ink-2">
                   <li>· Produce, adjust or round any figure in the declaration</li>
                   <li>· Invent a field, factor or process id — unknown ids are dropped</li>
                   <li>· Create a finding, clear one, or change a severity</li>
@@ -91,7 +91,7 @@ export default async function MethodologyPage() {
                 Every id the model returns is checked against the engine&apos;s own tables before
                 use. A hallucinated factor id is discarded and reported as a warning, never applied.
                 The tests covering that boundary are in{" "}
-                <span className="font-mono text-[11px]">src/lib/ai/guardrails.test.ts</span>.
+                <span className="font-mono text-[12.5px]">src/lib/ai/guardrails.test.ts</span>.
               </Note>
             </div>
           </Card>
@@ -122,14 +122,14 @@ export default async function MethodologyPage() {
                       >
                         {src.act}
                       </a>
-                      <div className="mt-0.5 text-[10.5px] text-muted">{src.caveat}</div>
+                      <div className="mt-0.5 text-[12px] text-muted">{src.caveat}</div>
                     </Td>
-                    <Td className="text-[11px]">
+                    <Td className="text-[12.5px]">
                       {src.title}
-                      <div className="text-[10.5px] text-muted">{src.table}</div>
+                      <div className="text-[12px] text-muted">{src.table}</div>
                     </Td>
-                    <Td className="tnum text-[11px]">{src.version}</Td>
-                    <Td className="font-mono text-[10px] text-muted">
+                    <Td className="tnum text-[12.5px]">{src.version}</Td>
+                    <Td className="font-mono text-[11.5px] text-muted">
                       {src.sha256 ? `${src.sha256.slice(0, 16)}…` : "-"}
                     </Td>
                   </tr>
@@ -138,7 +138,7 @@ export default async function MethodologyPage() {
             </Table>
           </Card>
 
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-3 gap-7">
             <Card
               title="CBAM factor and CSCF"
               subtitle="Share of EU free allocation still granted; multiplies the benchmark in the free allocation adjustment."
@@ -224,7 +224,7 @@ export default async function MethodologyPage() {
                       <Td align="right" numeric>
                         €{p.priceEur.toFixed(2)}
                       </Td>
-                      <Td className="text-[11px] text-muted">{p.published}</Td>
+                      <Td className="text-[12.5px] text-muted">{p.published}</Td>
                     </tr>
                   ))}
                 </tbody>
@@ -238,7 +238,7 @@ export default async function MethodologyPage() {
             padded={false}
           >
             {relevant.length === 0 ? (
-              <p className="px-5 py-4 text-[12px] text-muted">
+              <p className="px-5 py-4 text-[13.5px] text-muted">
                 No CBAM goods in this workspace yet.
               </p>
             ) : (
@@ -260,16 +260,16 @@ export default async function MethodologyPage() {
                       (list ?? []).map(([v, i]) => `${v}${i ? ` (${i})` : ""}`).join(" · ") || "-";
                     return (
                       <tr key={cn} className="align-top hover:bg-surface-2">
-                        <Td className="font-mono text-[11.5px] text-ink">{cn}</Td>
-                        <Td className="max-w-md text-[11px]">{lookupGoods(cn)?.description}</Td>
-                        <Td className="tnum text-[11px]">{fmtBm(bm?.a)}</Td>
-                        <Td className="tnum text-[11px]">{fmtBm(bm?.b)}</Td>
-                        <Td className="text-[11px]">
+                        <Td className="font-mono text-[13px] text-ink">{cn}</Td>
+                        <Td className="max-w-md text-[12.5px]">{lookupGoods(cn)?.description}</Td>
+                        <Td className="tnum text-[12.5px]">{fmtBm(bm?.a)}</Td>
+                        <Td className="tnum text-[12.5px]">{fmtBm(bm?.b)}</Td>
+                        <Td className="text-[12.5px]">
                           {dv.ok ? (
                             <>
                               {dv.value.total.toFixed(3)}
                               {dv.value.route ? ` (route ${dv.value.route})` : ""}
-                              <div className="text-[10.5px] text-muted">{dv.value.table}</div>
+                              <div className="text-[12px] text-muted">{dv.value.table}</div>
                             </>
                           ) : (
                             <span className="text-muted">{dv.message}</span>
@@ -281,7 +281,7 @@ export default async function MethodologyPage() {
                 </tbody>
               </Table>
             )}
-            <div className="border-t border-line px-5 py-2.5 text-[10.5px] leading-[1.6] text-muted">
+            <div className="border-t border-line px-5 py-2.5 text-[12px] leading-[1.6] text-muted">
               Route indicators:{" "}
               {Object.entries(ROUTE_INDICATORS)
                 .map(([k, v]) => `${k} = ${v}`)
@@ -290,8 +290,8 @@ export default async function MethodologyPage() {
             </div>
           </Card>
 
-          <details className="rounded-lg border border-line bg-surface">
-            <summary className="cursor-pointer px-5 py-3.5 text-[13px] font-semibold text-ink">
+          <details className="rounded-xl border border-line bg-surface">
+            <summary className="cursor-pointer px-5 py-3.5 text-[14.5px] font-semibold text-ink">
               Default values table - {countryTable[0]?.table.replace("Annex I - ", "") ?? country} (
               {countryTable.length} entries)
             </summary>
@@ -309,8 +309,8 @@ export default async function MethodologyPage() {
               <tbody>
                 {countryTable.map((v) => (
                   <tr key={v.tableCode} className="align-top">
-                    <Td className="font-mono text-[11px]">{v.tableCode}</Td>
-                    <Td className="max-w-lg text-[11px]">{v.description.slice(0, 140)}</Td>
+                    <Td className="font-mono text-[12.5px]">{v.tableCode}</Td>
+                    <Td className="max-w-lg text-[12.5px]">{v.description.slice(0, 140)}</Td>
                     <Td align="right" numeric>
                       {v.direct ?? "-"}
                     </Td>
@@ -320,7 +320,7 @@ export default async function MethodologyPage() {
                     <Td align="right" numeric>
                       {v.total}
                     </Td>
-                    <Td className="text-[11px]">{v.route}</Td>
+                    <Td className="text-[12.5px]">{v.route}</Td>
                   </tr>
                 ))}
               </tbody>
@@ -346,11 +346,11 @@ export default async function MethodologyPage() {
               <tbody>
                 {FACTORS.map((f) => (
                   <tr key={f.id} className="hover:bg-surface-2">
-                    <Td className="whitespace-nowrap font-mono text-[10.5px] text-muted">{f.id}</Td>
+                    <Td className="whitespace-nowrap font-mono text-[12px] text-muted">{f.id}</Td>
                     <Td>
                       <span className="text-ink">{f.name}</span>
                       {f.notes ? (
-                        <div className="mt-1 max-w-2xl text-[10.5px] leading-[1.5] text-muted">
+                        <div className="mt-1 max-w-2xl text-[12px] leading-[1.5] text-muted">
                           {f.notes}
                         </div>
                       ) : null}
@@ -369,9 +369,9 @@ export default async function MethodologyPage() {
                     <Td align="right" numeric>
                       {(f.uncertainty * 100).toFixed(0)}%
                     </Td>
-                    <Td className="text-[11px]">
+                    <Td className="text-[12.5px]">
                       {f.source}
-                      <div className="text-[10px] text-muted">
+                      <div className="text-[11.5px] text-muted">
                         {f.sourceRef} · {f.vintage}
                       </div>
                     </Td>
@@ -398,7 +398,7 @@ export default async function MethodologyPage() {
                 <tbody>
                   {RULE_CATALOGUE.map((r) => (
                     <tr key={r.code} className="hover:bg-surface-2">
-                      <Td className="font-mono text-[11px] text-ink">{r.code}</Td>
+                      <Td className="font-mono text-[12.5px] text-ink">{r.code}</Td>
                       <Td className="text-ink-2">{r.title}</Td>
                       <Td>
                         <Badge
@@ -451,7 +451,7 @@ export default async function MethodologyPage() {
                     <Td align="right" numeric className="whitespace-nowrap">
                       {b.plausibleDirect[0]} – {b.plausibleDirect[1]}
                     </Td>
-                    <Td className="max-w-md text-[11px] text-muted">{b.basis}</Td>
+                    <Td className="max-w-md text-[12.5px] text-muted">{b.basis}</Td>
                   </tr>
                 ))}
               </tbody>
@@ -493,7 +493,7 @@ export default async function MethodologyPage() {
           </Card>
 
           <Card title="Regulatory references">
-            <ul className="space-y-2 text-[12px] leading-[1.6] text-ink-2">
+            <ul className="space-y-2 text-[13.5px] leading-[1.6] text-ink-2">
               <li>
                 <span className="text-ink">Regulation (EU) 2023/956</span>, as amended by Regulation
                 (EU) 2025/2083 — establishes the CBAM. Annex I lists goods in scope; Annex II the

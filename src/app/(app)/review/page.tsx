@@ -48,7 +48,7 @@ export default async function ReviewPage() {
       />
 
       <Page>
-        <div className="grid grid-cols-4 gap-5">
+        <div className="grid grid-cols-4 gap-7">
           <div className="col-span-3">
             <FindingsPanel
               findings={d.findings.map((f) => ({
@@ -71,19 +71,19 @@ export default async function ReviewPage() {
             />
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-8">
             <Card title="Readiness" subtitle={BAND_LABELS[d.readiness.band]}>
               <div className="space-y-3.5">
                 {d.readiness.components.map((c) => (
                   <div key={c.id}>
-                    <div className="flex items-baseline justify-between text-[11.5px]">
+                    <div className="flex items-baseline justify-between text-[13px]">
                       <span className="text-ink-2">{c.label}</span>
                       <span className="tnum text-ink">{c.score.toFixed(0)}</span>
                     </div>
                     <div className="mt-1">
                       <MiniBar value={c.score} />
                     </div>
-                    <p className="mt-1 text-[10.5px] leading-[1.45] text-muted">{c.detail}</p>
+                    <p className="mt-1 text-[12px] leading-[1.45] text-muted">{c.detail}</p>
                   </div>
                 ))}
               </div>
@@ -98,8 +98,8 @@ export default async function ReviewPage() {
                   {state.exclusions.slice(0, 20).map((e) => {
                     const a = activityById.get(e.activityId);
                     return (
-                      <li key={e.activityId} className="text-[11px] leading-[1.5]">
-                        <div className="flex items-baseline justify-between gap-2 font-mono text-[10.5px] text-ink-2">
+                      <li key={e.activityId} className="text-[12.5px] leading-[1.5]">
+                        <div className="flex items-baseline justify-between gap-2 font-mono text-[12px] text-ink-2">
                           <span>
                             {a
                               ? `${a.lineage.fileName} row ${a.lineage.row}`
@@ -119,7 +119,7 @@ export default async function ReviewPage() {
             ) : null}
 
             <Card title="How to read this">
-              <div className="space-y-3 text-[11.5px] leading-[1.6] text-ink-2">
+              <div className="space-y-3 text-[13px] leading-[1.6] text-ink-2">
                 <p>
                   <span className="text-critical">Blockers</span> stop a filing. An intensity far
                   outside the plausible band is not an unusual plant, it is an error in the data.

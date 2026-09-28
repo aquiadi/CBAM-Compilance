@@ -118,7 +118,7 @@ export function SupplierForm({ token, supplierName }: { token: string; supplierN
             ref={file}
             type="file"
             accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg"
-            className="block w-full text-[12px] text-ink-2"
+            className="block w-full text-[13.5px] text-ink-2"
           />
         </Field>
         <Field label="Notes (optional)" className="col-span-2">

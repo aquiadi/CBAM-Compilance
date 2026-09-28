@@ -19,7 +19,7 @@ const BASE = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/$/, ""
 const OUT = process.env.SHOT_DIR ?? "artifacts/screenshots";
 
 const SCREENS = [
-  ["/", "01-overview"],
+  ["/overview", "01-overview"],
   ["/ingest", "02-data"],
   ["/review", "03-review"],
   ["/calculate", "04-calculate"],
@@ -49,7 +49,9 @@ page.on("pageerror", (e) => errors.push(String(e)));
 
 let failures = 0;
 
-// Sign up through the form, then open the demo from onboarding.
+// The landing page, then sign up through the form and open the demo.
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.screenshot({ path: `${OUT}/00-landing.png`, fullPage: true });
 await page.goto(`${BASE}/signup`, { waitUntil: "networkidle" });
 await page.screenshot({ path: `${OUT}/00-signup.png`, fullPage: true });
 const stamp = Date.now().toString(36);
@@ -61,7 +63,21 @@ await page.getByRole("button", { name: "Create account" }).click();
 await page.waitForURL(`${BASE}/onboarding`, { timeout: 30_000 });
 await page.screenshot({ path: `${OUT}/00-onboarding.png`, fullPage: true });
 await page.getByRole("button", { name: "Open the demo" }).click();
-await page.waitForURL(`${BASE}/`, { timeout: 60_000 });
+await page.waitForURL(`${BASE}/overview**`, { timeout: 60_000 });
+
+// The guided tour starts on the demo: capture its first steps, then leave it.
+const tourDialog = page.getByRole("dialog");
+await tourDialog.waitFor({ timeout: 15_000 });
+await page.waitForTimeout(500);
+await page.screenshot({ path: `${OUT}/00-tour-1.png` });
+for (const n of [2, 3, 4, 5]) {
+  await page.getByRole("button", { name: /Start the tour|Next/ }).click();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: `${OUT}/00-tour-${n}.png` });
+}
+await page.keyboard.press("Escape");
+await tourDialog.waitFor({ state: "detached" });
+console.log("tour: captured 5 steps and closed");
 
 for (const [path, name] of SCREENS) {
   try {

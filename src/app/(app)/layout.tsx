@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       canWrite={ctx.canWrite}
       workspaces={ctx.workspaces.map((w) => ({ id: w.id, name: w.name }))}
       currentWorkspaceId={ctx.workspace?.id ?? null}
+      isDemo={Boolean(ctx.workspace?.name.includes("(demo)"))}
       model={isAiAvailable() ? MODEL : null}
       database={ctx.db.kind}
     >

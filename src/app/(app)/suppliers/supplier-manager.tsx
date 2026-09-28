@@ -63,7 +63,7 @@ export function SupplierManager({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <Card
         title="Suppliers in your data"
         subtitle="From confirmed precursor datasets."
@@ -90,7 +90,7 @@ export function SupplierManager({
                   <Td className="text-ink">
                     {s.supplierName || <span className="text-muted">unnamed</span>}
                   </Td>
-                  <Td className="text-[11px]">
+                  <Td className="text-[12.5px]">
                     <span className="font-mono">{s.cnCode}</span> {s.description.slice(0, 60)}
                   </Td>
                   <Td align="right" numeric>
@@ -213,16 +213,16 @@ export function SupplierManager({
                 <tr key={r.id} className="align-top hover:bg-surface-2">
                   <Td className="text-ink">
                     {r.supplierName}
-                    <div className="text-[10.5px] text-muted">
+                    <div className="text-[12px] text-muted">
                       sent {r.createdAt.slice(0, 10)}
                       {r.supplierEmail ? ` · ${r.supplierEmail}` : ""}
                     </div>
                   </Td>
-                  <Td className="font-mono text-[11px]">{r.cnCode}</Td>
+                  <Td className="font-mono text-[12.5px]">{r.cnCode}</Td>
                   <Td>
                     <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
                   </Td>
-                  <Td className="text-[11px]">
+                  <Td className="text-[12.5px]">
                     {r.submission ? (
                       <>
                         SEE {r.submission.seeDirect} direct / {r.submission.seeIndirect} indirect
@@ -232,20 +232,20 @@ export function SupplierManager({
                         {r.submission.verified
                           ? `verified by ${r.submission.verifierName}`
                           : "not verified"}
-                        <div className="text-[10.5px] text-muted">
+                        <div className="text-[12px] text-muted">
                           {r.submission.installationName}, {r.submission.country} ·{" "}
                           {r.submission.reportingYear} · {r.submission.contactName} &lt;
                           {r.submission.contactEmail}&gt;
                         </div>
                         {r.submission.notes ? (
-                          <div className="text-[10.5px] text-muted">
+                          <div className="text-[12px] text-muted">
                             &quot;{r.submission.notes}&quot;
                           </div>
                         ) : null}
                         {r.fileId ? (
                           <a
                             href={`/api/files/${r.fileId}`}
-                            className="text-[10.5px] text-accent hover:underline"
+                            className="text-[12px] text-accent hover:underline"
                           >
                             Attached document
                           </a>
@@ -322,7 +322,7 @@ export function SupplierManager({
               {accepted.map((a) => (
                 <tr key={a.id}>
                   <Td className="text-ink">{a.supplierName}</Td>
-                  <Td className="font-mono text-[11px]">{a.cnCode}</Td>
+                  <Td className="font-mono text-[12.5px]">{a.cnCode}</Td>
                   <Td align="right" numeric>
                     {a.seeDirect}
                   </Td>
@@ -339,7 +339,7 @@ export function SupplierManager({
                       <Badge tone="warning">not verified</Badge>
                     )}
                   </Td>
-                  <Td className="text-[11px]">
+                  <Td className="text-[12.5px]">
                     {a.acceptedAt.slice(0, 10)} · {a.acceptedBy}
                   </Td>
                   <Td align="right">

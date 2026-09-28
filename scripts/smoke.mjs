@@ -63,10 +63,16 @@ async function main() {
   assert(health.ok, `health: ${JSON.stringify(health)}`);
   step(`health ok (${health.database}, schema v${health.schemaVersion})`);
 
-  // Anonymous users are sent to sign in, and API calls are refused.
+  // Anonymous users see the landing page; the app sends them to sign in, and
+  // API calls are refused.
   const anon = new Client();
-  const home = await anon.request("/", { expect: [307, 308] });
-  assert(home.headers.get("location")?.includes("/login"), "anonymous / redirects to /login");
+  const landing = await (await anon.request("/")).text();
+  assert(landing.includes("Five steps"), "landing page renders");
+  const home = await anon.request("/overview", { expect: [307, 308] });
+  assert(
+    home.headers.get("location")?.includes("/login"),
+    "anonymous /overview redirects to /login",
+  );
   await anon.request("/api/export?format=json", { expect: [401] });
   step("anonymous access refused");
 
@@ -101,7 +107,7 @@ async function main() {
   step("demo workspace created");
 
   for (const path of [
-    "/",
+    "/overview",
     "/ingest",
     "/review",
     "/calculate",
@@ -280,7 +286,7 @@ async function main() {
   step("activity log records every change");
 
   await owner.json("/api/auth/logout", { method: "POST" });
-  await owner.request("/", { expect: [307, 308] });
+  await owner.request("/overview", { expect: [307, 308] });
   step("signed out");
 
   console.log("\nSmoke test passed.");

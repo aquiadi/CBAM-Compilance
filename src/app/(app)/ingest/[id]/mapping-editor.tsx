@@ -160,18 +160,18 @@ export function MappingEditor(props: Props) {
         : props.factors.filter((f) => f.basis !== "electricity");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <Card
         title="Mapping"
         subtitle={schema.description}
         actions={
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted">File contains</span>
+            <span className="text-[12.5px] text-muted">File contains</span>
             <Select
               value={kind}
               disabled={readOnly}
               onChange={(e) => setKind(e.target.value as Kind)}
-              className="w-auto py-1 text-[11.5px]"
+              className="w-auto py-1 text-[13px]"
             >
               {Object.entries(props.schemas).map(([k, s]) => (
                 <option key={k} value={k}>
@@ -186,7 +186,7 @@ export function MappingEditor(props: Props) {
         {props.sheets.length > 0 || props.initial.headerRow > 1 ? (
           <div className="flex flex-wrap items-end gap-4 border-b border-line px-5 py-3">
             {props.sheets.length > 1 ? (
-              <label className="text-[11.5px] text-ink-2">
+              <label className="text-[13px] text-ink-2">
                 Sheet{" "}
                 <Select
                   value={sheet}
@@ -200,7 +200,7 @@ export function MappingEditor(props: Props) {
                 </Select>
               </label>
             ) : null}
-            <label className="text-[11.5px] text-ink-2">
+            <label className="text-[13px] text-ink-2">
               Header on row{" "}
               <Input
                 type="number"
@@ -212,7 +212,7 @@ export function MappingEditor(props: Props) {
                 className="ml-1 inline-block w-20 py-1"
               />
             </label>
-            <span className="text-[10.5px] text-muted">
+            <span className="text-[12px] text-muted">
               Changing the sheet or header row re-reads the file and proposes a fresh mapping.
             </span>
           </div>
@@ -231,8 +231,8 @@ export function MappingEditor(props: Props) {
           <tbody>
             {columns.map((c, i) => (
               <tr key={c.sourceColumn} className="align-top hover:bg-surface-2">
-                <Td className="font-mono text-[11.5px] text-ink">{c.sourceColumn}</Td>
-                <Td className="max-w-[220px] text-[10.5px] text-muted">
+                <Td className="font-mono text-[13px] text-ink">{c.sourceColumn}</Td>
+                <Td className="max-w-[220px] text-[12px] text-muted">
                   {(props.samples[c.sourceColumn] ?? []).slice(0, 3).join(" · ") || "-"}
                 </Td>
                 <Td>
@@ -244,7 +244,7 @@ export function MappingEditor(props: Props) {
                       next[i] = { ...c, targetField: e.target.value || null };
                       setColumns(next);
                     }}
-                    className="py-1 text-[11.5px]"
+                    className="py-1 text-[13px]"
                   >
                     <option value="">- not used -</option>
                     {schema.fields.map((f) => (
@@ -258,7 +258,7 @@ export function MappingEditor(props: Props) {
                       </option>
                     ))}
                   </Select>
-                  <div className="mt-1 max-w-[320px] text-[10.5px] leading-[1.45] text-muted">
+                  <div className="mt-1 max-w-[320px] text-[12px] leading-[1.45] text-muted">
                     {c.rationale}
                   </div>
                 </Td>
@@ -274,7 +274,7 @@ export function MappingEditor(props: Props) {
                         next[i] = { ...c, detectedUnit: e.target.value || null };
                         setColumns(next);
                       }}
-                      className="w-28 py-1 text-[11.5px]"
+                      className="w-28 py-1 text-[13px]"
                     />
                   ) : (
                     <span className="text-muted">-</span>
@@ -306,7 +306,7 @@ export function MappingEditor(props: Props) {
             <option key={u} value={u} />
           ))}
         </datalist>
-        <div className="border-t border-line px-5 py-2.5 text-[10.5px] leading-[1.5] text-muted">
+        <div className="border-t border-line px-5 py-2.5 text-[12px] leading-[1.5] text-muted">
           * required. A unit column on each row wins over the unit in the header. A quantity with no
           unit anywhere is rejected, never assumed.
         </div>
@@ -331,7 +331,7 @@ export function MappingEditor(props: Props) {
               {values.map((v, i) => (
                 <tr key={`${v.target}-${v.sourceValue}`} className="align-top hover:bg-surface-2">
                   <Td className="text-ink">{v.sourceValue}</Td>
-                  <Td className="text-[10.5px] uppercase tracking-wide text-muted">{v.target}</Td>
+                  <Td className="text-[12px] uppercase tracking-wide text-muted">{v.target}</Td>
                   <Td>
                     <Select
                       value={v.resolvedId ?? ""}
@@ -341,7 +341,7 @@ export function MappingEditor(props: Props) {
                         next[i] = { ...v, resolvedId: e.target.value || null };
                         setValues(next);
                       }}
-                      className="py-1 text-[11.5px]"
+                      className="py-1 text-[13px]"
                     >
                       <option value="">- unresolved (rows rejected) -</option>
                       {valueOptions(v.target).map((o) => (
@@ -350,7 +350,7 @@ export function MappingEditor(props: Props) {
                         </option>
                       ))}
                     </Select>
-                    <div className="mt-1 max-w-[380px] text-[10.5px] leading-[1.45] text-muted">
+                    <div className="mt-1 max-w-[380px] text-[12px] leading-[1.45] text-muted">
                       {v.rationale}
                     </div>
                   </Td>
@@ -424,12 +424,12 @@ export function MappingEditor(props: Props) {
             </Button>
           </div>
         ) : (
-          <p className="text-[11.5px] text-muted">
+          <p className="text-[13px] text-muted">
             Your role can view this mapping but not change it.
           </p>
         )}
         {props.missingRequired.length > 0 ? (
-          <p className="text-[11px] text-warning">
+          <p className="text-[12.5px] text-warning">
             Required field{props.missingRequired.length > 1 ? "s" : ""} not mapped:{" "}
             {props.missingRequired.join(", ")}.
           </p>

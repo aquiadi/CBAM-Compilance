@@ -17,7 +17,7 @@ export function LoginForm({ next }: { next?: string }) {
       onSubmit={async (e) => {
         e.preventDefault();
         if (await send("/api/auth/login", { json: { email, password } })) {
-          router.push(next && next.startsWith("/") ? next : "/");
+          router.push(next && next.startsWith("/") && next !== "/" ? next : "/overview");
           router.refresh();
         }
       }}
@@ -106,7 +106,7 @@ export function SignupForm({
         />
       </Field>
       {inviteToken ? (
-        <p className="text-[12px] text-ink-2">
+        <p className="text-[13.5px] text-ink-2">
           You will join <span className="text-ink">{orgName}</span>.
         </p>
       ) : (
@@ -122,7 +122,7 @@ export function SignupForm({
         {pending ? "Creating account…" : "Create account"}
       </Button>
       {!inviteToken ? (
-        <p className="text-center text-[12px] text-muted">
+        <p className="text-center text-[13.5px] text-muted">
           Already have an account?{" "}
           <Link href="/login" className="text-accent hover:underline">
             Sign in
@@ -145,7 +145,7 @@ export function AcceptInvitation({ token, orgName }: { token: string; orgName: s
         disabled={pending}
         onClick={async () => {
           if (await send("/api/invitations/accept", { json: { token } })) {
-            router.push("/");
+            router.push("/overview");
             router.refresh();
           }
         }}

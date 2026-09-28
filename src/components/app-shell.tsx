@@ -3,36 +3,34 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { TourProvider, useTour } from "./tour";
 
 /**
  * The application shell.
  *
  * Navigation follows the actual workflow rather than a feature list: data comes
  * in, gets reviewed, gets calculated, becomes a declaration, and leaves an audit
- * trail. Someone who has never seen the product should be able to read the
- * sidebar and understand what the product does.
+ * trail. Those five steps are the only thing the menu shows by default; the
+ * supporting pages sit under "More" so a first-time visitor reads a path, not a
+ * feature inventory.
  */
 
-const WORKFLOW = [
-  { href: "/", label: "Overview", hint: "Where the declaration stands", step: null },
-  { href: "/ingest", label: "Data", hint: "Upload files, review mappings", step: 1 },
-  { href: "/review", label: "Review", hint: "Findings and data quality", step: 2 },
-  { href: "/calculate", label: "Calculate", hint: "How each number was derived", step: 3 },
-  { href: "/declaration", label: "Declaration", hint: "Goods, cost, exports", step: 4 },
-  { href: "/audit", label: "Audit trail", hint: "Every figure to its source row", step: 5 },
+const STEPS = [
+  { href: "/ingest", label: "Data", hint: "Upload files and check how they were read" },
+  { href: "/review", label: "Review", hint: "Fix what the checks found" },
+  { href: "/calculate", label: "Calculate", hint: "How each number was derived" },
+  { href: "/declaration", label: "Declaration", hint: "Figures, cost and downloads" },
+  { href: "/audit", label: "Audit trail", hint: "Every figure to its source row" },
 ];
 
-const SUPPORT = [
-  { href: "/suppliers", label: "Suppliers", hint: "Request precursor data" },
-  { href: "/evidence", label: "Evidence", hint: "Reports, bills, certificates" },
-  { href: "/activity", label: "Activity log", hint: "Who changed what" },
-  { href: "/methodology", label: "Methodology", hint: "Official tables and rules" },
-];
-
-const SETTINGS = [
-  { href: "/settings", label: "Installation", hint: "Processes, routes, period" },
-  { href: "/settings/team", label: "Team", hint: "Members and roles" },
-  { href: "/settings/workspaces", label: "Workspaces", hint: "Installations and years" },
+const MORE = [
+  { href: "/suppliers", label: "Suppliers" },
+  { href: "/evidence", label: "Evidence" },
+  { href: "/activity", label: "Activity log" },
+  { href: "/methodology", label: "Methodology" },
+  { href: "/settings", label: "Installation settings" },
+  { href: "/settings/team", label: "Team" },
+  { href: "/settings/workspaces", label: "Workspaces" },
 ];
 
 interface Props {
@@ -43,11 +41,20 @@ interface Props {
   canWrite: boolean;
   workspaces: { id: string; name: string }[];
   currentWorkspaceId: string | null;
+  isDemo: boolean;
   model: string | null;
   database: "postgres" | "embedded";
 }
 
-export function AppShell({
+export function AppShell(props: Props) {
+  return (
+    <TourProvider autoStart={props.isDemo}>
+      <Shell {...props} />
+    </TourProvider>
+  );
+}
+
+function Shell({
   children,
   user,
   org,
@@ -60,7 +67,15 @@ export function AppShell({
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const tour = useTour();
   const [switching, setSwitching] = useState(false);
+  const moreActive = MORE.some((m) => isActive(m.href));
+  const [moreOpen, setMoreOpen] = useState(moreActive);
+
+  function isActive(href: string) {
+    if (href === "/settings") return pathname === "/settings";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
 
   async function selectWorkspace(id: string) {
     if (id === "__new") {
@@ -83,168 +98,218 @@ export function AppShell({
     router.refresh();
   }
 
-  const isActive = (href: string) =>
-    href === "/"
-      ? pathname === "/"
-      : href === "/settings"
-        ? pathname === "/settings"
-        : pathname.startsWith(href);
-
   return (
     <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-line bg-surface">
-        <div className="border-b border-line px-5 py-4">
-          <Link href="/" className="group block">
-            <div className="flex items-center gap-2.5">
-              <Mark />
-              <div>
-                <div className="text-[13px] font-semibold leading-none tracking-tight text-ink">
-                  CarbonPass
-                </div>
-                <div className="mt-1 text-[10.5px] leading-none text-muted">
-                  CBAM declaration engine
-                </div>
-              </div>
-            </div>
+      <aside className="fixed inset-y-0 left-0 flex w-[272px] flex-col border-r border-line bg-surface">
+        <div className="px-6 pb-5 pt-6">
+          <Link href="/overview" className="flex items-center gap-3">
+            <Mark />
+            <span className="font-display text-[21px] leading-none text-ink">CarbonPass</span>
           </Link>
         </div>
 
-        <div className="border-b border-line px-3 py-3">
-          <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.13em] text-muted">
-            {org.name}
-          </div>
-          <select
-            aria-label="Workspace"
-            value={currentWorkspaceId ?? ""}
-            disabled={switching}
-            onChange={(e) => selectWorkspace(e.target.value)}
-            className="w-full rounded-md border border-line-strong bg-surface-2 px-2 py-1.5 text-[12px] text-ink outline-none focus:border-accent"
-          >
-            {currentWorkspaceId === null ? <option value="">No workspace yet</option> : null}
-            {workspaces.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-            {canWrite ? <option value="__new">+ New workspace…</option> : null}
-          </select>
+        <div className="px-4 pb-4">
+          <label className="block rounded-xl border border-line bg-surface-2 px-3 py-2.5">
+            <span className="block truncate text-[11.5px] font-medium uppercase tracking-[0.12em] text-muted">
+              {org.name}
+            </span>
+            <select
+              aria-label="Workspace"
+              value={currentWorkspaceId ?? ""}
+              disabled={switching}
+              onChange={(e) => selectWorkspace(e.target.value)}
+              className="mt-0.5 w-full cursor-pointer truncate bg-transparent text-[14px] font-medium text-ink outline-none"
+            >
+              {currentWorkspaceId === null ? <option value="">No workspace yet</option> : null}
+              {workspaces.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+              {canWrite ? <option value="__new">+ New workspace…</option> : null}
+            </select>
+          </label>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
-          <NavGroup title="Workflow">
-            {WORKFLOW.map((item) => (
-              <NavItem
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                hint={item.hint}
-                marker={item.step ?? "·"}
-                active={isActive(item.href)}
-              />
-            ))}
-          </NavGroup>
-          <NavGroup title="Supporting">
-            {SUPPORT.map((item) => (
-              <NavItem key={item.href} {...item} marker="·" active={isActive(item.href)} />
-            ))}
-          </NavGroup>
-          <NavGroup title="Settings">
-            {SETTINGS.map((item) => (
-              <NavItem key={item.href} {...item} marker="·" active={isActive(item.href)} />
-            ))}
-          </NavGroup>
+        <nav className="flex-1 overflow-y-auto px-4 pb-4">
+          <NavLink href="/overview" active={isActive("/overview")}>
+            <span className="flex h-6 w-6 items-center justify-center" aria-hidden>
+              <HomeIcon />
+            </span>
+            <span className="text-[14.5px] font-medium">Overview</span>
+          </NavLink>
+
+          <div className="mt-6 px-3 text-[11.5px] font-medium uppercase tracking-[0.14em] text-muted">
+            Your path
+          </div>
+          <ol className="relative mt-2 space-y-0.5" data-tour="nav-steps">
+            {/* The line that joins the steps. */}
+            <span className="absolute bottom-5 left-[23px] top-5 w-px bg-line-strong" aria-hidden />
+            {STEPS.map((item, i) => {
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
+                  <NavLink href={item.href} active={active} title={item.hint}>
+                    <span
+                      className={
+                        "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold " +
+                        (active
+                          ? "bg-ink text-white"
+                          : "border border-line-strong bg-surface text-ink-2")
+                      }
+                      aria-hidden
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[14.5px] font-medium leading-tight">
+                        {item.label}
+                      </span>
+                      {active ? (
+                        <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">
+                          {item.hint}
+                        </span>
+                      ) : null}
+                    </span>
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ol>
+
+          <div className="mt-6" data-tour="nav-more">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((o) => !o)}
+              aria-expanded={moreOpen}
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11.5px] font-medium uppercase tracking-[0.14em] text-muted hover:text-ink"
+            >
+              More
+              <span
+                aria-hidden
+                className={"text-[14px] transition-transform " + (moreOpen ? "rotate-90" : "")}
+              >
+                ›
+              </span>
+            </button>
+            {moreOpen ? (
+              <ul className="mt-1 space-y-0.5 animate-fade">
+                {MORE.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={
+                        "block rounded-lg px-3 py-1.5 text-[14px] transition-colors " +
+                        (isActive(item.href)
+                          ? "bg-surface-3 font-medium text-ink"
+                          : "text-ink-2 hover:bg-surface-2 hover:text-ink")
+                      }
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </nav>
 
-        <div className="border-t border-line px-4 py-3">
-          <div className="flex items-start justify-between gap-2">
+        <div className="border-t border-line px-4 py-4">
+          <button
+            type="button"
+            onClick={tour.start}
+            className="mb-4 flex w-full items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-left transition-colors hover:border-line-strong"
+          >
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[13px] text-white"
+              aria-hidden
+            >
+              ?
+            </span>
+            <span>
+              <span className="block text-[13.5px] font-medium text-ink">Guided tour</span>
+              <span className="block text-[12px] text-muted">Two minutes, step by step</span>
+            </span>
+          </button>
+          <div className="flex items-center justify-between gap-3 px-1">
             <div className="min-w-0">
-              <div className="truncate text-[11.5px] font-medium text-ink">{user.name}</div>
-              <div className="truncate text-[10.5px] text-muted">{user.email}</div>
-              <div className="mt-0.5 text-[10px] text-muted">{role}</div>
+              <div className="truncate text-[13.5px] font-medium text-ink">{user.name}</div>
+              <div className="truncate text-[12px] text-muted" title={user.email}>
+                {role}
+              </div>
             </div>
             <button
               type="button"
               onClick={signOut}
-              className="shrink-0 rounded border border-line-strong px-2 py-0.5 text-[10.5px] text-ink-2 hover:border-accent hover:text-ink"
+              className="shrink-0 rounded-full border border-line-strong px-3 py-1 text-[12.5px] text-ink-2 hover:border-ink hover:text-ink"
             >
               Sign out
             </button>
           </div>
-          <p className="mt-2.5 text-[10px] leading-[1.5] text-muted">
-            {model ? `Model: ${model}` : "Deterministic mapping (no model key)"} ·{" "}
+          <p className="mt-3 px-1 text-[11.5px] leading-[1.5] text-muted">
+            {model ? `AI: ${model}` : "Rule-based mapping"} ·{" "}
             {database === "postgres" ? "Postgres" : "Embedded database"}
           </p>
         </div>
       </aside>
 
-      <main className="ml-60 min-w-0 flex-1 bg-plane">{children}</main>
+      <main className="ml-[272px] min-w-0 flex-1 bg-plane">{children}</main>
     </div>
   );
 }
 
-function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-3">
-      <div className="mb-1.5 px-2 text-[10px] font-medium uppercase tracking-[0.13em] text-muted">
-        {title}
-      </div>
-      <ul className="space-y-0.5">{children}</ul>
-    </div>
-  );
-}
-
-function NavItem({
+function NavLink({
   href,
-  label,
-  hint,
-  marker,
   active,
+  title,
+  children,
 }: {
   href: string;
-  label: string;
-  hint: string;
-  marker: number | string;
   active: boolean;
+  title?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <li>
-      <Link
-        href={href}
-        className={[
-          "group flex items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors",
-          active ? "bg-surface-3 text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
-        ].join(" ")}
-      >
-        <span
-          className={[
-            "mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded text-[9px] font-semibold tnum",
-            active
-              ? "bg-accent text-plane"
-              : "border border-line text-muted group-hover:border-line-strong",
-          ].join(" ")}
-          aria-hidden
-        >
-          {marker}
-        </span>
-        <span className="min-w-0">
-          <span className="block text-[12.5px] font-medium leading-tight">{label}</span>
-          <span className="mt-0.5 block truncate text-[10.5px] leading-tight text-muted">
-            {hint}
-          </span>
-        </span>
-      </Link>
-    </li>
+    <Link
+      href={href}
+      title={title}
+      aria-current={active ? "page" : undefined}
+      className={
+        "flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors " +
+        (active ? "bg-surface-3 text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink")
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-9.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
 /** A mark that reads as a border crossing: goods on the left, a levy at the line. */
-export function Mark() {
+export function Mark({ size = 30, onDark = false }: { size?: number; onDark?: boolean }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
-      <rect x="0.5" y="0.5" width="25" height="25" rx="6" fill="#181b20" stroke="#2f333b" />
-      <path d="M13 4.5v17" stroke="#3987e5" strokeWidth="1.5" strokeDasharray="2.5 2.5" />
-      <rect x="5" y="11" width="5.5" height="7.5" rx="1" fill="#d95926" />
-      <rect x="15.5" y="8" width="5.5" height="10.5" rx="1" fill="#199e70" />
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden>
+      <rect width="26" height="26" rx="7" fill={onDark ? "#ffffff" : "#16181c"} />
+      <path
+        d="M13 4.5v17"
+        stroke={onDark ? "#16181c" : "#ffffff"}
+        strokeWidth="1.4"
+        strokeDasharray="2.5 2.5"
+      />
+      <rect x="5" y="11" width="5.5" height="7.5" rx="1" fill="#eb6834" />
+      <rect x="15.5" y="8" width="5.5" height="10.5" rx="1" fill="#1baf7a" />
     </svg>
   );
 }

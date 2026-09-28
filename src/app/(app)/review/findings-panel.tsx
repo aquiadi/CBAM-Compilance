@@ -127,22 +127,25 @@ export function FindingsPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1">
+        <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
           {(["all", "blocker", "warning", "info"] as const).map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => setFilter(key)}
               className={cn(
-                "rounded-md px-2.5 py-1 text-[11.5px] font-medium capitalize transition-colors",
+                "rounded-full px-4 py-1.5 text-[13.5px] font-medium capitalize transition-colors",
                 filter === key
-                  ? "bg-surface-3 text-ink"
-                  : "text-muted hover:bg-surface-2 hover:text-ink-2",
+                  ? "bg-ink text-white"
+                  : "text-ink-2 hover:bg-surface-2 hover:text-ink",
               )}
             >
-              {key} <span className="tnum ml-0.5 text-muted">{counts[key]}</span>
+              {key}{" "}
+              <span className={cn("tnum ml-0.5", filter === key ? "text-white/70" : "text-muted")}>
+                {counts[key]}
+              </span>
             </button>
           ))}
         </div>
@@ -152,7 +155,7 @@ export function FindingsPanel({
           onClick={runTriage}
           disabled={!aiAvailable || !canWrite || triageState === "running"}
           title={aiAvailable ? undefined : "Set an API key to enable"}
-          className="rounded-md border border-line-strong bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full border border-line-strong bg-surface px-4 py-1.5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           {triageState === "running" ? "Triaging…" : "Triage with AI"}
         </button>
@@ -164,22 +167,23 @@ export function FindingsPanel({
 
       {visible.length === 0 ? (
         <Card>
-          <p className="py-6 text-center text-[12.5px] text-muted">
+          <p className="py-6 text-center text-[14px] text-muted">
             No {filter === "all" ? "" : filter} findings.
           </p>
         </Card>
       ) : null}
 
-      <div className="space-y-3">
-        {visible.map((f) => {
+      <div className="space-y-4">
+        {visible.map((f, i) => {
           const key = f.code + f.title;
           const t = triage[f.code];
           const excluded = f.alreadyExcluded.length > 0;
           return (
             <div
               key={key}
+              data-tour={i === 0 ? "findings" : undefined}
               className={cn(
-                "rounded-lg border bg-surface p-4",
+                "rounded-2xl border bg-surface p-6 shadow-[var(--shadow-card)]",
                 f.severity === "blocker" ? "border-critical/30" : "border-line",
                 (excluded || f.acknowledged) && "opacity-60",
               )}
@@ -188,8 +192,10 @@ export function FindingsPanel({
                 <div className="flex min-w-0 items-start gap-3">
                   <SeverityBadge severity={f.severity} />
                   <div className="min-w-0">
-                    <h3 className="text-[13px] font-semibold leading-tight text-ink">{f.title}</h3>
-                    <div className="mt-0.5 flex items-center gap-2 text-[10.5px] text-muted">
+                    <h3 className="text-[14.5px] font-semibold leading-tight text-ink">
+                      {f.title}
+                    </h3>
+                    <div className="mt-0.5 flex items-center gap-2 text-[12px] text-muted">
                       <span className="font-mono">{f.code}</span>
                       {f.reference ? <span>· {f.reference}</span> : null}
                       {f.activityIds.length > 0 ? (
@@ -204,7 +210,7 @@ export function FindingsPanel({
                       type="button"
                       onClick={() => acknowledge(f, f.acknowledged)}
                       disabled={busy === key}
-                      className="shrink-0 rounded-md border border-line-strong bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:opacity-40"
+                      className="shrink-0 rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink hover:text-ink disabled:opacity-40"
                     >
                       {f.acknowledged ? "Reopen" : "Accept with note"}
                     </button>
@@ -215,10 +221,10 @@ export function FindingsPanel({
                       onClick={() => exclude(f, excluded)}
                       disabled={busy === key}
                       className={cn(
-                        "shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-40",
+                        "shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-40",
                         excluded
-                          ? "border-line-strong bg-surface-3 text-ink-2 hover:text-ink"
-                          : "border-critical/40 bg-critical/10 text-critical hover:bg-critical/20",
+                          ? "border-line-strong bg-surface text-ink-2 hover:text-ink"
+                          : "border-critical bg-critical text-white hover:opacity-90",
                       )}
                     >
                       {busy === key
@@ -231,32 +237,32 @@ export function FindingsPanel({
                 </div>
               </div>
 
-              <p className="mt-3 text-[12px] leading-[1.6] text-ink-2">{f.detail}</p>
+              <p className="mt-3 text-[13.5px] leading-[1.6] text-ink-2">{f.detail}</p>
 
-              <div className="mt-3 rounded border-l-2 border-l-line-strong bg-surface-2 px-3 py-2 text-[11.5px] leading-[1.55] text-ink-2">
-                <span className="text-muted">Remedy — </span>
+              <div className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-[13.5px] leading-[1.6] text-ink-2">
+                <span className="font-medium text-ink">What to do: </span>
                 {f.remedy}
               </div>
 
               {t ? (
-                <div className="mt-3 rounded-md border border-accent/25 bg-accent/[0.06] p-3">
+                <div className="mt-3 rounded-lg border border-accent/25 bg-accent/[0.06] p-3">
                   <div className="mb-2 flex items-center gap-2">
                     <Badge tone="accent" icon={<span aria-hidden>✦</span>}>
                       Triage · priority {t.priority}
                     </Badge>
-                    <span className="text-[10.5px] text-muted">
+                    <span className="text-[12px] text-muted">
                       {t.effort} of work
                       {t.estimatedImpactT > 0
                         ? ` · ~${t.estimatedImpactT.toLocaleString("en-IN")} tCO₂e at stake`
                         : ""}
                     </span>
                   </div>
-                  <p className="text-[12px] leading-[1.6] text-ink">{t.plainEnglish}</p>
-                  <p className="mt-1.5 text-[11.5px] leading-[1.55] text-ink-2">
+                  <p className="text-[13.5px] leading-[1.6] text-ink">{t.plainEnglish}</p>
+                  <p className="mt-1.5 text-[13px] leading-[1.55] text-ink-2">
                     <span className="text-muted">Likely cause — </span>
                     {t.likelyCause}
                   </p>
-                  <p className="mt-1 text-[11.5px] leading-[1.55] text-ink-2">
+                  <p className="mt-1 text-[13px] leading-[1.55] text-ink-2">
                     <span className="text-muted">Start here — </span>
                     {t.firstStep}
                   </p>
@@ -264,14 +270,14 @@ export function FindingsPanel({
               ) : null}
 
               {f.acknowledgement ? (
-                <p className="mt-3 text-[11px] text-ink-2">
+                <p className="mt-3 text-[12.5px] text-ink-2">
                   <span className="text-good">Accepted</span> by {f.acknowledgement.by} on{" "}
                   {f.acknowledgement.at.slice(0, 10)}: {f.acknowledgement.note}
                 </p>
               ) : null}
 
               {excluded ? (
-                <p className="mt-3 text-[11px] text-warning">
+                <p className="mt-3 text-[12.5px] text-warning">
                   {f.alreadyExcluded.length} record{f.alreadyExcluded.length > 1 ? "s" : ""}{" "}
                   excluded from the calculation. They remain in the audit trail with this finding as
                   the reason.

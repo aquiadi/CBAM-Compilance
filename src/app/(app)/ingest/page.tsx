@@ -37,7 +37,7 @@ export default async function IngestPage() {
       />
       <Page>
         {noProcesses ? (
-          <div className="mb-5">
+          <div className="mb-8">
             <Note tone="warning">
               Define the installation&apos;s production processes first -{" "}
               <Link href="/settings" className="text-accent underline underline-offset-2">
@@ -50,6 +50,7 @@ export default async function IngestPage() {
 
         {ctx.canWrite ? (
           <Card
+            tour="upload"
             title="Upload a file"
             subtitle="One dataset per file. Workbooks: the sheet and header row are detected and can be changed on review."
           >
@@ -57,8 +58,13 @@ export default async function IngestPage() {
           </Card>
         ) : null}
 
-        <div className="mt-5">
-          <Card title="Files" subtitle={`${state.datasets.length} uploaded`} padded={false}>
+        <div className="mt-8">
+          <Card
+            tour="datasets"
+            title="Files"
+            subtitle={`${state.datasets.length} uploaded`}
+            padded={false}
+          >
             {state.datasets.length === 0 ? (
               <div className="p-5">
                 <Empty>No files yet.</Empty>
@@ -82,7 +88,7 @@ export default async function IngestPage() {
                 <tbody>
                   {state.datasets.map((ds) => (
                     <tr key={ds.id} className="hover:bg-surface-2">
-                      <Td className="font-mono text-[11.5px] text-ink">
+                      <Td className="font-mono text-[13px] text-ink">
                         {ds.fileName}
                         {ds.sheetName ? (
                           <span className="text-muted"> [{ds.sheetName}]</span>
@@ -118,17 +124,17 @@ export default async function IngestPage() {
                         <Badge tone={ds.mapping.producedBy === "model" ? "accent" : "neutral"}>
                           {ds.mapping.producedBy === "model"
                             ? (ds.mapping.model ?? "AI model")
-                            : "Deterministic"}
+                            : "Rule-based"}
                         </Badge>
                       </Td>
-                      <Td className="text-[11px]">
+                      <Td className="text-[12.5px]">
                         {ds.uploadedAt.slice(0, 10)}
-                        <div className="text-[10.5px] text-muted">{ds.uploadedBy}</div>
+                        <div className="text-[12px] text-muted">{ds.uploadedBy}</div>
                       </Td>
                       <Td align="right">
                         <Link
                           href={`/ingest/${ds.id}`}
-                          className="text-[11.5px] text-accent hover:underline"
+                          className="text-[13px] text-accent hover:underline"
                         >
                           {ds.status === "draft" && ctx.canWrite ? "Review →" : "Open →"}
                         </Link>

@@ -48,7 +48,7 @@ export function UploadForm({ aiAvailable, maxMb }: { aiAvailable: boolean; maxMb
             type="file"
             accept=".csv,.txt,.xlsx"
             onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
-            className="block w-full text-[12px] text-ink-2 file:mr-3 file:rounded-md file:border file:border-line-strong file:bg-surface-3 file:px-3 file:py-1.5 file:text-[12px] file:text-ink-2"
+            className="block w-full text-[13.5px] text-ink-2 file:mr-3 file:rounded-lg file:border file:border-line-strong file:bg-surface-3 file:px-3 file:py-1.5 file:text-[13.5px] file:text-ink-2"
           />
         </Field>
         <Field label="What it contains" hint="Leave on detect unless the guess is wrong.">
@@ -70,7 +70,7 @@ export function UploadForm({ aiAvailable, maxMb }: { aiAvailable: boolean; maxMb
           </Button>
         </div>
       </div>
-      <label className="flex items-center gap-2 text-[11.5px] text-ink-2">
+      <label className="flex items-center gap-2 text-[13px] text-ink-2">
         <input
           type="checkbox"
           checked={useModel && aiAvailable}

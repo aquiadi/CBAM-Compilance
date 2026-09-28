@@ -12,13 +12,13 @@ export default async function LoginPage({
 }) {
   const session = await optionalUser();
   if (!session) redirect("/setup");
-  if (session.user) redirect("/");
+  if (session.user) redirect("/overview");
   const { next } = await searchParams;
   return (
     <Card title="Sign in">
       <LoginForm next={next} />
       {env.CARBONPASS_SIGNUP === "open" ? (
-        <p className="mt-4 text-center text-[12px] text-muted">
+        <p className="mt-4 text-center text-[13.5px] text-muted">
           New here?{" "}
           <Link href="/signup" className="text-accent hover:underline">
             Create an account

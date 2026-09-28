@@ -52,12 +52,12 @@ export default async function ActivityPage() {
               <tbody>
                 {events.map((e) => (
                   <tr key={e.id} className="align-top hover:bg-surface-2">
-                    <Td className="tnum whitespace-nowrap text-[11px]">
+                    <Td className="tnum whitespace-nowrap text-[12.5px]">
                       {e.createdAt.replace("T", " ").slice(0, 19)}
                     </Td>
-                    <Td className="text-[11.5px]">{e.actorLabel}</Td>
-                    <Td className="font-mono text-[11px] text-ink">{e.action}</Td>
-                    <Td className="text-[11px] text-muted">{describe(e.detail)}</Td>
+                    <Td className="text-[13px]">{e.actorLabel}</Td>
+                    <Td className="font-mono text-[12.5px] text-ink">{e.action}</Td>
+                    <Td className="text-[12.5px] text-muted">{describe(e.detail)}</Td>
                   </tr>
                 ))}
               </tbody>

@@ -87,7 +87,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
             {ds.fileId ? (
               <a
                 href={`/api/files/${ds.fileId}`}
-                className="rounded-md border border-line-strong bg-surface-3 px-2.5 py-1 text-[11px] text-ink-2 hover:border-accent hover:text-ink"
+                className="rounded-lg border border-line-strong bg-surface px-2.5 py-1 text-[12.5px] text-ink-2 hover:border-ink hover:text-ink"
               >
                 Download source
               </a>
@@ -96,7 +96,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
         }
       />
       <Page>
-        <div className="mb-5 space-y-2">
+        <div className="mb-8 space-y-2">
           {readError ? <Note tone="critical">{readError}</Note> : null}
           {ds.aiOutcome.fallbackReason && ds.aiOutcome.producedBy === "heuristic" ? (
             <Note>Mapped by the deterministic mapper: {ds.aiOutcome.fallbackReason}</Note>
@@ -160,7 +160,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
         />
 
         {ds.rejected.length > 0 ? (
-          <div className="mt-5">
+          <div className="mt-8">
             <Card
               title={`${ds.rejected.length} rows not imported`}
               subtitle="They carry data but could not become records. Each raises a blocking finding while the file is confirmed - fix the mapping or the source."
@@ -181,7 +181,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
                         {r.row}
                       </Td>
                       <Td className="text-ink-2">{r.reason}</Td>
-                      <Td className="font-mono text-[10.5px] text-muted">
+                      <Td className="font-mono text-[12px] text-muted">
                         {Object.entries(r.raw)
                           .filter(([, v]) => v)
                           .slice(0, 5)
@@ -193,7 +193,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
                 </tbody>
               </Table>
               {ds.rejected.length > 100 ? (
-                <p className="px-5 py-2 text-[11px] text-muted">
+                <p className="px-5 py-2 text-[12.5px] text-muted">
                   and {ds.rejected.length - 100} more.
                 </p>
               ) : null}
@@ -202,7 +202,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
         ) : null}
 
         {ds.skipped.length > 0 ? (
-          <div className="mt-5">
+          <div className="mt-8">
             <Card
               title={`${ds.skipped.length} rows outside CBAM scope`}
               subtitle="Read correctly, but the goods are not in Annex I, so they carry no embedded emissions."
@@ -223,7 +223,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
                       <Td align="right" numeric>
                         {r.row}
                       </Td>
-                      <Td className="font-mono text-[11px]">{r.cnCode}</Td>
+                      <Td className="font-mono text-[12.5px]">{r.cnCode}</Td>
                       <Td>{r.description}</Td>
                       <Td className="text-muted">{r.reason}</Td>
                     </tr>
@@ -234,7 +234,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
           </div>
         ) : null}
 
-        <div className="mt-5">
+        <div className="mt-8">
           <Card
             title="Records this mapping produces"
             subtitle={`First ${Math.min(20, ds.activities.length)} of ${fmt(ds.activities.length)}, each traced to its row.`}
@@ -278,11 +278,11 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
                       </Td>
                       <Td>{a.kind.replace("_", " ")}</Td>
                       <Td>{processes.find((p) => p.id === a.processId)?.name ?? a.processId}</Td>
-                      <Td className="tnum text-[11px]">{a.periodStart.slice(0, 7)}</Td>
+                      <Td className="tnum text-[12.5px]">{a.periodStart.slice(0, 7)}</Td>
                       <Td align="right" numeric>
                         {fmt(Number(q), 2)} <span className="text-muted">{unit}</span>
                       </Td>
-                      <Td className="text-[11px] text-muted">{detail}</Td>
+                      <Td className="text-[12.5px] text-muted">{detail}</Td>
                     </tr>
                   );
                 })}

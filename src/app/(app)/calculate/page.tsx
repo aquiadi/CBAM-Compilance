@@ -34,7 +34,7 @@ export default async function CalculatePage() {
 
       <Page>
         {d.internalWarnings.length > 0 ? (
-          <div className="mb-5 space-y-2">
+          <div className="mb-8 space-y-2">
             {d.internalWarnings.map((w, i) => (
               <Note key={i} tone="warning">
                 {w}
@@ -123,14 +123,14 @@ export default async function CalculatePage() {
                     { label: "SEE total", value: seeDirect + seeIndirect, unit: "tCO₂e/t", dp: 4 },
                   ].map((m) => (
                     <div key={m.label} className="bg-surface px-5 py-3">
-                      <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+                      <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                         {m.label}
                       </div>
                       <div className="mt-1.5 flex items-baseline gap-1.5">
                         <span className="tnum text-[17px] font-semibold text-ink">
                           {fmt(m.value, m.dp ?? 0)}
                         </span>
-                        <span className="text-[10.5px] text-muted">{m.unit}</span>
+                        <span className="text-[12px] text-muted">{m.unit}</span>
                       </div>
                     </div>
                   ))}
@@ -150,7 +150,7 @@ export default async function CalculatePage() {
                   <div key={g.key} className="border-t border-line">
                     <div className="flex items-center gap-2 px-5 py-2">
                       <span className="h-2 w-2 rounded-sm" style={{ background: g.color }} />
-                      <span className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+                      <span className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                         {g.label}
                       </span>
                     </div>
@@ -184,8 +184,8 @@ export default async function CalculatePage() {
                                   <span className="text-muted">—</span>
                                 )}
                               </Td>
-                              <Td className="font-mono text-[10.5px] text-muted">{c.formula}</Td>
-                              <Td className="max-w-[260px] text-[11px] text-muted">
+                              <Td className="font-mono text-[12px] text-muted">{c.formula}</Td>
+                              <Td className="max-w-[260px] text-[12.5px] text-muted">
                                 {c.reference ?? source ?? "—"}
                               </Td>
                               <Td align="right" numeric>
@@ -210,7 +210,7 @@ export default async function CalculatePage() {
                 ) : null}
 
                 <div className="border-t border-line bg-surface-2 px-5 py-3">
-                  <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[11.5px]">
+                  <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[13px]">
                     <span className="text-muted">Annex IV:</span>
                     <span className="font-mono text-ink-2">
                       SEE<sub>direct</sub> = ({fmt(e.directT, 0)} +{" "}
@@ -225,10 +225,10 @@ export default async function CalculatePage() {
                   .filter((g) => g.processId === e.processId)
                   .map((g) => (
                     <div key={g.cnCode} className="border-t border-line px-5 py-3">
-                      <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+                      <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                         Free allocation adjustment · CN {g.cnCode}
                       </div>
-                      <div className="mt-2 font-mono text-[11.5px] leading-[1.7] text-ink-2">
+                      <div className="mt-2 font-mono text-[13px] leading-[1.7] text-ink-2">
                         SFA<sub>process</sub> = {(d.sefa.cbamFactor * 100).toFixed(1)}% CBAM factor
                         × CSCF {d.sefa.cscf} ×{" "}
                         {g.benchmark

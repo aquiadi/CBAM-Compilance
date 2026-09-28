@@ -40,7 +40,7 @@ export function WorkspaceList({
               <Td align="right" numeric>
                 {w.year}
               </Td>
-              <Td className="text-[11px]">{w.updatedAt.replace("T", " ").slice(0, 16)}</Td>
+              <Td className="text-[12.5px]">{w.updatedAt.replace("T", " ").slice(0, 16)}</Td>
               <Td align="right">
                 <div className="flex justify-end gap-1">
                   {w.id !== currentId ? (
@@ -49,7 +49,7 @@ export function WorkspaceList({
                       disabled={pending}
                       onClick={async () => {
                         if (await send("/api/workspaces/select", { json: { workspaceId: w.id } })) {
-                          router.push("/");
+                          router.push("/overview");
                           router.refresh();
                         }
                       }}

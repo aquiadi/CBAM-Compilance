@@ -48,7 +48,7 @@ export function EvidenceManager({
   const kb = (n: number) => `${(n / 1024).toFixed(n < 10240 ? 1 : 0)} KB`;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {canWrite ? (
         <Card title="Add evidence">
           <div className="grid grid-cols-4 gap-3">
@@ -56,7 +56,7 @@ export function EvidenceManager({
               <input
                 ref={file}
                 type="file"
-                className="block w-full text-[12px] text-ink-2 file:mr-3 file:rounded-md file:border file:border-line-strong file:bg-surface-3 file:px-3 file:py-1.5 file:text-[12px] file:text-ink-2"
+                className="block w-full text-[13.5px] text-ink-2 file:mr-3 file:rounded-lg file:border file:border-line-strong file:bg-surface-3 file:px-3 file:py-1.5 file:text-[13.5px] file:text-ink-2"
               />
             </Field>
             <Field label="Category" className="col-span-2">
@@ -120,12 +120,12 @@ export function EvidenceManager({
                     <a href={`/api/files/${f.id}`} className="hover:text-accent">
                       {f.label ?? f.fileName}
                     </a>
-                    <div className="text-[10.5px] text-muted">
+                    <div className="text-[12px] text-muted">
                       {f.fileName} · {kb(f.sizeBytes)}
                     </div>
                   </Td>
-                  <Td className="text-[11px]">{categoryLabel(f.category)}</Td>
-                  <Td className="text-[11px]">
+                  <Td className="text-[12.5px]">{categoryLabel(f.category)}</Td>
+                  <Td className="text-[12.5px]">
                     {[
                       f.links.supplierName,
                       f.links.findingCode,
@@ -134,11 +134,11 @@ export function EvidenceManager({
                       .filter(Boolean)
                       .join(" · ") || "-"}
                   </Td>
-                  <Td className="text-[11px]">
+                  <Td className="text-[12.5px]">
                     {f.createdAt.slice(0, 10)}
-                    <div className="text-[10.5px] text-muted">{f.uploadedByLabel}</div>
+                    <div className="text-[12px] text-muted">{f.uploadedByLabel}</div>
                   </Td>
-                  <Td className="font-mono text-[10px] text-muted">{f.sha256.slice(0, 12)}…</Td>
+                  <Td className="font-mono text-[11.5px] text-muted">{f.sha256.slice(0, 12)}…</Td>
                   <Td align="right">
                     {canWrite ? (
                       <Button
@@ -183,18 +183,18 @@ export function EvidenceManager({
             <tbody>
               {sources.map((f) => (
                 <tr key={f.id} className="hover:bg-surface-2">
-                  <Td className="font-mono text-[11.5px] text-ink">
+                  <Td className="font-mono text-[13px] text-ink">
                     <a href={`/api/files/${f.id}`} className="hover:text-accent">
                       {f.fileName}
                     </a>
                   </Td>
-                  <Td className="text-[11px]">
+                  <Td className="text-[12.5px]">
                     {f.createdAt.slice(0, 10)} · {f.uploadedByLabel}
                   </Td>
                   <Td align="right" numeric>
                     {kb(f.sizeBytes)}
                   </Td>
-                  <Td className="font-mono text-[10px] text-muted">{f.sha256}</Td>
+                  <Td className="font-mono text-[11.5px] text-muted">{f.sha256}</Td>
                 </tr>
               ))}
             </tbody>

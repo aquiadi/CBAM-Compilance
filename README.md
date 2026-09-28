@@ -56,6 +56,18 @@ number traceable to the source file and row it came from.
 - **Teams.** Organisations, several installations and years each, and four roles: owner, editor,
   viewer and verifier. An append-only activity log records who changed what.
 
+## Finding your way around
+
+- **`/`** is a public landing page: what CarbonPass does, who it is for, and how the app is laid out.
+- **Sign up**, then choose **Open the demo**. A **guided tour** starts on its own. It walks the
+  workflow across pages, one highlighted element at a time, with Back, Next and Skip (the arrow keys
+  and Esc work too). Replay it any time from **Guided tour** at the bottom of the menu.
+- **The menu is the workflow**: Overview, then five numbered steps (Data, Review, Calculate,
+  Declaration, Audit trail). Suppliers, evidence, the activity log, methodology, team and plant
+  settings sit under **More**.
+- **Overview** always shows readiness, the single next step and the three figures that matter.
+  Charts and tables that explain them are folded under **More detail**.
+
 ## The demo
 
 "Open the demo" after signing up loads Raigarh Works, a DRI–EAF steel plant in Chhattisgarh. It
@@ -362,7 +374,8 @@ src/
   lib/auth/                Accounts, sessions, roles
   lib/workspace/           Versioned workspace state, datasets, demo seed
   lib/exports/             XLSX report, monitoring methodology, verifier pack
-  app/(app)/               The signed-in product
+  app/(site)/              The public landing page at /
+  app/(app)/               The signed-in product (starts at /overview)
   app/(auth)/              Sign-in, sign-up, onboarding, invitations, setup
   app/(public)/supplier/   The supplier portal
   app/api/                 Route handlers

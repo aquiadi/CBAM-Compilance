@@ -4,7 +4,7 @@ import { Card, Note } from "@/components/ui";
 export default function SetupPage() {
   return (
     <Card title="Connect a database">
-      <div className="space-y-3 text-[12.5px] leading-[1.65] text-ink-2">
+      <div className="space-y-3 text-[14px] leading-[1.65] text-ink-2">
         <p>
           This deployment has no database configured. On Vercel the filesystem is not persistent and
           functions do not share memory, so CarbonPass needs a Postgres database to keep your data.
@@ -13,7 +13,7 @@ export default function SetupPage() {
           <li>
             In your Vercel project open <span className="text-ink">Storage</span> and add a{" "}
             <span className="text-ink">Neon Postgres</span> database (free tier is enough). It sets{" "}
-            <span className="font-mono text-[11.5px]">DATABASE_URL</span> for you.
+            <span className="font-mono text-[13px]">DATABASE_URL</span> for you.
           </li>
           <li>Redeploy. Tables are created automatically on first request.</li>
         </ol>

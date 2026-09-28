@@ -45,14 +45,14 @@ export function MemoPanel({ aiAvailable }: { aiAvailable: boolean }) {
           type="button"
           onClick={generate}
           disabled={state === "streaming"}
-          className="rounded-md border border-line-strong bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-accent hover:text-ink disabled:opacity-40"
+          className="rounded-lg border border-line-strong bg-surface px-2.5 py-1 text-[12.5px] font-medium text-ink-2 transition-colors hover:border-ink hover:text-ink disabled:opacity-40"
         >
           {state === "streaming" ? "Writing…" : text ? "Regenerate" : "Generate memo"}
         </button>
       }
     >
       {state === "idle" && !text ? (
-        <p className="text-[12px] leading-[1.6] text-muted">
+        <p className="text-[13.5px] leading-[1.6] text-muted">
           {aiAvailable
             ? "Generates from the computed declaration, not the raw data — the model cannot recompute a figure, only describe the ones the engine produced."
             : "No API key is set, so this returns the deterministic memo. It carries the same content, written by template rather than by the model."}
@@ -60,11 +60,11 @@ export function MemoPanel({ aiAvailable }: { aiAvailable: boolean }) {
       ) : null}
 
       {state === "error" ? (
-        <p className="text-[12px] text-critical">Memo generation failed.</p>
+        <p className="text-[13.5px] text-critical">Memo generation failed.</p>
       ) : null}
 
       {text ? (
-        <article className="max-h-[560px] overflow-y-auto whitespace-pre-wrap font-mono text-[11.5px] leading-[1.7] text-ink-2">
+        <article className="max-h-[560px] overflow-y-auto whitespace-pre-wrap font-mono text-[13px] leading-[1.7] text-ink-2">
           {text}
           {state === "streaming" ? (
             <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-accent align-middle" />

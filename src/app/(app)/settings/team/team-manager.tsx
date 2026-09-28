@@ -34,7 +34,7 @@ export function TeamManager({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <Card title="Members" padded={false}>
         <Table>
           <thead>
@@ -65,7 +65,7 @@ export function TeamManager({
                         )
                           router.refresh();
                       }}
-                      className="w-36 py-1 text-[11.5px]"
+                      className="w-36 py-1 text-[13px]"
                     >
                       {roles.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -77,7 +77,7 @@ export function TeamManager({
                     roles.find((r) => r.id === m.role)?.label
                   )}
                 </Td>
-                <Td className="text-[11px]">{m.since.slice(0, 10)}</Td>
+                <Td className="text-[12.5px]">{m.since.slice(0, 10)}</Td>
                 <Td align="right">
                   {isOwner || m.userId === currentUserId ? (
                     <Button
@@ -137,14 +137,14 @@ export function TeamManager({
           ) : null}
           {invitations.length > 0 ? (
             <div className="mt-4">
-              <div className="mb-1.5 text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+              <div className="mb-1.5 text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                 Pending
               </div>
               <ul className="space-y-1.5">
                 {invitations.map((inv) => (
                   <li
                     key={inv.id}
-                    className="flex items-center justify-between text-[12px] text-ink-2"
+                    className="flex items-center justify-between text-[13.5px] text-ink-2"
                   >
                     <span>
                       {inv.email} · {roles.find((r) => r.id === inv.role)?.label} · expires{" "}

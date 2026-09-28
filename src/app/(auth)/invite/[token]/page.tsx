@@ -25,7 +25,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   const role = ROLES[invitation.role];
   const header = (
-    <p className="mb-4 text-[12.5px] leading-[1.6] text-ink-2">
+    <p className="mb-4 text-[14px] leading-[1.6] text-ink-2">
       You have been invited to <span className="text-ink">{invitation.orgName}</span> as{" "}
       <span className="text-ink">{role.label}</span> - {role.description.toLowerCase()}
     </p>

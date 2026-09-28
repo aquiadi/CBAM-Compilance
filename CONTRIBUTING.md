@@ -35,8 +35,16 @@ true })` (or `roles: ["owner"]`) from `src/lib/auth/context.ts`; it also refuses
   an applied one.
 - **Chart colours come from `src/lib/palette.ts`**, which is a plain module on purpose. An export
   from a `"use client"` module read by a server component resolves to a client reference rather
-  than the value, and paints the mark black. The palette _order_ is the colourblind-safety
-  mechanism; re-run the validator before changing a hue.
+  than the value, and paints the mark black. The series are the light categorical steps validated
+  against the white card surface; the palette _order_ is the colourblind-safety mechanism, so
+  re-run the validator before changing a hue. Status colours used as text are the darker
+  `STATUS_INK` steps, because the chart status steps are too light to read on white.
+- **Design tokens live in `src/app/globals.css`.** The style is paper, ink and one blue, with
+  generous space. Put new secondary detail behind a `Disclosure` rather than adding another card to
+  the first screen.
+- **Keep the guided tour working.** Its steps (`src/components/tour.tsx`) point at `data-tour`
+  attributes. If you move or rename one of those elements, move the attribute with it; a missing
+  target falls back to a centred card, but the step then loses its highlight.
 - **Confidence must be calibrated.** It decides what a human is asked to review, so inflating it
   defeats the review step. The deterministic mapper caps itself at 0.90 for this reason.
 

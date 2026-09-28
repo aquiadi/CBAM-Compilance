@@ -30,8 +30,10 @@ export default async function SupplierPage({ params }: { params: Promise<{ token
       <div className="mb-8 flex items-center gap-2.5">
         <Mark />
         <div>
-          <div className="text-[14px] font-semibold leading-none text-ink">CarbonPass</div>
-          <div className="mt-1 text-[11px] leading-none text-muted">CBAM supplier data request</div>
+          <div className="text-[15.5px] font-semibold leading-none text-ink">CarbonPass</div>
+          <div className="mt-1 text-[12.5px] leading-none text-muted">
+            CBAM supplier data request
+          </div>
         </div>
       </div>
       <div className="w-full max-w-[640px]">
@@ -58,7 +60,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ token
                   {request.message}
                 </Note>
               ) : null}
-              <p className="text-[12px] leading-[1.65] text-ink-2">
+              <p className="text-[13.5px] leading-[1.65] text-ink-2">
                 Under the EU Carbon Border Adjustment Mechanism your customer must report the
                 emissions embedded in the{" "}
                 {lookupGoods(request.cnCode)?.description.toLowerCase() ?? "goods"} they buy from

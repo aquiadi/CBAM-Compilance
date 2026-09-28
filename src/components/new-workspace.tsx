@@ -25,22 +25,22 @@ export function NewWorkspace({ needsOrganisation }: { needsOrganisation: boolean
       json: { ...json, organisation: needsOrganisation ? organisation : undefined },
     });
     if (r) {
-      router.push(json.mode === "blank" ? "/settings" : "/");
+      router.push(json.mode === "blank" ? "/settings" : "/overview?tour=1");
       router.refresh();
     }
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {needsOrganisation ? (
         <Field label="Organisation" hint="Your company - the exporter.">
           <Input value={organisation} onChange={(e) => setOrganisation(e.target.value)} required />
         </Field>
       ) : null}
 
-      <div className="rounded-lg border border-line bg-surface-2 p-4">
-        <h3 className="text-[13px] font-semibold text-ink">Explore the demo plant</h3>
-        <p className="mt-1 text-[11.5px] leading-[1.6] text-ink-2">
+      <div className="rounded-xl border border-line bg-surface-2 p-6">
+        <h3 className="text-[14.5px] font-semibold text-ink">Explore the demo plant</h3>
+        <p className="mt-1 text-[13px] leading-[1.6] text-ink-2">
           A Chhattisgarh DRI-EAF steel plant with eight months of real-shaped data: five files from
           SAP, the DISCOM and the despatch register, each with the defects real exports carry. See
           the whole workflow in a minute; delete it whenever you like.
@@ -56,14 +56,14 @@ export function NewWorkspace({ needsOrganisation }: { needsOrganisation: boolean
       </div>
 
       <form
-        className="rounded-lg border border-line bg-surface-2 p-4"
+        className="rounded-xl border border-line bg-surface-2 p-6"
         onSubmit={(e) => {
           e.preventDefault();
           void create({ mode: "blank", ...form });
         }}
       >
-        <h3 className="text-[13px] font-semibold text-ink">Set up my installation</h3>
-        <p className="mt-1 text-[11.5px] leading-[1.6] text-ink-2">
+        <h3 className="text-[14.5px] font-semibold text-ink">Set up my installation</h3>
+        <p className="mt-1 text-[13px] leading-[1.6] text-ink-2">
           One workspace per installation and reporting year. You will define the production
           processes next, then upload your files.
         </p>

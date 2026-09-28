@@ -78,13 +78,13 @@ export function ExposureControls({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-2 gap-7">
         <label className="block">
           <div className="flex items-baseline justify-between">
-            <span className="text-[11.5px] font-medium text-ink-2">
+            <span className="text-[13px] font-medium text-ink-2">
               Price for unpublished quarters
             </span>
-            <span className="tnum text-[12.5px] text-ink">€{price}</span>
+            <span className="tnum text-[14px] text-ink">€{price}</span>
           </div>
           <input
             type="range"
@@ -97,9 +97,9 @@ export function ExposureControls({
             onMouseUp={() => commit({ etsPriceEur: price })}
             onTouchEnd={() => commit({ etsPriceEur: price })}
             onKeyUp={() => commit({ etsPriceEur: price })}
-            className="mt-2 w-full accent-[#3987e5]"
+            className="mt-2 w-full accent-[#1f5bd8]"
           />
-          <p className="mt-1 text-[10.5px] text-muted">
+          <p className="mt-1 text-[12px] text-muted">
             Published quarters use the Commission&apos;s price; this applies to the rest and to
             later years.
           </p>
@@ -107,8 +107,8 @@ export function ExposureControls({
 
         <label className="block">
           <div className="flex items-baseline justify-between">
-            <span className="text-[11.5px] font-medium text-ink-2">INR per EUR</span>
-            <span className="tnum text-[12.5px] text-ink">₹{inr}</span>
+            <span className="text-[13px] font-medium text-ink-2">INR per EUR</span>
+            <span className="tnum text-[14px] text-ink">₹{inr}</span>
           </div>
           <input
             type="number"
@@ -119,9 +119,9 @@ export function ExposureControls({
             disabled={!canWrite}
             onChange={(e) => setInr(Number(e.target.value))}
             onBlur={() => commit({ inrPerEur: inr })}
-            className="mt-2 w-full rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-accent"
+            className="mt-2 w-full rounded-lg border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[14px] text-ink outline-none focus:border-accent"
           />
-          <p className="mt-1 text-[10.5px] text-muted">For budgeting in rupees only.</p>
+          <p className="mt-1 text-[12px] text-muted">For budgeting in rupees only.</p>
         </label>
       </div>
 
@@ -130,7 +130,7 @@ export function ExposureControls({
           {pricing.map((p) => (
             <span
               key={p.quarter}
-              className="rounded border border-line bg-surface-2 px-2 py-1 text-[10.5px] text-ink-2"
+              className="rounded border border-line bg-surface-2 px-2 py-1 text-[12px] text-ink-2"
             >
               {p.quarter}: {fmt(p.euTonnes)} t at €{p.priceEur.toFixed(2)}{" "}
               <span className="text-muted">({p.basis})</span>
@@ -139,34 +139,34 @@ export function ExposureControls({
         </div>
       ) : null}
 
-      <div className="mt-5 border-t border-line pt-4">
+      <div className="mt-8 border-t border-line pt-4">
         <dl className="space-y-2">
           {rows.map(([label, value, hint]) => (
             <div key={label} className="flex items-baseline justify-between gap-4">
-              <dt className="text-[11.5px] text-ink-2">
+              <dt className="text-[13px] text-ink-2">
                 {label}
-                {hint ? <span className="ml-1.5 text-[10.5px] text-muted">({hint})</span> : null}
+                {hint ? <span className="ml-1.5 text-[12px] text-muted">({hint})</span> : null}
               </dt>
-              <dd className="tnum shrink-0 text-[12.5px] text-ink">{value}</dd>
+              <dd className="tnum shrink-0 text-[14px] text-ink">{value}</dd>
             </div>
           ))}
         </dl>
 
         <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
-          <span className="text-[12px] font-medium text-ink">Cost for this period</span>
+          <span className="text-[13.5px] font-medium text-ink">Cost for this period</span>
           <div className="text-right">
             <div
               className={`text-[26px] font-semibold leading-none tracking-[-0.02em] text-accent ${saving || pending ? "opacity-50" : ""}`}
             >
               {fmtEur(summary.netCostEur)}
             </div>
-            <div className="mt-1 text-[11px] text-muted">
+            <div className="mt-1 text-[12.5px] text-muted">
               ₹{fmtCompact(summary.netCostInr)} · average €{summary.effectivePriceEur.toFixed(2)}
               /certificate
             </div>
           </div>
         </div>
-        <div className="mt-3 flex items-baseline justify-between text-[11.5px]">
+        <div className="mt-3 flex items-baseline justify-between text-[13px]">
           <span className="text-ink-2">The same goods on default values</span>
           <span className="tnum text-ink-2">
             {fmt(summary.defaultCertificates)} certificates · {fmtEur(summary.defaultCostEur)}

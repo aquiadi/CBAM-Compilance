@@ -3,57 +3,94 @@
 /*
  * CarbonPass design tokens.
  *
- * A dark instrument panel, committed to deliberately rather than themed: this
- * is a tool someone stares at for an hour reconciling a furnace log, and the
- * chrome should disappear behind the data.
+ * Paper, ink and one blue. The product is read by plant accountants and
+ * sustainability leads who are new to CBAM, so the page should feel like a
+ * well-set report rather than a control room: warm off-white paper, white
+ * cards with generous padding, near-black ink, and colour spent only where it
+ * carries meaning (a series in a chart, a status, the next action).
  *
- * The four series colours are the validated dark categorical steps, checked
- * against this exact surface (#131519) for the lightness band, chroma floor,
- * adjacent-pair CVD separation, normal-vision separation and 3:1 contrast.
- * Do not substitute a hue here without re-running that check - the palette
- * order is the colourblind-safety mechanism, not decoration.
+ * Series colours are the validated LIGHT categorical steps, checked against the
+ * card surface (#ffffff): lightness band, chroma floor, adjacent-pair CVD and
+ * normal-vision separation all pass. Aqua and yellow sit below 3:1 on white,
+ * so every chart that uses them carries visible labels or a table view. The
+ * order is the colourblind-safety mechanism; do not reassign a hue without
+ * re-running the validator.
+ *
+ * Status colours used for TEXT are darker steps of the chart status hues, so
+ * a "Warning" label is legible on white. Chart marks keep the fixed status
+ * steps from src/lib/palette.ts. Status never ships as colour alone.
  */
 @theme {
-  --color-plane: #0b0c0e;
-  --color-surface: #131519;
-  --color-surface-2: #181b20;
-  --color-surface-3: #1e222a;
-  --color-line: #23262c;
-  --color-line-strong: #2f333b;
+  --color-plane: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f3ee;
+  --color-surface-3: #ebe9e2;
+  --color-line: #e8e5dd;
+  --color-line-strong: #d6d2c7;
 
-  --color-ink: #f2f4f7;
-  --color-ink-2: #a7aeb9;
-  --color-muted: #6e7682;
+  --color-ink: #16181c;
+  --color-ink-2: #4a4e56;
+  --color-muted: #686c74;
 
   /* Categorical series - fixed order, never cycled. */
-  --color-series-1: #d95926; /* direct / combustion */
-  --color-series-2: #3987e5; /* indirect / electricity */
-  --color-series-3: #199e70; /* precursors */
-  --color-series-4: #c98500; /* other */
+  --color-series-1: #eb6834; /* direct / combustion */
+  --color-series-2: #2a78d6; /* indirect / electricity */
+  --color-series-3: #1baf7a; /* precursors */
+  --color-series-4: #eda100; /* other */
 
-  /* Status - reserved, never reused as a series colour. */
-  --color-good: #0ca30c;
-  --color-warning: #fab219;
-  --color-serious: #ec835a;
-  --color-critical: #d03b3b;
+  /* Status, as text and badge ink on white. */
+  --color-good: #117a2c;
+  --color-warning: #95610a;
+  --color-serious: #b04a1f;
+  --color-critical: #c0312f;
 
-  --color-accent: #3987e5;
+  --color-accent: #1f5bd8;
+  --color-accent-ink: #ffffff;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-display: "Newsreader Variable", "Newsreader", Georgia, "Times New Roman", serif;
+
+  --shadow-card: 0 1px 2px rgb(22 24 28 / 0.04), 0 1px 1px rgb(22 24 28 / 0.02);
+  --shadow-float: 0 12px 40px -12px rgb(22 24 28 / 0.28), 0 2px 6px rgb(22 24 28 / 0.06);
+
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade: fade 0.3s ease-out both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
     background: var(--color-plane);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
-    font-feature-settings: "cv05", "ss01";
+    text-rendering: optimizeLegibility;
   }
 
   /* Columns of numbers must align; standalone display figures must not, because
@@ -63,8 +100,20 @@
     font-family: var(--font-mono);
   }
 
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.015em;
+  }
+
   ::selection {
-    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+    background: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 
   ::-webkit-scrollbar {
@@ -79,8 +128,14 @@
     border-radius: 999px;
     border: 3px solid var(--color-plane);
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #3d424c;
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -90,12 +145,45 @@
     border-color: var(--color-line);
   }
 
-  .grain {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      color-mix(in oklab, var(--color-ink) 6%, transparent) 1px,
-      transparent 0
-    );
-    background-size: 4px 4px;
+  /* Faint ledger ruling behind the landing hero. */
+  .ledger {
+    background-image: linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+    background-size: 100% 32px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: #fff;
+    padding: 0.7rem 1.35rem;
+    font-size: 14.5px;
+    font-weight: 500;
+    transition:
+      transform 0.15s ease,
+      background 0.15s ease;
+  }
+  .btn-primary:hover {
+    background: #000;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    padding: 0.7rem 1.35rem;
+    font-size: 14.5px;
+    font-weight: 500;
+    transition: border-color 0.15s ease;
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-ink);
   }
 }

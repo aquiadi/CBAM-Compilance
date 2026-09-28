@@ -144,7 +144,7 @@ export function InstallationEditor({
   const ro = !canWrite;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <Card
         title="Installation details"
         subtitle="As communicated to importers (sheet A_InstData of the communication template)."
@@ -273,7 +273,7 @@ export function InstallationEditor({
           {processes.map((p, i) => (
             <div
               key={p.id}
-              className="grid grid-cols-12 gap-2 rounded-md border border-line bg-surface-2 p-3"
+              className="grid grid-cols-12 gap-2 rounded-lg border border-line bg-surface-2 p-3"
             >
               <Field label="Name" className="col-span-3">
                 <Input
@@ -436,7 +436,7 @@ export function InstallationEditor({
             </Button>
           ) : null}
           {processes.some((p) => p.id.startsWith("new_")) ? (
-            <p className="text-[10.5px] text-muted">Save new processes before linking them.</p>
+            <p className="text-[12px] text-muted">Save new processes before linking them.</p>
           ) : null}
         </div>
       </Card>
@@ -473,7 +473,7 @@ export function InstallationEditor({
             {pending ? "Saving and rebuilding…" : "Save installation"}
           </Button>
         ) : (
-          <p className="text-[11.5px] text-muted">
+          <p className="text-[13px] text-muted">
             Your role can view these settings but not change them.
           </p>
         )}

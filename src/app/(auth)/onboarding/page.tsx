@@ -11,11 +11,11 @@ export default async function OnboardingPage() {
   if (!session.user) redirect("/login");
   const memberships = await membershipsFor(session.db, session.user.id);
   const first = memberships[0];
-  if (first && (await listWorkspaces(session.db, first.orgId)).length > 0) redirect("/");
+  if (first && (await listWorkspaces(session.db, first.orgId)).length > 0) redirect("/overview");
   if (first && first.role !== "owner" && first.role !== "editor") {
     return (
       <Card title="Nothing here yet">
-        <p className="text-[12.5px] leading-[1.6] text-ink-2">
+        <p className="text-[14px] leading-[1.6] text-ink-2">
           {first.orgName} has no workspaces yet, and your role can view but not create them. Ask an
           owner or editor to set one up.
         </p>

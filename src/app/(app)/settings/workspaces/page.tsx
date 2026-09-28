@@ -20,7 +20,7 @@ export default async function WorkspacesPage() {
           isOwner={ctx.role === "owner"}
         />
         {ctx.canWrite ? (
-          <div className="mt-5" id="new">
+          <div className="mt-8" id="new">
             <Card title="New workspace">
               <NewWorkspace needsOrganisation={false} />
             </Card>

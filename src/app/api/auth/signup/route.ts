@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       await createOrganisation(db, { name: organisation, owner: user });
     }
     await startSession(db, user, request);
-    return NextResponse.json({ ok: true, next: invitation ? "/" : "/onboarding" });
+    return NextResponse.json({ ok: true, next: invitation ? "/overview" : "/onboarding" });
   } catch (error) {
     return errorResponse(error);
   }

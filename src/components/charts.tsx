@@ -35,7 +35,7 @@ function Tooltip({
 }) {
   return (
     <div
-      className="pointer-events-none absolute z-20 -translate-x-1/2 rounded-md border border-line-strong bg-surface-3 px-2.5 py-1.5 text-[11px] leading-[1.5] text-ink shadow-lg"
+      className="pointer-events-none absolute z-20 -translate-x-1/2 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-ink shadow-lg"
       style={{ left, top }}
     >
       {children}
@@ -110,7 +110,7 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
               y={y(t) + 3.5}
               textAnchor="end"
               fill={MUTED}
-              fontSize="10"
+              fontSize="11.5"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {fmt(Math.round(t))}
@@ -161,7 +161,7 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
                 y={height - padding.bottom + 15}
                 textAnchor="middle"
                 fill={INK2}
-                fontSize="10.5"
+                fontSize="12"
               >
                 {b.label.length > 16 ? `${b.label.slice(0, 15)}…` : b.label}
               </text>
@@ -170,7 +170,7 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
                 y={height - padding.bottom + 29}
                 textAnchor="middle"
                 fill={MUTED}
-                fontSize="10"
+                fontSize="11.5"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {b.total ? fmt(b.value) : `${b.value >= 0 ? "+" : ""}${fmt(b.value)}`}
@@ -187,7 +187,7 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
             {fmt(bars[hover]!.value)} {unit}
           </div>
           {bars[hover]!.detail ? (
-            <div className="mt-1 max-w-[220px] text-[10.5px] text-ink-2">{bars[hover]!.detail}</div>
+            <div className="mt-1 max-w-[220px] text-[12px] text-ink-2">{bars[hover]!.detail}</div>
           ) : null}
         </Tooltip>
       ) : null}
@@ -226,7 +226,7 @@ export function BenchmarkBars({
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-4 text-[11px] text-ink-2">
+      <div className="mb-3 flex items-center gap-4 text-[12.5px] text-ink-2">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm" style={{ background: SERIES.direct }} />
           This installation
@@ -251,19 +251,16 @@ export function BenchmarkBars({
             >
               <div className="mb-1 flex items-baseline justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="text-[12px] font-medium text-ink">{r.label}</span>
+                  <span className="text-[13.5px] font-medium text-ink">{r.label}</span>
                   {r.sublabel ? (
-                    <span className="ml-2 text-[10.5px] text-muted">{r.sublabel}</span>
+                    <span className="ml-2 text-[12px] text-muted">{r.sublabel}</span>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-baseline gap-2">
-                  <span className="tnum text-[12px] text-ink">{r.value.toFixed(3)}</span>
+                  <span className="tnum text-[13.5px] text-ink">{r.value.toFixed(3)}</span>
                   {delta !== null ? (
                     <span
-                      className={cn(
-                        "tnum text-[10.5px]",
-                        delta <= 0 ? "text-good" : "text-serious",
-                      )}
+                      className={cn("tnum text-[12px]", delta <= 0 ? "text-good" : "text-serious")}
                     >
                       {delta <= 0 ? "▼" : "▲"} {Math.abs(delta * 100).toFixed(0)}%
                     </span>
@@ -291,7 +288,7 @@ export function BenchmarkBars({
           );
         })}
       </div>
-      <p className="mt-3 text-[10.5px] text-muted">Values in {unit}.</p>
+      <p className="mt-3 text-[12px] text-muted">Values in {unit}.</p>
     </div>
   );
 }
@@ -360,7 +357,7 @@ export function TrajectoryLine({
   return (
     <div className="relative">
       {hasDefault ? (
-        <div className="mb-2 flex items-center gap-4 text-[11px] text-ink-2">
+        <div className="mb-2 flex items-center gap-4 text-[12.5px] text-ink-2">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-[2px] w-4" style={{ background: SERIES.indirect }} />
             With this installation&apos;s data
@@ -403,7 +400,7 @@ export function TrajectoryLine({
               y={padding.top + plotH * (1 - f) + 3.5}
               textAnchor="end"
               fill={MUTED}
-              fontSize="10"
+              fontSize="11.5"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {fmtEur(max * f)}
@@ -438,7 +435,7 @@ export function TrajectoryLine({
               y={height - padding.bottom + 16}
               textAnchor="middle"
               fill={hover === i ? INK2 : MUTED}
-              fontSize="10"
+              fontSize="11.5"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {p.year}
@@ -479,7 +476,7 @@ export function TrajectoryLine({
           x={x(points.length - 1) + 10}
           y={y(last.costEur) + 4}
           fill={INK2}
-          fontSize="11"
+          fontSize="12.5"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {fmtEur(last.costEur)}
@@ -490,7 +487,7 @@ export function TrajectoryLine({
             x={x(points.length - 1) + 10}
             y={y(last.defaultCostEur) + 4}
             fill={MUTED}
-            fontSize="11"
+            fontSize="12.5"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
             {fmtEur(last.defaultCostEur)}
@@ -500,7 +497,7 @@ export function TrajectoryLine({
 
       {hover !== null && points[hover] ? (
         <div
-          className="pointer-events-none absolute z-20 -translate-x-1/2 rounded-md border border-line-strong bg-surface-3 px-2.5 py-1.5 text-[11px] text-ink shadow-lg"
+          className="pointer-events-none absolute z-20 -translate-x-1/2 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-[12.5px] text-ink shadow-lg"
           style={{ left: `${(x(hover) / width) * 100}%`, top: 4 }}
         >
           <div className="font-medium tnum">{points[hover]!.year}</div>
@@ -510,7 +507,7 @@ export function TrajectoryLine({
               {fmtEur(points[hover]!.defaultCostEur!)} {defaultLabel.toLowerCase()}
             </div>
           ) : null}
-          <div className="mt-0.5 text-[10.5px] text-ink-2">
+          <div className="mt-0.5 text-[12px] text-ink-2">
             CBAM factor {(points[hover]!.factor * 100).toFixed(1)}% ·{" "}
             {fmt(points[hover]!.certificates)} certs
           </div>
@@ -542,7 +539,7 @@ export function ReadinessMeter({
         >
           {score}
         </span>
-        <span className="text-[11.5px] font-medium" style={{ color }}>
+        <span className="text-[13px] font-medium" style={{ color }}>
           {band}
         </span>
       </div>
@@ -552,7 +549,7 @@ export function ReadinessMeter({
           style={{ width: `${score}%`, background: color }}
         />
       </div>
-      <div className="mt-1.5 flex justify-between text-[10px] text-muted">
+      <div className="mt-1.5 flex justify-between text-[11.5px] text-muted">
         <span>0</span>
         <span>Verification ready · 85</span>
         <span>100</span>
@@ -596,7 +593,7 @@ export function StackBar({
         {segments
           .filter((s) => Math.abs(s.value) > 0)
           .map((s) => (
-            <span key={s.label} className="flex items-center gap-1.5 text-[10.5px] text-ink-2">
+            <span key={s.label} className="flex items-center gap-1.5 text-[12px] text-ink-2">
               <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} />
               {s.label}
               <span className="tnum text-muted">{fmt(s.value)}</span>

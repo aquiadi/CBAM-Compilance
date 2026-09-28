@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 
-/** Shared primitives. Deliberately small - the data is what should be loud. */
+/**
+ * Shared primitives. Generous space, quiet chrome: the figures and the next
+ * action should be the loudest things on any page.
+ */
 
 export function cn(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -18,29 +21,33 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="border-b border-line bg-surface px-8 py-6">
-      <div className="flex items-start justify-between gap-8">
-        <div className="min-w-0">
+    <header className="px-10 pb-2 pt-12" data-tour="page-header">
+      <div className="mx-auto flex max-w-[1180px] items-end justify-between gap-10">
+        <div className="min-w-0 animate-rise">
           {eyebrow ? (
-            <div className="mb-1.5 text-[10.5px] font-medium uppercase tracking-[0.14em] text-muted">
+            <div className="mb-3 text-[12px] font-medium uppercase tracking-[0.16em] text-muted">
               {eyebrow}
             </div>
           ) : null}
-          <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">
-            {title}
-          </h1>
+          <h1 className="font-display text-[40px] font-normal leading-[1.08] text-ink">{title}</h1>
           {description ? (
-            <div className="mt-2 max-w-3xl text-[13px] leading-[1.6] text-ink-2">{description}</div>
+            <div className="mt-4 max-w-[68ch] text-[15.5px] leading-[1.65] text-ink-2">
+              {description}
+            </div>
           ) : null}
         </div>
-        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
       </div>
     </header>
   );
 }
 
 export function Page({ children }: { children: ReactNode }) {
-  return <div className="px-8 py-6">{children}</div>;
+  return (
+    <div className="px-10 pb-20 pt-8">
+      <div className="mx-auto max-w-[1180px]">{children}</div>
+    </div>
+  );
 }
 
 export function Card({
@@ -50,6 +57,7 @@ export function Card({
   children,
   className,
   padded = true,
+  tour,
 }: {
   title?: ReactNode;
   subtitle?: ReactNode;
@@ -57,21 +65,31 @@ export function Card({
   children: ReactNode;
   className?: string;
   padded?: boolean;
+  /** Anchor for the guided tour. */
+  tour?: string;
 }) {
   return (
-    <section className={cn("rounded-lg border border-line bg-surface", className)}>
+    <section
+      data-tour={tour}
+      className={cn(
+        "rounded-2xl border border-line bg-surface shadow-[var(--shadow-card)]",
+        className,
+      )}
+    >
       {title ? (
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-3.5">
+        <div className="flex items-start justify-between gap-6 px-7 pb-1 pt-6">
           <div className="min-w-0">
-            <h2 className="text-[13px] font-semibold leading-tight text-ink">{title}</h2>
+            <h2 className="text-[16px] font-semibold leading-snug text-ink">{title}</h2>
             {subtitle ? (
-              <p className="mt-1 text-[11.5px] leading-[1.5] text-muted">{subtitle}</p>
+              <p className="mt-1.5 max-w-[70ch] text-[13.5px] leading-[1.6] text-muted">
+                {subtitle}
+              </p>
             ) : null}
           </div>
           {actions ? <div className="shrink-0">{actions}</div> : null}
         </div>
       ) : null}
-      <div className={padded ? "p-5" : undefined}>{children}</div>
+      <div className={padded ? "px-7 pb-7 pt-5" : "pt-3"}>{children}</div>
     </section>
   );
 }
@@ -79,12 +97,12 @@ export function Card({
 type Tone = "neutral" | "good" | "warning" | "serious" | "critical" | "accent";
 
 const TONE_CLASS: Record<Tone, string> = {
-  neutral: "border-line-strong bg-surface-3 text-ink-2",
-  good: "border-good/35 bg-good/10 text-good",
-  warning: "border-warning/35 bg-warning/10 text-warning",
-  serious: "border-serious/35 bg-serious/10 text-serious",
-  critical: "border-critical/40 bg-critical/12 text-critical",
-  accent: "border-accent/35 bg-accent/10 text-accent",
+  neutral: "border-line-strong bg-surface-2 text-ink-2",
+  good: "border-good/25 bg-good/[0.07] text-good",
+  warning: "border-warning/25 bg-warning/[0.08] text-warning",
+  serious: "border-serious/25 bg-serious/[0.07] text-serious",
+  critical: "border-critical/25 bg-critical/[0.07] text-critical",
+  accent: "border-accent/25 bg-accent/[0.07] text-accent",
 };
 
 /**
@@ -104,7 +122,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10.5px] font-medium leading-[1.4]",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[12px] font-medium leading-[1.5]",
         TONE_CLASS[tone],
       )}
     >
@@ -121,7 +139,14 @@ export function SeverityBadge({ severity }: { severity: "blocker" | "warning" | 
     info: { tone: "accent" as Tone, label: "Info", glyph: "●" },
   }[severity];
   return (
-    <Badge tone={map.tone} icon={<span aria-hidden>{map.glyph}</span>}>
+    <Badge
+      tone={map.tone}
+      icon={
+        <span aria-hidden className="text-[9px]">
+          {map.glyph}
+        </span>
+      }
+    >
       {map.label}
     </Badge>
   );
@@ -140,9 +165,7 @@ export function ProvenanceBadge({
       {model ?? "AI model"}
     </Badge>
   ) : (
-    <Badge tone="neutral" icon={<span aria-hidden>⌘</span>}>
-      Deterministic
-    </Badge>
+    <Badge tone="neutral">Rule-based</Badge>
   );
 }
 
@@ -170,24 +193,22 @@ export function Stat({
       }[tone]
     : "text-ink";
   return (
-    <div className="rounded-lg border border-line bg-surface px-4 py-3.5">
-      <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
-        {label}
-      </div>
-      <div className="mt-2 flex items-baseline gap-1.5">
+    <div className="rounded-2xl border border-line bg-surface px-6 py-6 shadow-[var(--shadow-card)]">
+      <div className="text-[13px] font-medium text-muted">{label}</div>
+      <div className="mt-3 flex items-baseline gap-2">
         {/* Proportional figures on display values; tabular is for columns. */}
         <span
           className={cn(
-            "font-semibold leading-none tracking-[-0.02em]",
-            hero ? "text-[38px]" : "text-[22px]",
+            "font-display leading-none",
+            hero ? "text-[52px]" : "text-[36px]",
             toneClass,
           )}
         >
           {value}
         </span>
-        {unit ? <span className="text-[11.5px] font-medium text-muted">{unit}</span> : null}
+        {unit ? <span className="text-[13px] font-medium text-muted">{unit}</span> : null}
       </div>
-      {sub ? <div className="mt-2 text-[11px] leading-[1.5] text-ink-2">{sub}</div> : null}
+      {sub ? <div className="mt-3 text-[13px] leading-[1.55] text-ink-2">{sub}</div> : null}
     </div>
   );
 }
@@ -195,7 +216,7 @@ export function Stat({
 export function Table({ children }: { children: ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-full border-collapse text-[12.5px]">{children}</table>
+      <table className="w-full min-w-full border-collapse text-[14px]">{children}</table>
     </div>
   );
 }
@@ -213,7 +234,7 @@ export function Th({
   return (
     <th
       className={cn(
-        "whitespace-nowrap border-b border-line px-3 py-2 text-[10.5px] font-medium uppercase tracking-[0.1em] text-muted",
+        "whitespace-nowrap border-b border-line px-4 py-3 text-[12px] font-medium text-muted first:pl-7 last:pr-7",
         align === "right" && "text-right",
         align === "center" && "text-center",
         align === "left" && "text-left",
@@ -239,7 +260,7 @@ export function Td({
   return (
     <td
       className={cn(
-        "border-b border-line/60 px-3 py-2 align-top text-ink-2",
+        "border-b border-line/70 px-4 py-3.5 align-top text-ink-2 first:pl-7 last:pr-7",
         align === "right" && "text-right",
         align === "center" && "text-center",
         numeric && "tnum text-ink",
@@ -253,30 +274,59 @@ export function Td({
 
 export function Empty({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-[12.5px] text-muted">
+    <div className="rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center text-[14px] text-muted">
       {children}
     </div>
   );
 }
 
 export function Note({ children, tone = "neutral" }: { children: ReactNode; tone?: Tone }) {
-  const border = {
-    neutral: "border-l-line-strong",
-    good: "border-l-good",
-    warning: "border-l-warning",
-    serious: "border-l-serious",
-    critical: "border-l-critical",
-    accent: "border-l-accent",
+  const style = {
+    neutral: "border-line bg-surface-2",
+    good: "border-good/20 bg-good/[0.05]",
+    warning: "border-warning/20 bg-warning/[0.06]",
+    serious: "border-serious/20 bg-serious/[0.05]",
+    critical: "border-critical/20 bg-critical/[0.05]",
+    accent: "border-accent/20 bg-accent/[0.05]",
   }[tone];
   return (
-    <div
-      className={cn(
-        "rounded-r border-l-2 bg-surface-2 px-3.5 py-2.5 text-[11.5px] leading-[1.6] text-ink-2",
-        border,
-      )}
-    >
+    <div className={cn("rounded-xl border px-5 py-4 text-[14px] leading-[1.65] text-ink-2", style)}>
       {children}
     </div>
+  );
+}
+
+/** Folds secondary detail away so a page leads with what matters. */
+export function Disclosure({
+  summary,
+  hint,
+  children,
+  defaultOpen = false,
+}: {
+  summary: ReactNode;
+  hint?: ReactNode;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details
+      className="group rounded-2xl border border-line bg-surface shadow-[var(--shadow-card)]"
+      open={defaultOpen}
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-6 px-7 py-5 [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="block text-[15px] font-semibold text-ink">{summary}</span>
+          {hint ? <span className="mt-1 block text-[13px] text-muted">{hint}</span> : null}
+        </span>
+        <span
+          aria-hidden
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-ink-2 transition-transform group-open:rotate-45"
+        >
+          +
+        </span>
+      </summary>
+      <div className="space-y-8 border-t border-line px-7 pb-7 pt-6">{children}</div>
+    </details>
   );
 }
 

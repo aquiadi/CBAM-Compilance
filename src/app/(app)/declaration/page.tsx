@@ -4,6 +4,7 @@ import { PUBLISHED_CERTIFICATE_PRICES } from "@/lib/cbam/regulatory";
 import { computeDeclaration } from "@/lib/workspace/declaration";
 import {
   Card,
+  Disclosure,
   fmt,
   fmtCompact,
   fmtEur,
@@ -74,7 +75,7 @@ export default async function DeclarationPage() {
 
       <Page>
         {d.readiness.blockers > 0 ? (
-          <div className="mb-5">
+          <div className="mb-8">
             <Note tone="critical">
               <span className="font-medium text-critical">
                 {d.readiness.blockers} blocking finding{d.readiness.blockers > 1 ? "s" : ""} remain
@@ -86,40 +87,50 @@ export default async function DeclarationPage() {
           </div>
         ) : null}
 
-        <Card title="Exports" subtitle="Generated from the current data on every download.">
-          <div className="grid grid-cols-3 gap-3">
+        <Card
+          tour="exports"
+          title="Downloads"
+          subtitle="Generated from the current data every time you download."
+        >
+          <div className="grid grid-cols-3 gap-4">
             {EXPORTS.map((x) => (
               <a
                 key={x.format}
                 href={`/api/export?format=${x.format}`}
-                className="rounded-md border border-line-strong bg-surface-2 px-3 py-2.5 transition-colors hover:border-accent"
+                className="group rounded-xl border border-line bg-surface-2 px-5 py-4 transition-colors hover:border-ink hover:bg-surface"
               >
-                <div className="text-[12px] font-medium text-ink">{x.label}</div>
-                <div className="mt-0.5 text-[10.5px] leading-[1.4] text-muted">{x.hint}</div>
+                <div className="flex items-center justify-between text-[14.5px] font-medium text-ink">
+                  {x.label}
+                  <span
+                    aria-hidden
+                    className="text-muted transition-transform group-hover:translate-y-0.5"
+                  >
+                    ↓
+                  </span>
+                </div>
+                <div className="mt-1 text-[13px] leading-[1.5] text-muted">{x.hint}</div>
               </a>
             ))}
           </div>
         </Card>
 
-        <div className="mt-5">
+        <div className="mt-8">
           <Card
+            tour="goods-table"
             title="Goods, embedded emissions and free allocation"
-            subtitle="Produced is the SEE denominator; only the EU column creates an obligation. Obligation per tonne = SEE counted − SEFA."
+            subtitle="Per product: emissions per tonne, the free allocation the EU still grants per tonne, and what is left to pay for on the tonnes shipped to the EU."
             padded={false}
           >
             <Table>
               <thead>
                 <tr>
-                  <Th>CN code</Th>
-                  <Th>Goods</Th>
-                  <Th align="right">Produced t</Th>
-                  <Th align="right">To EU t</Th>
-                  <Th align="right">SEE direct</Th>
-                  <Th align="right">SEE indirect</Th>
-                  <Th align="right">SEE counted</Th>
-                  <Th align="right">SEFA</Th>
-                  <Th align="right">Obligation /t</Th>
-                  <Th align="right">vs default</Th>
+                  <Th>Product</Th>
+                  <Th align="right">Made, t</Th>
+                  <Th align="right">To EU, t</Th>
+                  <Th align="right">Emissions /t</Th>
+                  <Th align="right">Free allocation /t</Th>
+                  <Th align="right">Charged /t</Th>
+                  <Th align="right">vs EU default</Th>
                   <Th align="right">Certificates</Th>
                 </tr>
               </thead>
@@ -130,12 +141,15 @@ export default async function DeclarationPage() {
                   );
                   return (
                     <tr key={`${l.cnCode}-${l.processId}`} className="hover:bg-surface-2">
-                      <Td className="font-mono text-[11.5px] text-ink">{l.cnCode}</Td>
-                      <Td>
-                        <span className="text-ink">{l.description}</span>
-                        <div className="mt-0.5 text-[10.5px] text-muted">
-                          {l.processName} ·{" "}
-                          {l.directOnly ? "Annex II - direct only" : "Direct + indirect"}
+                      <Td className="min-w-[300px] max-w-[380px]">
+                        <span className="text-ink" title={l.description}>
+                          {l.description.length > 64
+                            ? `${l.description.slice(0, 63)}…`
+                            : l.description}
+                        </span>
+                        <div className="mt-1 text-[12.5px] text-muted">
+                          CN <span className="font-mono">{l.cnCode}</span> · {l.processName}
+                          {l.directOnly ? " · direct emissions only" : ""}
                         </div>
                       </Td>
                       <Td align="right" numeric>
@@ -149,27 +163,19 @@ export default async function DeclarationPage() {
                         )}
                       </Td>
                       <Td align="right" numeric>
-                        {l.seeDirect.toFixed(4)}
-                      </Td>
-                      <Td align="right" numeric>
-                        <span className={l.directOnly ? "text-muted" : undefined}>
-                          {l.seeIndirect.toFixed(4)}
-                        </span>
-                      </Td>
-                      <Td align="right" numeric>
-                        {l.seeForObligation.toFixed(4)}
+                        {l.seeForObligation.toFixed(3)}
                       </Td>
                       <Td align="right" numeric>
                         {l.sefaIssues.length > 0 ? (
                           <span className="text-critical" title={l.sefaIssues.join(" ")}>
-                            {l.sefa.toFixed(4)} !
+                            {l.sefa.toFixed(3)} !
                           </span>
                         ) : (
-                          l.sefa.toFixed(4)
+                          l.sefa.toFixed(3)
                         )}
                       </Td>
                       <Td align="right" numeric>
-                        {Math.max(0, l.seeForObligation - l.sefa).toFixed(4)}
+                        {Math.max(0, l.seeForObligation - l.sefa).toFixed(3)}
                       </Td>
                       <Td align="right" numeric>
                         {l.vsDefault !== undefined ? (
@@ -190,36 +196,35 @@ export default async function DeclarationPage() {
               <tfoot>
                 <tr className="bg-surface-2">
                   <Td className="font-medium text-ink">Total</Td>
-                  <Td>-</Td>
                   <Td align="right" numeric>
                     {fmt(d.totals.goodsT)}
                   </Td>
                   <Td align="right" numeric>
                     {fmt(d.totals.goodsEuT)}
                   </Td>
-                  <Td align="right">-</Td>
-                  <Td align="right">-</Td>
-                  <Td align="right">-</Td>
-                  <Td align="right">-</Td>
-                  <Td align="right">-</Td>
-                  <Td align="right">-</Td>
+                  <Td align="right"> </Td>
+                  <Td align="right"> </Td>
+                  <Td align="right"> </Td>
+                  <Td align="right"> </Td>
                   <Td align="right" numeric className="font-medium text-ink">
                     {fmt(e.grossCertificates)}
                   </Td>
                 </tr>
               </tfoot>
             </Table>
-            <div className="border-t border-line px-5 py-3">
-              <p className="text-[10.5px] leading-[1.55] text-muted">
-                &quot;vs default&quot; compares with the Commission&apos;s default value for{" "}
+            <div className="px-7 py-5">
+              <p className="max-w-[110ch] text-[12.5px] leading-[1.6] text-muted">
+                Emissions per tonne are the specific embedded emissions counted towards the
+                obligation (SEE); free allocation is the benchmark-based adjustment (SEFA). &quot;vs
+                EU default&quot; compares with the Commission&apos;s default value for{" "}
                 {state.installation.country} including the {d.period.year} mark-up. {d.disclaimer}
               </p>
             </div>
           </Card>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-5">
-          <div className="col-span-2 space-y-5">
+        <div className="mt-8 grid grid-cols-3 gap-7">
+          <div className="col-span-2">
             <Card
               title="Certificate cost"
               subtitle="Certificates are bought and surrendered by the EU importer; this is the cost your data implies for them."
@@ -243,7 +248,44 @@ export default async function DeclarationPage() {
                 pricing={e.pricing}
               />
             </Card>
+          </div>
+          <div className="space-y-8">
+            <Card title="What ships where">
+              <div className="space-y-3 text-[13px] leading-[1.6] text-ink-2">
+                <p>
+                  <span className="text-ink">{fmtCompact(d.totals.goodsT)} t</span> produced, of
+                  which <span className="text-ink">{fmtCompact(d.totals.goodsEuT)} t</span> goes to
+                  the EU.
+                </p>
+                <p>
+                  {fmt(e.nonEuEmissionsT)} tCO₂e is embedded in output that stayed in India or moved
+                  on site. It is reported but never charged.
+                </p>
+              </div>
+            </Card>
+            <Card
+              title="Published certificate prices"
+              subtitle="Commission, quarterly in 2026; weekly from 2027."
+            >
+              <dl className="space-y-1.5 text-[13px]">
+                {PUBLISHED_CERTIFICATE_PRICES.map((p) => (
+                  <div key={p.quarter} className="flex justify-between">
+                    <dt className="text-muted">{p.quarter}</dt>
+                    <dd className="tnum text-ink-2">
+                      €{p.priceEur.toFixed(2)} <span className="text-muted">({p.published})</span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </Card>
+          </div>
+        </div>
 
+        <div className="mt-8">
+          <Disclosure
+            summary="More detail"
+            hint="The cost year by year to 2034, engine notes, installation details and the methodology memo"
+          >
             <Card
               title="Across the phase-in"
               subtitle={`Same volumes and intensity each year, recomputed with that year's CBAM factor and default mark-up, at €${state.assumptions.etsPriceEur}/certificate after 2026.`}
@@ -291,83 +333,52 @@ export default async function DeclarationPage() {
               </Table>
             </Card>
 
-            <MemoPanel aiAvailable={isAiAvailable()} />
-          </div>
+            <div className="grid grid-cols-2 gap-8">
+              <Card title="Engine notes">
+                {e.notes.length === 0 ? (
+                  <p className="text-[13px] text-muted">No notes.</p>
+                ) : (
+                  <ul className="space-y-2.5">
+                    {e.notes.map((n, i) => (
+                      <li key={i} className="text-[13px] leading-[1.6] text-ink-2">
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
 
-          <div className="space-y-5">
-            <Card title="Engine notes">
-              {e.notes.length === 0 ? (
-                <p className="text-[11.5px] text-muted">No notes.</p>
-              ) : (
-                <ul className="space-y-2.5">
-                  {e.notes.map((n, i) => (
-                    <li key={i} className="text-[11.5px] leading-[1.6] text-ink-2">
-                      {n}
-                    </li>
+              <Card title="Installation details" subtitle="As they appear on the communication.">
+                <dl className="space-y-2.5 text-[13px]">
+                  {[
+                    ["Installation", d.installation.name],
+                    ["Operator", d.installation.operator],
+                    [
+                      "Address",
+                      [d.installation.street, d.installation.city].filter(Boolean).join(", "),
+                    ],
+                    ["State", `${d.installation.state} ${d.installation.postcode}`],
+                    ["Country", d.installation.country],
+                    ["UN/LOCODE", d.installation.unlocode ?? "-"],
+                    [
+                      "Emission source",
+                      d.installation.latitude !== undefined
+                        ? `${d.installation.latitude}, ${d.installation.longitude}`
+                        : "-",
+                    ],
+                    ["Contact", `${d.installation.contactName} · ${d.installation.contactEmail}`],
+                    ["Period", `${d.period.start} → ${d.period.end}`],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-3">
+                      <dt className="shrink-0 text-muted">{k}</dt>
+                      <dd className="text-right text-ink-2">{v}</dd>
+                    </div>
                   ))}
-                </ul>
-              )}
-            </Card>
-
-            <Card
-              title="Published certificate prices"
-              subtitle="Commission, quarterly in 2026; weekly from 2027."
-            >
-              <dl className="space-y-1.5 text-[11.5px]">
-                {PUBLISHED_CERTIFICATE_PRICES.map((p) => (
-                  <div key={p.quarter} className="flex justify-between">
-                    <dt className="text-muted">{p.quarter}</dt>
-                    <dd className="tnum text-ink-2">
-                      €{p.priceEur.toFixed(2)} <span className="text-muted">({p.published})</span>
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </Card>
-
-            <Card title="Installation details" subtitle="As they appear on the communication.">
-              <dl className="space-y-2.5 text-[11.5px]">
-                {[
-                  ["Installation", d.installation.name],
-                  ["Operator", d.installation.operator],
-                  [
-                    "Address",
-                    [d.installation.street, d.installation.city].filter(Boolean).join(", "),
-                  ],
-                  ["State", `${d.installation.state} ${d.installation.postcode}`],
-                  ["Country", d.installation.country],
-                  ["UN/LOCODE", d.installation.unlocode ?? "-"],
-                  [
-                    "Emission source",
-                    d.installation.latitude !== undefined
-                      ? `${d.installation.latitude}, ${d.installation.longitude}`
-                      : "-",
-                  ],
-                  ["Contact", `${d.installation.contactName} · ${d.installation.contactEmail}`],
-                  ["Period", `${d.period.start} → ${d.period.end}`],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3">
-                    <dt className="shrink-0 text-muted">{k}</dt>
-                    <dd className="text-right text-ink-2">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </Card>
-
-            <Card title="What ships where">
-              <div className="space-y-3 text-[11.5px] leading-[1.6] text-ink-2">
-                <p>
-                  <span className="text-ink">{fmtCompact(d.totals.goodsT)} t</span> produced, of
-                  which <span className="text-ink">{fmtCompact(d.totals.goodsEuT)} t</span> goes to
-                  the EU.
-                </p>
-                <p>
-                  {fmt(e.nonEuEmissionsT)} tCO₂e is embedded in output that stayed in India or moved
-                  on site. It is reported but never charged.
-                </p>
-              </div>
-            </Card>
-          </div>
+                </dl>
+              </Card>
+            </div>
+            <MemoPanel aiAvailable={isAiAvailable()} />
+          </Disclosure>
         </div>
       </Page>
     </>

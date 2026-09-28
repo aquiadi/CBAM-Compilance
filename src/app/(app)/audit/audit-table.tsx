@@ -62,7 +62,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
             setLimit(50);
           }}
           placeholder="Search files, sections, materials, raw cell values…"
-          className="min-w-[280px] flex-1 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-[12px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+          className="min-w-[280px] flex-1 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-[13.5px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
         />
         <div className="flex gap-1">
           {kinds.map((k) => (
@@ -74,7 +74,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
                 setLimit(50);
               }}
               className={cn(
-                "rounded-md px-2 py-1 text-[11px] font-medium capitalize transition-colors",
+                "rounded-lg px-2 py-1 text-[12.5px] font-medium capitalize transition-colors",
                 kind === k
                   ? "bg-surface-3 text-ink"
                   : "text-muted hover:bg-surface-2 hover:text-ink-2",
@@ -84,7 +84,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
             </button>
           ))}
         </div>
-        <span className="tnum text-[11px] text-muted">
+        <span className="tnum text-[12.5px] text-muted">
           showing {fmt(shown.length)} of {fmt(filtered.length)}
           {filtered.length !== rows.length ? ` (${fmt(rows.length)} total)` : ""}
         </span>
@@ -114,26 +114,26 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
                   open === r.id && "bg-surface-2",
                 )}
               >
-                <Td className="whitespace-nowrap font-mono text-[11px] text-ink">
+                <Td className="whitespace-nowrap font-mono text-[12.5px] text-ink">
                   {r.fileName.replace(/\.csv$/, "")}
                   <span className="text-muted">:{r.row}</span>
                 </Td>
-                <Td className="whitespace-nowrap text-[11px] capitalize">
+                <Td className="whitespace-nowrap text-[12.5px] capitalize">
                   {r.kind.replace(/_/g, " ")}
-                  {r.detail ? <div className="text-[10px] text-muted">{r.detail}</div> : null}
+                  {r.detail ? <div className="text-[11.5px] text-muted">{r.detail}</div> : null}
                 </Td>
-                <Td className="whitespace-nowrap text-[11px]">{r.processName}</Td>
-                <Td className="whitespace-nowrap font-mono text-[10.5px] text-muted">
+                <Td className="whitespace-nowrap text-[12.5px]">{r.processName}</Td>
+                <Td className="whitespace-nowrap font-mono text-[12px] text-muted">
                   {r.period.slice(0, 7)}
                 </Td>
                 <Td align="right" numeric className="whitespace-nowrap">
                   {fmt(r.quantity, r.quantity < 100 ? 2 : 0)}{" "}
                   <span className="text-muted">{r.unit}</span>
                 </Td>
-                <Td className="text-[11px]">
+                <Td className="text-[12.5px]">
                   {r.factorName ?? <span className="text-muted">—</span>}
                   {r.factorSource ? (
-                    <div className="text-[10px] text-muted">{r.factorSource}</div>
+                    <div className="text-[11.5px] text-muted">{r.factorSource}</div>
                   ) : null}
                 </Td>
                 <Td className="whitespace-nowrap">
@@ -146,19 +146,19 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
               {open === r.id ? (
                 <tr className="bg-surface-2">
                   <td colSpan={8} className="border-b border-line px-5 py-3">
-                    <div className="mb-2 text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+                    <div className="mb-2 text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                       Raw source row — {r.fileName} line {r.row}
                     </div>
                     <div className="grid grid-cols-4 gap-x-6 gap-y-1.5">
                       {Object.entries(r.raw).map(([k, v]) => (
-                        <div key={k} className="min-w-0 text-[11px]">
+                        <div key={k} className="min-w-0 text-[12.5px]">
                           <div className="truncate text-muted">{k}</div>
                           <div className="truncate font-mono text-ink-2">{v || "—"}</div>
                         </div>
                       ))}
                     </div>
                     {r.exclusionReason ? (
-                      <p className="mt-3 text-[11px] text-warning">
+                      <p className="mt-3 text-[12.5px] text-warning">
                         Excluded — {r.exclusionReason}
                       </p>
                     ) : null}
@@ -172,14 +172,14 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
 
       {filtered.length > shown.length ? (
         <div className="flex items-center justify-between gap-4 border-t border-line px-5 py-3">
-          <p className="text-[11px] text-muted">
+          <p className="text-[12.5px] text-muted">
             {fmt(filtered.length - shown.length)} more matching records. Narrow the search, or
             export the full declaration JSON for everything at once.
           </p>
           <button
             type="button"
             onClick={() => setLimit((n) => n + 100)}
-            className="shrink-0 rounded-md border border-line-strong bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:border-accent hover:text-ink"
+            className="shrink-0 rounded-lg border border-line-strong bg-surface px-2.5 py-1 text-[12.5px] font-medium text-ink-2 transition-colors hover:border-ink hover:text-ink"
           >
             Show 100 more
           </button>

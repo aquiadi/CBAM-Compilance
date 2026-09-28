@@ -96,7 +96,7 @@ export default async function AuditPage() {
         actions={
           <a
             href="/api/export?format=verifier-pack"
-            className="rounded-md border border-line-strong bg-surface-3 px-2.5 py-1.5 text-[11.5px] font-medium text-ink-2 transition-colors hover:border-accent hover:text-ink"
+            className="rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink hover:text-ink"
           >
             Verifier pack (.zip)
           </a>
@@ -104,7 +104,7 @@ export default async function AuditPage() {
       />
 
       <Page>
-        <div className="mb-5 grid grid-cols-4 gap-4">
+        <div className="mb-8 grid grid-cols-4 gap-4">
           {[
             { label: "Activity records", value: fmt(rows.length) },
             {
@@ -117,8 +117,8 @@ export default async function AuditPage() {
               value: fmt(state.datasets.reduce((s, x) => s + x.rejected.length, 0)),
             },
           ].map((m) => (
-            <div key={m.label} className="rounded-lg border border-line bg-surface px-4 py-3">
-              <div className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted">
+            <div key={m.label} className="rounded-xl border border-line bg-surface px-4 py-3">
+              <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                 {m.label}
               </div>
               <div className="mt-1.5 tnum text-[20px] font-semibold text-ink">{m.value}</div>
@@ -133,7 +133,7 @@ export default async function AuditPage() {
           relative to the data underneath it.
         </Note>
 
-        <div className="mt-5">
+        <div className="mt-8">
           <Card padded={false}>
             <AuditTable rows={rows} />
           </Card>

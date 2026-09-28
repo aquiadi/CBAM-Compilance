@@ -18,17 +18,17 @@ export function Field({
 }) {
   return (
     <label className={cn("block", className)}>
-      <span className="text-[11.5px] font-medium text-ink-2">{label}</span>
-      <div className="mt-1">{children}</div>
+      <span className="text-[13.5px] font-medium text-ink">{label}</span>
+      <div className="mt-2">{children}</div>
       {hint ? (
-        <span className="mt-1 block text-[10.5px] leading-[1.45] text-muted">{hint}</span>
+        <span className="mt-1.5 block text-[12.5px] leading-[1.5] text-muted">{hint}</span>
       ) : null}
     </label>
   );
 }
 
 const INPUT =
-  "w-full rounded-md border border-line-strong bg-surface-2 px-2.5 py-1.5 text-[12.5px] text-ink outline-none placeholder:text-muted focus:border-accent disabled:opacity-60";
+  "w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-[14.5px] text-ink outline-none transition-shadow placeholder:text-muted/70 focus:border-accent focus:shadow-[0_0_0_4px_rgb(31_91_216/0.12)] disabled:bg-surface-2 disabled:opacity-70";
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(INPUT, props.className)} />;
@@ -50,18 +50,17 @@ export function Button({
   variant?: "primary" | "secondary" | "danger" | "ghost";
 }) {
   const styles = {
-    primary: "bg-accent text-plane hover:opacity-90 border border-accent",
-    secondary:
-      "border border-line-strong bg-surface-3 text-ink-2 hover:border-accent hover:text-ink",
-    danger: "border border-critical/40 bg-critical/10 text-critical hover:bg-critical/20",
-    ghost: "border border-transparent text-ink-2 hover:text-ink",
+    primary: "border border-ink bg-ink text-white hover:bg-black",
+    secondary: "border border-line-strong bg-surface text-ink hover:border-ink",
+    danger: "border border-critical/30 bg-critical/[0.06] text-critical hover:bg-critical/[0.12]",
+    ghost: "border border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",
   }[variant];
   return (
     <button
       type="button"
       {...props}
       className={cn(
-        "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+        "rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
         styles,
         className,
       )}
@@ -72,7 +71,7 @@ export function Button({
 export function FormError({ children }: { children: ReactNode }) {
   if (!children) return null;
   return (
-    <div className="rounded-md border border-critical/35 bg-critical/10 px-3 py-2 text-[12px] text-critical">
+    <div className="rounded-xl border border-critical/25 bg-critical/[0.06] px-4 py-3 text-[13.5px] text-critical">
       {children}
     </div>
   );
@@ -81,7 +80,7 @@ export function FormError({ children }: { children: ReactNode }) {
 export function FormSuccess({ children }: { children: ReactNode }) {
   if (!children) return null;
   return (
-    <div className="rounded-md border border-good/35 bg-good/10 px-3 py-2 text-[12px] text-good">
+    <div className="rounded-xl border border-good/25 bg-good/[0.06] px-4 py-3 text-[13.5px] text-good">
       {children}
     </div>
   );
@@ -125,13 +124,13 @@ export function useRequest() {
 export function CopyLink({ link, note }: { link: string; note?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="rounded-md border border-accent/30 bg-accent/[0.06] p-3">
-      {note ? <p className="mb-2 text-[11.5px] text-ink-2">{note}</p> : null}
+    <div className="rounded-xl border border-accent/25 bg-accent/[0.05] p-4">
+      {note ? <p className="mb-2 text-[13px] text-ink-2">{note}</p> : null}
       <div className="flex gap-2">
         <input
           readOnly
           value={link}
-          className={cn(INPUT, "font-mono text-[11px]")}
+          className={cn(INPUT, "font-mono text-[12.5px]")}
           onFocus={(e) => e.target.select()}
         />
         <Button
