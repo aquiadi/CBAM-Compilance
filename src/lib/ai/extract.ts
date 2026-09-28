@@ -1,9 +1,8 @@
 import * as z from "zod/v4";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import type Anthropic from "@anthropic-ai/sdk";
 import { resolveUnit } from "../cbam/units";
 import type { DatasetKind } from "../ingest/schema";
-import { describeError, getClient, isAiAvailable, MODEL, type AiOutcome } from "./client";
+import { describeError, isAiAvailable, type AiOutcome } from "./client";
+import { structured, type DocumentPrompt } from "./generate";
 
 /**
  * Reading figures off documents: fuel invoices, electricity bills, material
@@ -181,45 +180,20 @@ Return one line per consumed or delivered item. Rules:
 - Indian number formats are common: 1,23,456.78 is one hundred twenty-three thousand four hundred fifty-six point seven eight.
 - "evidence" must be a short verbatim quote from the document that includes the number you report.
 - If a figure is unreadable, handwritten, crossed out or ambiguous, set quantity to null or lower the confidence, and say why in warnings. Never guess.
-- category: fuel (burned on site: coal, coke, diesel/HSD, furnace oil, LPG, natural gas), electricity, process_material (limestone, dolomite, electrodes, fluxes, ore), precursor (bought-in CBAM goods such as sponge iron/DRI, pig iron, billets, clinker, ammonia), otherwise other.`;
+- category: fuel (burned on site: coal, coke, diesel/HSD/LDO, furnace oil/FO/LSHS, LPG, natural gas), electricity, process_material (limestone, dolomite, electrodes, fluxes, ore), precursor (bought-in CBAM goods such as sponge iron/DRI, pig iron, billets, clinker, ammonia), otherwise other.`;
 
-/** The document as a content block, followed by the instruction. */
-export function documentContent(
-  bytes: Uint8Array,
-  mediaType: DocumentMediaType,
-  fileName: string,
-  instruction = "Extract every consumed or delivered item from this document.",
-): Anthropic.Beta.BetaContentBlockParam[] {
-  const data = Buffer.from(bytes).toString("base64");
-  const kind = DOCUMENT_MEDIA_TYPES[mediaType];
-  const source: Anthropic.Beta.BetaContentBlockParam =
-    kind === "pdf"
-      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data } }
-      : kind === "text"
-        ? {
-            type: "document",
-            source: {
-              type: "text",
-              media_type: "text/plain",
-              data: new TextDecoder().decode(bytes),
-            },
-          }
-        : {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
-              data,
-            },
-          };
-  return [
-    source,
-    {
-      type: "text",
-      text: `File name: ${fileName}\n${instruction}`,
-    },
-  ];
+/** A document and what to do with it, for whichever model is configured. */
+export function documentPrompt(
+  args: { bytes: Uint8Array; mediaType: DocumentMediaType; fileName: string },
+  text: string | null,
+  instruction: string,
+): DocumentPrompt {
+  return { ...args, kind: DOCUMENT_MEDIA_TYPES[args.mediaType], text, instruction };
 }
+
+/** Said when no model key is set, so the reader knows why the table is empty. */
+export const NO_MODEL_CONFIGURED =
+  "No AI model is configured (ANTHROPIC_API_KEY, or GROQ_API_KEY for the free option), so the document was not read automatically.";
 
 export interface ExtractResult {
   extraction: Extraction;
@@ -246,49 +220,40 @@ export async function extractDocument(args: {
     outcome: { producedBy: "heuristic", fallbackReason: reason },
   });
 
-  if (!isAiAvailable()) {
-    return empty(
-      "No AI model is configured (ANTHROPIC_API_KEY), so the document was not read automatically. Enter its figures below.",
-    );
-  }
-  const client = getClient();
-  if (!client) return empty("The AI model is not available.");
+  if (!isAiAvailable()) return empty(`${NO_MODEL_CONFIGURED} Enter its figures below.`);
 
   const started = Date.now();
   try {
-    const response = await client.beta.messages.parse({
-      model: MODEL,
-      max_tokens: 16000,
-      // A declined request is re-run server-side on Anthropic's recommended
-      // fallback model instead of coming back empty.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      thinking: { type: "adaptive" },
+    const answer = await structured({
+      name: "document_reading",
       system: SYSTEM,
-      messages: [
-        { role: "user", content: documentContent(args.bytes, args.mediaType, args.fileName) },
-      ],
-      output_config: { format: betaZodOutputFormat(ExtractionSchema) },
+      prompt: documentPrompt(
+        args,
+        text,
+        "Extract every consumed or delivered item from this document.",
+      ),
+      schema: ExtractionSchema,
     });
-    if (response.stop_reason === "refusal") {
+    if (answer.stop === "refusal") {
       return empty("The model declined to read this document. Enter its figures below.");
     }
-    if (response.stop_reason === "max_tokens") {
+    if (answer.stop === "max_tokens") {
       return empty(
         "The document is too long to read in one pass. Split it, or enter its figures below.",
       );
     }
-    const parsed = response.parsed_output;
-    if (!parsed) return empty("The model's answer could not be read. Enter the figures below.");
+    if (!answer.value) {
+      return empty("The model's answer could not be read. Enter the figures below.");
+    }
 
-    const extraction = crossCheck(validateExtraction(parsed), text);
+    const extraction = crossCheck(validateExtraction(answer.value), text);
     return {
       extraction,
       outcome: {
         producedBy: "model",
-        model: response.model,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+        model: answer.model,
+        inputTokens: answer.inputTokens,
+        outputTokens: answer.outputTokens,
         latencyMs: Date.now() - started,
       },
     };

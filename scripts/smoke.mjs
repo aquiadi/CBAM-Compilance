@@ -210,6 +210,11 @@ async function main() {
   docForm.set("file", new Blob([pdf], { type: "application/pdf" }), "iocl-invoice.pdf");
   const read = await owner.json("/api/documents", { method: "POST", form: docForm });
   assert(read.fileId && Array.isArray(read.extraction.lines), "document stored and read");
+  // Reading it again (after a rate limit, say) reuses the stored copy.
+  const againForm = new FormData();
+  againForm.set("fileId", read.fileId);
+  const again = await owner.json("/api/documents", { method: "POST", form: againForm });
+  assert(again.fileId === read.fileId, "a stored document can be read again without a new copy");
   const beforeDoc = await owner.json("/api/export?format=json");
   const processId = beforeDoc.installation.processes[0].id;
   const imported = await owner.json("/api/documents/import", {

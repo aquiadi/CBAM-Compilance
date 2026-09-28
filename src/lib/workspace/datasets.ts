@@ -1,5 +1,5 @@
 import { env, hasModelKey } from "@/config/env";
-import type { AiOutcome } from "../ai/client";
+import { modelMapsColumns, RULE_BASED_ON_GROQ, type AiOutcome } from "../ai/client";
 import { mapDataset } from "../ai/mapper";
 import { FACTORS } from "../cbam/factors";
 import { countryCode } from "../cbam/regulatory";
@@ -58,14 +58,18 @@ async function proposeMapping(
   useModel: boolean,
   forceKind?: DatasetKind,
 ): Promise<{ mapping: DatasetMapping; outcome: AiOutcome }> {
-  if (useModel && hasModelKey()) {
+  if (useModel && modelMapsColumns()) {
     return mapDataset(read.parsed, processes, forceKind);
   }
   return {
     mapping: heuristicMapping(read.parsed, processes, forceKind),
     outcome: {
       producedBy: "heuristic",
-      fallbackReason: hasModelKey() ? "Deterministic mapper chosen." : "No API key configured.",
+      fallbackReason: !hasModelKey()
+        ? "No API key configured."
+        : modelMapsColumns()
+          ? "Deterministic mapper chosen."
+          : RULE_BASED_ON_GROQ,
     },
   };
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { env } from "@/config/env";
-import { isAiAvailable, MODEL } from "@/lib/ai/client";
+import { aiLabel, isAiAvailable, modelMapsColumns, RULE_BASED_ON_GROQ } from "@/lib/ai/client";
 import { workspaceContext } from "@/lib/auth/context";
 import { DATASET_SCHEMAS } from "@/lib/ingest/schema";
 import { Badge, Card, Empty, fmt, Note, Page, PageHeader, Table, Td, Th } from "@/components/ui";
@@ -32,7 +32,7 @@ export default async function IngestPage() {
         }
         actions={
           <Badge tone={isAiAvailable() ? "accent" : "neutral"}>
-            {isAiAvailable() ? `AI: ${MODEL}` : "Rule-based mapping"}
+            {aiLabel() ? `AI: ${aiLabel()}` : "Rule-based mapping"}
           </Badge>
         }
       />
@@ -55,7 +55,11 @@ export default async function IngestPage() {
             title="Upload a file"
             subtitle="One dataset per file. Workbooks: the sheet and header row are detected and can be changed on review."
           >
-            <UploadForm aiAvailable={isAiAvailable()} maxMb={env.CARBONPASS_MAX_UPLOAD_MB} />
+            <UploadForm
+              aiAvailable={modelMapsColumns()}
+              ruleBasedNote={isAiAvailable() && !modelMapsColumns() ? RULE_BASED_ON_GROQ : null}
+              maxMb={env.CARBONPASS_MAX_UPLOAD_MB}
+            />
           </Card>
         ) : null}
 

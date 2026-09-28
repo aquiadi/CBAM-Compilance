@@ -13,7 +13,16 @@ const KINDS = [
   ["precursor", "Precursor receipts"],
 ] as const;
 
-export function UploadForm({ aiAvailable, maxMb }: { aiAvailable: boolean; maxMb: number }) {
+export function UploadForm({
+  aiAvailable,
+  ruleBasedNote = null,
+  maxMb,
+}: {
+  aiAvailable: boolean;
+  /** Why the model is not offered although a key is set. */
+  ruleBasedNote?: string | null;
+  maxMb: number;
+}) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const { send, pending, error, setError } = useRequest();
@@ -79,7 +88,9 @@ export function UploadForm({ aiAvailable, maxMb }: { aiAvailable: boolean; maxMb
         />
         Propose the mapping with the AI model
         {!aiAvailable ? (
-          <span className="text-muted">(no API key set - the deterministic mapper is used)</span>
+          <span className="text-muted">
+            ({ruleBasedNote ?? "no API key set - the deterministic mapper is used"})
+          </span>
         ) : null}
       </label>
       <FormError>{error}</FormError>

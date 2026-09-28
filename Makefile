@@ -75,7 +75,7 @@ docker-build: ## Build the container image
 
 docker-run: ## Run the image on $(PORT) with the embedded database in a named volume
 	docker run --rm -d --name $(IMAGE) -p $(PORT):3000 -v $(IMAGE)-data:/app/.data \
-		-e ANTHROPIC_API_KEY=$${ANTHROPIC_API_KEY:-} $(IMAGE):$(TAG)
+		-e ANTHROPIC_API_KEY=$${ANTHROPIC_API_KEY:-} -e GROQ_API_KEY=$${GROQ_API_KEY:-} $(IMAGE):$(TAG)
 	@echo "http://localhost:$(PORT)"
 
 docker-stop: ## Stop the running container

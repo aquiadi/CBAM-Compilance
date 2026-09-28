@@ -25,6 +25,19 @@ const EnvSchema = z.object({
   CARBONPASS_MODEL: z.string().min(1).default("claude-opus-5"),
 
   /**
+   * Groq API key: the free alternative. Used when ANTHROPIC_API_KEY is unset.
+   * Groq serves open-weight models and has no PDF input, so PDFs are read
+   * from their text layer and photos go to a vision model.
+   */
+  GROQ_API_KEY: z.string().min(1).optional(),
+
+  /** Groq model for mapping, triage, the memo and reading PDF text. */
+  GROQ_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
+
+  /** Groq model for reading photos and scans. It must accept images. */
+  GROQ_VISION_MODEL: z.string().min(1).default("qwen/qwen3.8-27b"),
+
+  /**
    * Certificate price in EUR assumed for quarters the Commission has not yet
    * published (the published 2026 quarterly prices are built in). Bounded
    * rather than merely numeric: a price of 0 or 10,000 is a configuration
@@ -124,8 +137,8 @@ function load(): Env {
 
 export const env: Env = load();
 
-/** True when a model API key is configured. */
-export const hasModelKey = (): boolean => Boolean(env.ANTHROPIC_API_KEY);
+/** True when a model API key is configured (Anthropic or Groq). */
+export const hasModelKey = (): boolean => Boolean(env.ANTHROPIC_API_KEY || env.GROQ_API_KEY);
 
 /** True when running on Vercel, where the filesystem is not persistent. */
 export const onVercel = (): boolean => Boolean(env.VERCEL);

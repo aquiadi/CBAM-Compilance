@@ -415,7 +415,11 @@ export function MappingEditor(props: Props) {
             <Button
               onClick={remap}
               disabled={pending || !props.aiAvailable}
-              title={props.aiAvailable ? undefined : "Set an API key to enable"}
+              title={
+                props.aiAvailable
+                  ? undefined
+                  : "AI mapping needs ANTHROPIC_API_KEY; on the free Groq tier the rule-based mapper is used"
+              }
             >
               Re-map with AI
             </Button>

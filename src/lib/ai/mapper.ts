@@ -2,7 +2,6 @@
 // ships alongside the classic API. Importing the same module keeps the
 // inferred parsed_output type intact instead of collapsing to {}.
 import * as z from "zod/v4";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { FACTORS } from "../cbam/factors";
 import { knownUnits } from "../cbam/units";
 import { heuristicMapping } from "../ingest/heuristic";
@@ -13,7 +12,8 @@ import {
   type DatasetKind,
   type DatasetMapping,
 } from "../ingest/schema";
-import { getClient, MODEL, withFallback, type AiOutcome } from "./client";
+import { MODEL, withFallback, type AiOutcome } from "./client";
+import { structured } from "./generate";
 
 /**
  * The schema-mapping agent.
@@ -144,32 +144,24 @@ export async function mapDataset(
   const fallback = () => heuristicMapping(dataset, processes, forceKind);
 
   const { value, outcome } = await withFallback<DatasetMapping>(async () => {
-    const client = getClient();
-    if (!client) throw new Error("No client");
     const started = Date.now();
-
-    const response = await client.messages.parse({
-      model: MODEL,
-      max_tokens: 16000,
+    const answer = await structured({
+      name: "column_mapping",
       system: SYSTEM,
-      thinking: { type: "adaptive" },
-      messages: [{ role: "user", content: buildPrompt(dataset, processes) }],
-      output_config: { format: zodOutputFormat(MappingSchema) },
+      prompt: buildPrompt(dataset, processes),
+      schema: MappingSchema,
     });
 
-    if (response.stop_reason === "refusal") {
-      throw new Error("Model declined to map this dataset.");
-    }
-    const parsed = response.parsed_output;
-    if (!parsed) throw new Error("Model returned no parseable mapping.");
+    if (answer.stop === "refusal") throw new Error("Model declined to map this dataset.");
+    if (!answer.value) throw new Error("Model returned no parseable mapping.");
 
     return {
-      value: validateMapping(dataset, parsed, processes, forceKind),
+      value: validateMapping(dataset, answer.value, processes, forceKind),
       outcome: {
         producedBy: "model",
-        model: MODEL,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+        model: answer.model,
+        inputTokens: answer.inputTokens,
+        outputTokens: answer.outputTokens,
         latencyMs: Date.now() - started,
       },
     };

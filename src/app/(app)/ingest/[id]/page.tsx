@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isAiAvailable } from "@/lib/ai/client";
+import { modelMapsColumns } from "@/lib/ai/client";
 import { workspaceContext } from "@/lib/auth/context";
 import { FACTORS } from "@/lib/cbam/factors";
 import { knownUnits } from "@/lib/cbam/units";
@@ -128,7 +128,7 @@ export default async function DatasetPage({ params }: { params: Promise<{ id: st
         <MappingEditor
           datasetId={ds.id}
           canWrite={ctx.canWrite}
-          aiAvailable={isAiAvailable()}
+          aiAvailable={modelMapsColumns()}
           status={ds.status}
           initial={{
             kind: ds.mapping.kind,

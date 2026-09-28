@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { extractDocument } from "@/lib/ai/extract";
+import { documentMediaType, extractDocument } from "@/lib/ai/extract";
 import { recordAudit } from "@/lib/audit";
 import { apiWorkspaceContext, jsonError } from "@/lib/auth/context";
 import { takeDocument } from "@/lib/document-upload";
-import { storeFile, type EvidenceCategory } from "@/lib/files";
+import { getFile, storeFile, type EvidenceCategory } from "@/lib/files";
 import { errorResponse } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -24,6 +24,9 @@ const CATEGORY_FOR_TYPE: Record<string, EvidenceCategory> = {
  * Reads a bill, receipt or photo. The document is stored as evidence first, so
  * it is kept whatever happens next; the model's reading comes back as proposed
  * lines for a person to check. Nothing is added to a dataset here.
+ *
+ * Sending `fileId` instead of a file reads a document already stored - to try
+ * again after a rate limit, without keeping a second copy.
  */
 export async function POST(request: Request) {
   const r = await apiWorkspaceContext(request, { write: true });
@@ -34,6 +37,8 @@ export async function POST(request: Request) {
   } catch {
     return jsonError(400, "Send the document as multipart/form-data.");
   }
+  const fileId = form.get("fileId");
+  if (typeof fileId === "string" && fileId) return readAgain(r.ctx, fileId);
   const doc = await takeDocument(form);
   if (!doc.ok) return jsonError(doc.status, doc.message);
 
@@ -73,6 +78,64 @@ export async function POST(request: Request) {
       fileId: stored.id,
       fileName: stored.fileName,
       mediaType: doc.mediaType,
+      extraction,
+      outcome,
+    });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+type Ctx = Extract<Awaited<ReturnType<typeof apiWorkspaceContext>>, { ok: true }>["ctx"];
+
+async function readAgain(ctx: Ctx, fileId: string) {
+  try {
+    const limit = await rateLimit(ctx.db, `documents:${ctx.user.id}`, 60, 3600);
+    if (!limit.allowed) {
+      return jsonError(429, "Too many documents in the last hour. Try again later.");
+    }
+    const stored = await getFile(ctx.db, ctx.workspace.id, fileId);
+    const mediaType = stored && documentMediaType(stored.fileName, stored.contentType);
+    if (!stored || stored.purpose !== "evidence" || !mediaType) {
+      return jsonError(404, "Document not found.");
+    }
+    const { extraction, outcome } = await extractDocument({
+      bytes: stored.bytes,
+      mediaType,
+      fileName: stored.fileName,
+    });
+    if (outcome.producedBy === "model") {
+      const label = [extraction.issuer, extraction.documentNumber].filter(Boolean).join(" · ");
+      await ctx.db.query(
+        "UPDATE files SET category = $1, label = $2 WHERE workspace_id = $3 AND id = $4",
+        [
+          CATEGORY_FOR_TYPE[extraction.documentType] ?? "other",
+          label || stored.fileName,
+          ctx.workspace.id,
+          stored.id,
+        ],
+      );
+    }
+    await recordAudit(ctx.db, {
+      orgId: ctx.org.id,
+      workspaceId: ctx.workspace.id,
+      actor: ctx.actor,
+      action: "document.read",
+      detail: {
+        fileId: stored.id,
+        fileName: stored.fileName,
+        sha256: stored.sha256,
+        readBy: outcome.producedBy === "model" ? outcome.model : "nobody (manual entry)",
+        lines: extraction.lines.length,
+        notFoundInText: extraction.lines.filter((l) => l.check === "not_found").length,
+        again: true,
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      fileId: stored.id,
+      fileName: stored.fileName,
+      mediaType,
       extraction,
       outcome,
     });

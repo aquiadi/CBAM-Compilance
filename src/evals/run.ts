@@ -11,7 +11,7 @@
 import { heuristicMapping } from "../lib/ingest/heuristic";
 import { parseCsv } from "../lib/ingest/parse";
 import { mapDataset } from "../lib/ai/mapper";
-import { isAiAvailable, MODEL } from "../lib/ai/client";
+import { aiProvider, isAiAvailable, MODEL } from "../lib/ai/client";
 import { CASES, PROCESSES } from "./fixtures/mapping";
 import { formatReport, scoreCase, summarise, type CaseScore, type EvalSummary } from "./score";
 import { formatDelta, previousRun, record, toRun } from "./tracker";
@@ -32,17 +32,22 @@ async function runHeuristic(): Promise<EvalSummary> {
 
 async function runModel(): Promise<EvalSummary> {
   const started = Date.now();
-  // Cases run concurrently; they are independent and this keeps the loop short.
-  const scores = await Promise.all(
-    CASES.map(async (testCase) => {
-      const dataset = parseCsv(testCase.fileName, testCase.csv, testCase.id);
-      const { mapping, outcome } = await mapDataset(dataset, PROCESSES);
-      if (outcome.producedBy !== "model") {
-        console.warn(`  ! ${testCase.id} fell back to the heuristic: ${outcome.fallbackReason}`);
-      }
-      return scoreCase(testCase, mapping);
-    }),
-  );
+  const run = async (testCase: (typeof CASES)[number]) => {
+    const dataset = parseCsv(testCase.fileName, testCase.csv, testCase.id);
+    const { mapping, outcome } = await mapDataset(dataset, PROCESSES);
+    if (outcome.producedBy !== "model") {
+      console.warn(`  ! ${testCase.id} fell back to the heuristic: ${outcome.fallbackReason}`);
+    }
+    return scoreCase(testCase, mapping);
+  };
+  // Cases are independent, so they run concurrently - except on Groq's free
+  // tier, whose per-minute token limit only fits one case at a time.
+  const scores: CaseScore[] = [];
+  if (aiProvider() === "groq") {
+    for (const testCase of CASES) scores.push(await run(testCase));
+  } else {
+    scores.push(...(await Promise.all(CASES.map(run))));
+  }
   return summarise(MODEL, scores, Date.now() - started);
 }
 

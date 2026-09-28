@@ -142,10 +142,11 @@ export function DocumentReader({
     await read(next);
   }
 
-  async function read(target: File | null = file) {
-    if (!target) return;
+  async function read(target: File | null = file, storedId?: string) {
+    if (!target && !storedId) return;
     const form = new FormData();
-    form.set("file", target);
+    if (storedId) form.set("fileId", storedId);
+    else if (target) form.set("file", target);
     const r = await reading.send<ReadResponse>("/api/documents", { form });
     if (!r) return;
     setResult(r);
@@ -512,11 +513,22 @@ export function DocumentReader({
             <Button variant="primary" disabled={importing.pending} onClick={importRows}>
               {importing.pending ? "Creating…" : "Create draft dataset"}
             </Button>
+            {aiAvailable && result.outcome.producedBy !== "model" ? (
+              <Button
+                disabled={reading.pending}
+                onClick={() => {
+                  setProblem(null);
+                  void read(null, result.fileId);
+                }}
+              >
+                {reading.pending ? "Reading…" : "Try reading again"}
+              </Button>
+            ) : null}
             <Button variant="ghost" onClick={reset}>
               Start over
             </Button>
           </div>
-          <FormError>{problem ?? importing.error}</FormError>
+          <FormError>{problem ?? importing.error ?? reading.error}</FormError>
         </div>
       </div>
     </div>

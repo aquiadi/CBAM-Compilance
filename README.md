@@ -31,7 +31,7 @@ number traceable to the source file and row it came from.
   deterministic mapper), and shows you the mapping to review before any row counts. Units are never
   assumed: a row with no unit, or an unrecognised one, is rejected with a reason.
 - **Read documents.** Fuel invoices, electricity bills, material receipts and weighbridge slips,
-  as PDFs, scans or phone photos. With a model key, Claude reads each document into proposed line
+  as PDFs, scans or phone photos. With a model key (Claude, or Groq's free tier), the model reads each document into proposed line
   items. Every item comes with the words it was read from, and a PDF's figures are cross-checked
   against the document's own text; a figure the model reports but the text does not contain is
   flagged. A person checks every line next to the document. Only then does it become a draft
@@ -135,7 +135,8 @@ It is one Next.js app and one Postgres database. There is nothing else to run.
 3. **Optional settings**: under _Settings_ → _Environment Variables_:
    - `APP_URL`: your deployment URL, used in invitation and supplier links.
    - `CARBONPASS_SIGNUP=invite`: set this once your own account exists.
-   - `ANTHROPIC_API_KEY`: switches the column mapper, triage and memo to the model.
+   - `ANTHROPIC_API_KEY`: switches document reading, the column mapper, triage and memo to Claude.
+     For a free start, set `GROQ_API_KEY` instead (see [Free AI with Groq](#free-ai-with-groq)).
 4. **Redeploy** (_Deployments_ → ⋯ → _Redeploy_). Tables are created on the first request. Open the
    URL, create an account, and choose **Open the demo**.
 
@@ -188,19 +189,49 @@ Every variable is optional except `DATABASE_URL` on Vercel. [`src/config/env.ts`
 validates them all at startup; a bad value stops the process with the variable named.
 [`.env.example`](.env.example) documents each one.
 
-| Variable                   | Default           | Purpose                                                                     |
-| -------------------------- | ----------------- | --------------------------------------------------------------------------- |
-| `DATABASE_URL`             | embedded database | Postgres connection string. `POSTGRES_URL` is accepted as well              |
-| `CARBONPASS_DATA_DIR`      | `.data`           | Where the embedded database lives when `DATABASE_URL` is unset              |
-| `CARBONPASS_SIGNUP`        | `open`            | `invite` allows new accounts only through an invitation link                |
-| `APP_URL`                  | from the request  | Base URL for invitation and supplier links                                  |
-| `CARBONPASS_MAX_UPLOAD_MB` | `4`               | Largest accepted upload                                                     |
-| `ANTHROPIC_API_KEY`        | unset             | Enables document reading, and the model for mapping, triage, memo           |
-| `CARBONPASS_MODEL`         | `claude-opus-5`   | Model used when a key is set                                                |
-| `SMTP_URL`                 | unset             | `smtps://user:pass@host:465`: e-mails invitations, supplier and reset links |
-| `MAIL_FROM`                | unset             | Sender, e.g. `CarbonPass <cbam@yourplant.in>`; needed with `SMTP_URL`       |
-| `CARBONPASS_ETS_PRICE_EUR` | `75`              | Price for quarters not yet published; each workspace can override           |
-| `CARBONPASS_INR_PER_EUR`   | `92`              | For showing cost in rupees                                                  |
+| Variable                   | Default               | Purpose                                                                     |
+| -------------------------- | --------------------- | --------------------------------------------------------------------------- |
+| `DATABASE_URL`             | embedded database     | Postgres connection string. `POSTGRES_URL` is accepted as well              |
+| `CARBONPASS_DATA_DIR`      | `.data`               | Where the embedded database lives when `DATABASE_URL` is unset              |
+| `CARBONPASS_SIGNUP`        | `open`                | `invite` allows new accounts only through an invitation link                |
+| `APP_URL`                  | from the request      | Base URL for invitation and supplier links                                  |
+| `CARBONPASS_MAX_UPLOAD_MB` | `4`                   | Largest accepted upload                                                     |
+| `ANTHROPIC_API_KEY`        | unset                 | Enables document reading, and the model for mapping, triage, memo           |
+| `CARBONPASS_MODEL`         | `claude-opus-5`       | Model used when a key is set                                                |
+| `GROQ_API_KEY`             | unset                 | The free option, used when `ANTHROPIC_API_KEY` is unset                     |
+| `GROQ_MODEL`               | `openai/gpt-oss-120b` | Groq model for text, PDFs, mapping, triage and memo                         |
+| `GROQ_VISION_MODEL`        | `qwen/qwen3.8-27b`    | Groq model for photos                                                       |
+| `SMTP_URL`                 | unset                 | `smtps://user:pass@host:465`: e-mails invitations, supplier and reset links |
+| `MAIL_FROM`                | unset                 | Sender, e.g. `CarbonPass <cbam@yourplant.in>`; needed with `SMTP_URL`       |
+| `CARBONPASS_ETS_PRICE_EUR` | `75`                  | Price for quarters not yet published; each workspace can override           |
+| `CARBONPASS_INR_PER_EUR`   | `92`                  | For showing cost in rupees                                                  |
+
+### Free AI with Groq
+
+To try the AI steps without paying, use [Groq](https://console.groq.com)'s free tier:
+
+1. Sign in at console.groq.com (no card needed) and create an API key under _API Keys_.
+2. Add it to your deployment as `GROQ_API_KEY` (Railway: the service's _Variables_ tab; Vercel:
+   _Settings_ → _Environment Variables_) and redeploy. Leave `ANTHROPIC_API_KEY` unset.
+
+The app then labels every AI answer with the Groq model that produced it. Compared with Claude:
+
+- **PDFs are read from their text layer.** Groq has no PDF input. Scanned PDFs have no text, so
+  upload photos of their pages instead.
+- **Photos go to a smaller vision model** and must be under 4 MB.
+- **Column mapping stays rule-based.** On the mapping eval the free model matched the rule-based
+  mapper on columns (98.6%) but resolved fewer materials (66.7% against 100%) and filed DOLOCHAR, a
+  fuel, as dolomite. So on Groq the model reads documents, triages findings and writes the memo,
+  and spreadsheets are mapped by rules. `npm run eval -- --model` re-measures it.
+- **Free-tier rate limits.** At the time of writing each model allows 8,000 tokens a minute and
+  1,000 requests a day. A document takes about 2,000 tokens, so expect three or four a minute; the
+  app waits up to 30 seconds when Groq asks it to. When a limit is still hit it says so and falls
+  back: documents open for manual entry, mapping uses the rule-based mapper, the memo uses the
+  deterministic writer.
+- **Check Groq's data terms** before sending customer documents.
+
+Every answer still goes through the same checks: schema validation, figures looked up in the
+document's text, and a person confirming each line. Switching to Claude later is one variable.
 
 ---
 
@@ -434,7 +465,9 @@ src/
 - **The XLSX report follows the structure of the communication template**; it is not the
   Commission's own file. The monitoring methodology is a document for the verifier, not a
   Commission-format monitoring plan.
-- **Document reading needs a model key** (`ANTHROPIC_API_KEY`). Without one, documents are stored
+- **Document reading needs a model key** (`ANTHROPIC_API_KEY`, or `GROQ_API_KEY` for free). With
+  Groq, scanned PDFs cannot be read (upload photos of the pages instead), photos must be under
+  4 MB, and the free tier reads three or four documents a minute. Without a key, documents are stored
   and figures are entered by hand. Photos and scans have no text layer, so their figures cannot be
   cross-checked automatically and are marked "check by eye". iPhone HEIC photos must be shared as
   JPEG. Word files must be saved as PDF.
@@ -449,10 +482,11 @@ src/
   value, column and route indicator used for each good.
 - **Shared site activities are attributed by configured alias, not allocated.** For example, diesel
   for material handling lands on the DRI kiln because the installation configuration says so.
-- **The model paths have not been run against a live API here**: no key was available during
-  development. The requests and the handling of every kind of answer are unit-tested against a
-  stubbed client, but reading accuracy on real bills has not been measured yet. Every figure above
-  came from the deterministic path.
+- **Reading accuracy is not yet measured on real bills.** The Groq path has been run live on
+  generated invoices (a PDF and a photo, read correctly) and on the mapping eval (results above); the
+  Claude path has only been run against a stubbed client, since no key was available. Every
+  request and every kind of answer is unit-tested either way. Every figure above came from the
+  deterministic path.
 
 ---
 

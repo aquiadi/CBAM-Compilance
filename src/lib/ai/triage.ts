@@ -1,8 +1,8 @@
 import * as z from "zod/v4";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { DeclarationResult } from "../cbam/declaration";
 import type { Finding } from "../cbam/rules";
-import { getClient, MODEL, withFallback, type AiOutcome } from "./client";
+import { withFallback, type AiOutcome } from "./client";
+import { structured } from "./generate";
 
 /**
  * Finding triage.
@@ -124,30 +124,24 @@ export async function triageFindings(result: DeclarationResult): Promise<TriageR
   });
 
   const { value, outcome } = await withFallback(async () => {
-    const client = getClient();
-    if (!client) throw new Error("No client");
     const started = Date.now();
-
-    const response = await client.messages.parse({
-      model: MODEL,
-      max_tokens: 16000,
+    const answer = await structured({
+      name: "finding_triage",
       system: SYSTEM,
-      thinking: { type: "adaptive" },
-      messages: [{ role: "user", content: buildPrompt(result) }],
-      output_config: { format: zodOutputFormat(TriageSchema) },
+      prompt: buildPrompt(result),
+      schema: TriageSchema,
     });
 
-    if (response.stop_reason === "refusal") throw new Error("Model declined to triage.");
-    const parsed = response.parsed_output;
-    if (!parsed) throw new Error("Model returned no parseable triage.");
+    if (answer.stop === "refusal") throw new Error("Model declined to triage.");
+    if (!answer.value) throw new Error("Model returned no parseable triage.");
 
     return {
-      value: parsed,
+      value: answer.value,
       outcome: {
         producedBy: "model" as const,
-        model: MODEL,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+        model: answer.model,
+        inputTokens: answer.inputTokens,
+        outputTokens: answer.outputTokens,
         latencyMs: Date.now() - started,
       },
     };

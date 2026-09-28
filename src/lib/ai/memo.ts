@@ -1,6 +1,7 @@
 import type { DeclarationResult } from "../cbam/declaration";
 import { getFactor } from "../cbam/factors";
-import { getClient, MODEL, describeError } from "./client";
+import { aiProvider, getClient, MODEL, describeError } from "./client";
+import { groqStream } from "./groq";
 
 /**
  * The methodology memo.
@@ -138,6 +139,16 @@ Write the methodology memo.`;
 
 /** Streams the memo as plain text chunks. */
 export async function* streamMemo(result: DeclarationResult): AsyncGenerator<string> {
+  if (aiProvider() === "groq") {
+    try {
+      yield* groqStream({ system: SYSTEM, prompt: buildPrompt(result) });
+    } catch (error) {
+      yield `\n\n---\n\n_Memo generation fell back to the deterministic writer: ${describeError(error)}_\n\n`;
+      yield fallbackMemo(result);
+    }
+    return;
+  }
+
   const client = getClient();
   if (!client) {
     yield fallbackMemo(result);

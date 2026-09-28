@@ -37,6 +37,7 @@ services:
       # and the UI labels the provenance accordingly.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CARBONPASS_MODEL: ${CARBONPASS_MODEL:-claude-opus-5}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
       CARBONPASS_ETS_PRICE_EUR: ${CARBONPASS_ETS_PRICE_EUR:-75}
     volumes:
       - carbonpass-data:/app/.data

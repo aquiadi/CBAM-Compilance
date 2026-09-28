@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { isAiAvailable, MODEL } from "@/lib/ai/client";
+import { aiLabel } from "@/lib/ai/client";
 import { pageContext } from "@/lib/auth/context";
 import { ROLES } from "@/lib/auth/accounts";
 
@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       workspaces={ctx.workspaces.map((w) => ({ id: w.id, name: w.name }))}
       currentWorkspaceId={ctx.workspace?.id ?? null}
       isDemo={Boolean(ctx.workspace?.name.includes("(demo)"))}
-      model={isAiAvailable() ? MODEL : null}
+      model={aiLabel()}
       database={ctx.db.kind}
     >
       {children}

@@ -1,15 +1,16 @@
 import * as z from "zod/v4";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { lookupGoods } from "../cbam/goods";
 import { countryCode } from "../cbam/regulatory";
-import { describeError, getClient, isAiAvailable, MODEL, type AiOutcome } from "./client";
+import { describeError, isAiAvailable, type AiOutcome } from "./client";
 import {
-  documentContent,
+  documentPrompt,
   documentText,
+  NO_MODEL_CONFIGURED,
   numberInText,
   type CheckStatus,
   type DocumentMediaType,
 } from "./extract";
+import { structured } from "./generate";
 
 /**
  * Reading a supplier's CBAM communication - the document a precursor supplier
@@ -196,51 +197,32 @@ export async function readSupplierCommunication(args: {
     communication: emptySupplierCommunication(reason, text !== null),
     outcome: { producedBy: "heuristic" as const, fallbackReason: reason },
   });
-  if (!isAiAvailable()) {
-    return empty(
-      "No AI model is configured (ANTHROPIC_API_KEY), so the document was not read automatically. Enter the supplier's values below.",
-    );
-  }
-  const client = getClient();
-  if (!client) return empty("The AI model is not available.");
+  if (!isAiAvailable()) return empty(`${NO_MODEL_CONFIGURED} Enter the supplier's values below.`);
   const started = Date.now();
   try {
-    const response = await client.beta.messages.parse({
-      model: MODEL,
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      thinking: { type: "adaptive" },
+    const answer = await structured({
+      name: "supplier_communication",
       system: SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content: documentContent(
-            args.bytes,
-            args.mediaType,
-            args.fileName,
-            "Extract the supplier, installation, verification status and the per-good figures.",
-          ),
-        },
-      ],
-      output_config: { format: betaZodOutputFormat(SupplierCommunicationSchema) },
+      prompt: documentPrompt(
+        args,
+        text,
+        "Extract the supplier, installation, verification status and the per-good figures.",
+      ),
+      schema: SupplierCommunicationSchema,
     });
-    if (response.stop_reason === "refusal") {
+    if (answer.stop === "refusal") {
       return empty("The model declined to read this document. Enter the values below.");
     }
-    if (response.stop_reason === "max_tokens" || !response.parsed_output) {
+    if (answer.stop === "max_tokens" || !answer.value) {
       return empty("The document could not be read in one pass. Enter the values below.");
     }
     return {
-      communication: crossCheckSupplier(
-        validateSupplierCommunication(response.parsed_output),
-        text,
-      ),
+      communication: crossCheckSupplier(validateSupplierCommunication(answer.value), text),
       outcome: {
         producedBy: "model",
-        model: response.model,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+        model: answer.model,
+        inputTokens: answer.inputTokens,
+        outputTokens: answer.outputTokens,
         latencyMs: Date.now() - started,
       },
     };
