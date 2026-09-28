@@ -31,6 +31,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.07,
+    tier: 2,
     notes:
       "NCV lowered to 18.0 GJ/t to reflect the high ash content of Indian domestic coal; " +
       "IPCC's 25.8 GJ/t default assumes internationally traded bituminous coal and " +
@@ -49,6 +50,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.05,
+    tier: 1,
   },
   {
     id: "coke_oven_coke",
@@ -62,6 +64,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.05,
+    tier: 1,
   },
   {
     id: "natural_gas",
@@ -76,6 +79,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.04,
+    tier: 1,
   },
   {
     id: "furnace_oil",
@@ -90,6 +94,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.05,
+    tier: 1,
   },
   {
     id: "diesel",
@@ -104,6 +109,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.04,
+    tier: 1,
   },
   {
     id: "lpg",
@@ -118,6 +124,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.04,
+    tier: 1,
   },
   {
     id: "petroleum_coke",
@@ -131,6 +138,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: IPCC_REF,
     vintage: "2006",
     uncertainty: 0.06,
+    tier: 1,
   },
   {
     id: "biomass_agri_residue",
@@ -144,6 +152,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Vol. 2 Ch. 2, biomass CO2 reported as memo item",
     vintage: "2006",
     uncertainty: 0.15,
+    tier: 1,
     notes:
       "Biogenic CO2 carries a zero factor for the CBAM direct-emissions total. " +
       "Sustainability criteria must be documented or the zero rating fails verification.",
@@ -160,6 +169,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Vol. 3 Ch. 2, stoichiometric ratio CO2/CaCO3",
     vintage: "2006",
     uncertainty: 0.03,
+    tier: 1,
     notes:
       "Assumes complete calcination; apply the plant's measured calcination fraction if lower.",
   },
@@ -173,6 +183,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Vol. 3 Ch. 2, stoichiometric ratio",
     vintage: "2006",
     uncertainty: 0.03,
+    tier: 1,
   },
   {
     id: "graphite_electrode",
@@ -184,6 +195,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Vol. 3 Ch. 4, carbon content 99%, oxidised to CO2",
     vintage: "2006",
     uncertainty: 0.05,
+    tier: 1,
   },
   {
     id: "carbon_anode_paste",
@@ -195,6 +207,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Vol. 3 Ch. 4.4, prebake anode consumption",
     vintage: "2006",
     uncertainty: 0.06,
+    tier: 1,
   },
 
   // ----------------------------------------------------------- electricity
@@ -208,10 +221,13 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Weighted average emission rate, all-India",
     vintage: "v20 (2024)",
     uncertainty: 0.05,
+    tier: 2,
     notes:
-      "CBAM requires the actual emission factor of the electricity consumed where it can be " +
-      "evidenced. Use the national average only where no supplier-specific factor exists, and " +
-      "expect a verifier to ask why.",
+      "In the definitive period the default for grid electricity is the Commission's country " +
+      "factor in Annex II to Implementing Regulation (EU) 2025/2621 (IEA-based, licensed data " +
+      "not redistributed here). Enter it under Settings to replace this national value. For " +
+      "iron & steel, aluminium and hydrogen indirect emissions do not create an obligation, so " +
+      "the choice changes what is reported, not what is charged.",
   },
   {
     id: "grid_in_western",
@@ -223,6 +239,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Regional weighted average, Western grid",
     vintage: "v20 (2024)",
     uncertainty: 0.06,
+    tier: 2,
   },
   {
     id: "captive_coal_power",
@@ -234,6 +251,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "Subcritical CFBC unit at 32% net efficiency on Indian coal",
     vintage: "derived",
     uncertainty: 0.1,
+    tier: 1,
     notes:
       "Placeholder pending the plant's own generation and fuel records. Where the captive unit " +
       "sits inside the installation boundary its fuel is already counted as a direct emission, " +
@@ -249,6 +267,7 @@ export const FACTORS: EmissionFactor[] = [
     sourceRef: "CBAM IR Annex III - PPA with a direct technical connection",
     vintage: "n/a",
     uncertainty: 0.0,
+    tier: 3,
     notes:
       "A zero factor is only defensible for a direct-line PPA or where the CBAM rules on power " +
       "purchase agreements are met. An unbundled REC purchase does not qualify.",
@@ -261,10 +280,11 @@ export const FACTORS: EmissionFactor[] = [
     basis: "energy",
     value: 66.7,
     unit: "tCO2e/TJ",
-    source: "CBAM Implementing Regulation (EU) 2023/1773",
-    sourceRef: "Annex III, default for heat from natural gas at 90% efficiency",
+    source: "CBAM transitional-period default, Implementing Regulation (EU) 2023/1773",
+    sourceRef: "Annex III, heat from natural gas at 90% efficiency",
     vintage: "2023",
     uncertainty: 0.08,
+    tier: 1,
   },
 ];
 

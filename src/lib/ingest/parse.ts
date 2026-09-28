@@ -78,6 +78,23 @@ export function parseCsv(fileName: string, content: string, datasetId: string): 
   );
   const headers = (result.meta.fields ?? []).filter((h) => h !== "");
 
+  return profileDataset(
+    fileName,
+    datasetId,
+    headers,
+    rows,
+    (result.errors ?? []).slice(0, 5).map((e) => `Row ${e.row ?? "?"}: ${e.message}`),
+  );
+}
+
+/** Profiles already-split rows. Shared by the CSV and spreadsheet readers. */
+export function profileDataset(
+  fileName: string,
+  datasetId: string,
+  headers: string[],
+  rows: Record<string, string>[],
+  parseErrors: string[] = [],
+): ParsedDataset {
   const columns: ColumnProfile[] = headers.map((name, index) => {
     const values = rows.map((r) => String(r[name] ?? ""));
     const nonEmpty = values.filter((v) => !isNullish(v));
@@ -103,7 +120,7 @@ export function parseCsv(fileName: string, content: string, datasetId: string): 
     rows,
     columns,
     rowCount: rows.length,
-    parseErrors: (result.errors ?? []).slice(0, 5).map((e) => `Row ${e.row ?? "?"}: ${e.message}`),
+    parseErrors,
   };
 }
 

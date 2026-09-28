@@ -1,308 +1,399 @@
-# CarbonPass AI
+# CarbonPass
 
 [![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml?query=branch%3Amain)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-3987e5)](.nvmrc)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3987e5)](tsconfig.json)
 [![License](https://img.shields.io/badge/license-MIT-6e7682)](LICENSE)
 
-**CBAM compliance for Indian exporters. Messy production data in, a defensible emissions
-declaration out.**
+**CBAM emissions data for non-EU installations. Plant spreadsheets in; specific embedded
+emissions, free-allocation adjustment and a verifier-ready evidence pack out.**
 
 ---
 
-## Executive summary
+## What it is
 
-From 1 January 2026 the EU's Carbon Border Adjustment Mechanism stops being a reporting exercise and
-starts costing money. An Indian steel, aluminium, cement or fertiliser exporter must tell their EU
-importer how much CO₂ is embedded in every tonne shipped, evidence it to an accredited verifier, and
-watch that figure multiplied by an EU ETS certificate price on a schedule reaching 100% by 2034. The
-data to answer that already exists — scattered across an SAP consumption extract, a DISCOM
-electricity bill and a despatch register, in tonnes, kilolitres, million units and lakhs, with the
-units in a different column from the numbers.
+The EU's Carbon Border Adjustment Mechanism entered its definitive period on 1 January 2026. An EU
+importer of steel, aluminium, cement, fertilisers, hydrogen or electricity must buy and surrender
+CBAM certificates for the emissions embedded in those goods. For each good the importer needs the
+**specific embedded emissions** (SEE) of the installation that made it, verified by an accredited
+verifier. Without verified figures the importer has to use the Commission's default values, which
+carry a mark-up. The first annual declaration is due by **30 September 2027**.
 
-CarbonPass ingests those files and produces a declaration with every figure traceable to the source
-row that produced it.
+CarbonPass is for the operator of that installation: the Indian steel plant, the aluminium smelter,
+the fertiliser unit. Its data sits in an SAP consumption extract, a DISCOM electricity bill and a
+despatch register. It turns that data into the figures an importer and a verifier need, with every
+number traceable to the source file and row it came from.
 
-**On the seeded demo — a Chhattisgarh DRI–EAF steel plant, 5 files, 120 rows:**
+**What it does:**
 
-| Metric                                   | Result                                                      |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| Unit error caught                        | A coal row exported in **kg** while the UOM column said MT  |
-| Phantom exposure removed                 | **€65.2M → €307,892** once the operator acts on the finding |
-| Declaration readiness                    | **80 → 89 / 100**, 3 blocking findings → 0                  |
-| Calculated intensity vs sector benchmark | Within **1–13%** across all three products                  |
-| Mapping eval — column **error** rate     | **0.0%** across 9 adversarial cases                         |
-| Test suite                               | **87 tests**, including architecture tests enforcing purity |
+- **Ingest.** Upload CSV or Excel exports as they come out of the plant's systems. It finds the
+  header row and sheet, maps columns to a canonical schema (a model if configured, otherwise a
+  deterministic mapper), and shows you the mapping to review before any row counts. Units are never
+  assumed: a row with no unit, or an unrecognised one, is rejected with a reason.
+- **Calculate.** It applies the definitive-period methodology (Implementing Regulation (EU)
+  2025/2547) to reach attributed emissions per process, then specific embedded emissions per CN
+  code, resolving on-site precursors in dependency order: DRI → billets → rebar.
+- **Free allocation.** It computes the benchmark-based free allocation adjustment (SEFA) per good
+  from the Commission's benchmark table (IR 2025/2620) and the CBAM factor for each year. It
+  compares each good against the official default value for the country of origin (IR 2025/2621,
+  corrected by 2026/1740).
+- **Certificates and cost.** Obligation = (SEE − SEFA) × EU-bound tonnes, less any carbon price
+  paid at origin (Art. 9), priced at the Commission's published quarterly price. It shows the
+  trajectory to 2034 against what the same goods would cost on default values.
+- **Check.** It runs 20 data-quality rules (unit outliers, duplicates, gaps, implausible
+  intensities, unverified precursor data, non-CBAM CN codes, missing installation details). Each
+  finding has a severity. Blocking findings cannot be waved away; the fix is to exclude a row with a
+  recorded reason, or to correct the data.
+- **Suppliers.** It sends precursor suppliers a private link where they submit their SEE, SEFA and
+  verification status, with evidence. Accepted submissions replace default values in the
+  calculation.
+- **Evidence and outputs.** It exports:
+  - an emissions report (.xlsx), structured after the Commission's communication template;
+  - the communication data as JSON;
+  - a monitoring-methodology document;
+  - a **verifier pack** (.zip) holding every export, every source file and every piece of evidence,
+    each with a SHA-256 checksum.
+- **Teams.** Organisations, several installations and years each, and four roles: owner, editor,
+  viewer and verifier. An append-only activity log records who changed what.
 
-The product is the catch. A single misread unit was worth €64.9M of imaginary liability.
+## The demo
 
----
+"Open the demo" after signing up loads Raigarh Works, a DRI–EAF steel plant in Chhattisgarh. It
+reports eight months of exports (Jan–Aug 2026, five files, 137 records) and a seeded set of defects:
 
-## Architecture
+| On the demo                           | Before the operator acts                        | After two exclusions (with reasons) |
+| ------------------------------------- | ----------------------------------------------- | ----------------------------------- |
+| Coal row exported in **kg**, UOM "MT" | Rebar at 401.9 tCO₂e/t: three blocking findings | 2.34 tCO₂e/t, blockers cleared      |
+| 2026 certificates (Jan–Aug)           | 33.4 million (€2.51 bn)                         | **159,017 (€11.96 M)**              |
+| Same goods on default values          | —                                               | 282,167 certificates (€21.23 M)     |
+| Readiness                             | 82 / 100, not filable                           | 89 / 100, defensible                |
 
-The system is two halves separated by a validation gate. A language model handles the fuzzy problem
-(what does this column mean); a deterministic engine owns every number. Nothing crosses the gate
-without being checked against the engine's own tables.
+After the fixes, SEE against the Commission default values for India, and SEFA per good:
 
-```mermaid
-flowchart TB
-    subgraph SRC["Source data"]
-        A["Plant exports<br/>SAP · DISCOM bills · despatch register<br/>tonnes / KL / MU / lakhs"]
-    end
+| CN code    | Good    | SEE (direct, counted) | Default value (2026) | SEFA 2026 |
+| ---------- | ------- | --------------------- | -------------------- | --------- |
+| 7203 10 00 | DRI     | 1.935 tCO₂e/t         | 4.620                | 0.288     |
+| 7207 11 14 | Billets | 2.183 tCO₂e/t         | 4.697                | 0.350     |
+| 7214 20 00 | Rebar   | 2.336 tCO₂e/t         | 4.697                | 0.392     |
 
-    subgraph ING["Ingest — src/lib/ingest"]
-        B["Parse and profile<br/>headers, samples, cardinality"]
-        C{"Model API key<br/>configured?"}
-        D["LLM mapper<br/>structured output"]
-        E["Deterministic mapper<br/>token overlap + shape"]
-        F["VALIDATION GATE<br/>every field, factor and process id<br/>checked against engine tables"]
-        G["Materialise to activity records<br/>rejects with a reason, never guesses"]
-    end
+Ferro-silicon (7202 21 00) is correctly recorded as outside CBAM: of the ferro-alloys, Annex I
+covers only ferro-manganese, ferro-chromium and ferro-nickel. Workshop spares despatched under a
+machinery code (8455 90 00) are flagged as not a CBAM good. The remaining warnings are real and left
+open on purpose:
 
-    subgraph ENG["Engine — src/lib/cbam (pure, no I/O, no model)"]
-        H["Factor library<br/>source · vintage · uncertainty"]
-        I["Attributed emissions<br/>Annex III"]
-        J["On-site precursors<br/>resolved in dependency order"]
-        K["Specific embedded emissions<br/>Annex IV"]
-        L["13 data-quality rules<br/>CP-001 … CP-013"]
-        M["Readiness score<br/>weighted to verifier priorities"]
-        N["Certificate exposure<br/>CBAM factor · Art. 9 credit"]
-    end
-
-    subgraph OUT["Outputs"]
-        O["Declaration lines<br/>per CN code"]
-        P["Communication JSON · CSV · Registry XML"]
-        Q["Methodology memo<br/>LLM-drafted from computed figures"]
-        R["Audit trail<br/>every figure → file and row"]
-    end
-
-    A --> B --> C
-    C -- yes --> D --> F
-    C -- no --> E --> F
-    F --> G --> I
-    H --> I --> J --> K --> L --> M
-    K --> N
-    K --> O --> P
-    M --> Q
-    G --> R
-    N --> O
-
-    classDef model fill:#1e2a3a,stroke:#3987e5,color:#e6e9ee
-    classDef gate fill:#3a2418,stroke:#d95926,color:#f2f4f7
-    classDef engine fill:#16241e,stroke:#199e70,color:#e6e9ee
-    class D,Q model
-    class F gate
-    class H,I,J,K,L,M,N engine
-```
-
-### The core design decision: the model never touches a number
-
-This is a compliance tool. A wrong figure is not a bad user experience, it is a misdeclaration with
-a penalty attached.
-
-| The model does                                  | The engine does                                        |
-| ----------------------------------------------- | ------------------------------------------------------ |
-| Map "Qty Consumed" to a canonical field         | Convert 19,240.80 MT of coal to 18 TJ to 1,702.8 tCO₂e |
-| Notice the unit column says MU, not MWh         | Apply Annex IV to get specific embedded emissions      |
-| Resolve "NON COKING COAL (G11)" to a factor id  | Decide whether the declaration is filable              |
-| Rank findings and explain them in plain English | Raise, keep and clear the findings themselves          |
-| Draft the methodology memo                      | Own every figure in it                                 |
-
-A hallucinated factor id is dropped and reported, never applied. A triage comment on a finding the
-rules engine never raised is discarded. A blocker cannot be demoted below a warning however the
-model ranked it. These are not conventions — they are enforced by
-[`guardrails.test.ts`](src/lib/ai/guardrails.test.ts), which feeds deliberately bad model output
-through the validators, and by [`architecture.test.ts`](src/lib/cbam/architecture.test.ts), which
-fails the build if any engine file imports the AI layer, reads `process.env`, touches the network or
-filesystem, or reads the clock.
-
-**The whole product works with no API key.** Every AI step falls back to a deterministic
-implementation and the UI labels which one produced each result.
+- electricity data covers 7 of 8 months;
+- the period covers 8 of 12 months;
+- 8 precursor rows fall back to default values;
+- one supplier's data is unverified;
+- the installation has no UN/LOCODE.
 
 ---
 
-## Quickstart
+## Deploy it
+
+It is one Next.js app and one Postgres database. There is nothing else to run.
+
+### Vercel
+
+1. **Import the repository**: vercel.com → _Add New_ → _Project_ → pick this repo. Vercel detects
+   Next.js; keep the defaults and deploy. The first deployment shows a _Connect a database_ page,
+   which is expected.
+2. **Add a database**: in the project, open _Storage_ → _Create Database_ → **Neon** (Serverless
+   Postgres; the free plan is enough), and connect it to all environments. This sets `DATABASE_URL`
+   for you.
+3. **Optional settings**: under _Settings_ → _Environment Variables_:
+   - `APP_URL`: your deployment URL, used in invitation and supplier links.
+   - `CARBONPASS_SIGNUP=invite`: set this once your own account exists.
+   - `ANTHROPIC_API_KEY`: switches the column mapper, triage and memo to the model.
+4. **Redeploy** (_Deployments_ → ⋯ → _Redeploy_). Tables are created on the first request. Open the
+   URL, create an account, and choose **Open the demo**.
+
+Vercel's filesystem is not persistent and its functions share no memory. On Vercel the app
+therefore refuses to start without `DATABASE_URL` and tells you why; it never silently loses data.
+Uploads are capped at 4 MB there because Vercel limits request bodies to 4.5 MB.
+
+### Railway
+
+The repo ships a [`railway.json`](railway.json). Railway builds the [`Dockerfile`](Dockerfile) and
+health-checks `/api/health`, which only answers once the database is reachable and migrated.
+
+1. **Create the service**: railway.com → _New Project_ → _Deploy from GitHub repo_ → pick this repo.
+2. **Add Postgres**: in the project, _+ Create_ → _Database_ → _PostgreSQL_.
+3. **Connect it**: in the app service's _Variables_, add `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`.
+4. **Give it a URL**: under _Settings_ → _Networking_ → _Generate Domain_. Set `APP_URL` to that
+   `https://…` address.
+5. **Deploy.** Open the domain, create an account, and open the demo.
+
+**No database service?** The image also runs on its embedded Postgres. Attach a volume mounted at
+`/app/.data` and leave `DATABASE_URL` unset. Railway mounts volumes as root while the image runs as
+an unprivileged user, so also set `RAILWAY_RUN_UID=0`. Run a single replica in that mode.
+
+### Docker, anywhere
 
 ```bash
-make install     # npm ci
-make dev         # http://localhost:3000, demo dataset seeded on first request
-make check       # lint, format, types, fixture checksums, 87 tests, mapping eval
+docker compose up --build        # app + Postgres 17 on http://localhost:3000
 ```
 
-`make help` lists every target. No API key is required for any of the above.
-
-To enable the LLM path:
+Or run the image on its own, with the embedded database kept in a volume:
 
 ```bash
-cp .env.example .env      # set the model API key
-make eval-model           # scores the LLM mapper against the deterministic baseline
+docker build -t carbonpass .
+docker run -p 3000:3000 -v carbonpass-data:/app/.data carbonpass
 ```
 
-### Docker
+### Locally
 
 ```bash
-make docker-build
-make docker-run           # http://localhost:3000
-# or: docker compose up --build
+npm ci
+npm run dev                      # http://localhost:3000, embedded database under ./.data
 ```
 
-Multi-stage build on Next's standalone output, running as a non-root user with a healthcheck that
-loads a real page — proving the engine can compute a declaration, not merely that a process is
-listening.
+No database, API key or configuration file is needed. Set `DATABASE_URL` to use a real Postgres.
 
----
+### Configuration
 
-## Engineering decisions & trade-offs
+Every variable is optional except `DATABASE_URL` on Vercel. [`src/config/env.ts`](src/config/env.ts)
+validates them all at startup; a bad value stops the process with the variable named.
+[`.env.example`](.env.example) documents each one.
 
-**A deterministic engine rather than an end-to-end model.** The obvious build is to hand the
-spreadsheets to a model and ask for the emissions. That fails the only test that matters: a verifier
-asks "where did 1.93 come from" and the answer has to be an arithmetic chain, not a probability. So
-the model is confined to the genuinely ambiguous problem — what does this column mean — and every
-figure comes from pure functions with unit tests. The cost is that the system cannot handle a file
-shape nobody anticipated; it rejects rows instead, which is the right failure direction.
-
-**Confidence is capped at 0.90 for the deterministic mapper.** Token overlap plus a shape check
-cannot distinguish "certainly right" from "probably right". A mapper reporting 0.99 on a guess
-defeats the review step that confidence exists to drive, so the ceiling is deliberate. Only an
-operator-configured alias — a fact, not an inference — scores higher.
-
-**The eval gates on column _error_ rate, not accuracy.** A column mapped to the wrong field corrupts
-a calculation silently. A column left unmapped surfaces in the UI and is fixed in ten seconds. Those
-two failures cost different amounts, so scoring them as one number would hide the one that matters.
-Two eval cases are left deliberately failing: `DOLOCHAR` is spent kiln char but contains the
-substring "dolo", so keyword matching confidently applies a carbonate factor to a fuel. The right
-answer when nothing fits is `null`. That is the headroom the LLM mapper should win, and a saturated
-eval could not measure it.
-
-**Checksums rather than a data-versioning tool.** The dataset is five deterministically generated
-CSVs totalling ~20 KB. Adding a Python data-versioning stack with a remote store to track that would
-be ceremony. What actually matters is the guarantee: the figures quoted here were produced from
-_these_ bytes. A SHA-256 manifest verified in CI delivers that with zero runtime dependencies.
-
-**A JSONL eval log rather than a tracking service.** Every eval run is recorded with its commit SHA
-and compared against the previous run, so "did that change help" is answerable after the fact. But
-nothing here trains, so there is no loss curve to plot and no hyperparameter sweep to coordinate —
-a hosted tracking server would be a dashboard with one number on it.
-
-**Configuration is injected at the application layer, never read inside the engine.** An earlier
-revision had `cost.ts` read the certificate price from the environment. That is convenient and
-wrong: it makes the same activity records produce different figures on different machines. The
-engine now takes explicit assumptions and the store supplies them from validated config.
-
-**Certificates are charged on EU-bound volume, not total production.** Sponge iron made and consumed
-on site already carries its emissions downstream as a precursor. Charging total production would
-count the same tonne of coal three times across the DRI → billet → rebar chain.
-
-**State is a JSON file.** Right size for a single installation, wrong shape for a multi-tenant
-service. The seam is `src/lib/store.ts` and nothing else.
+| Variable                   | Default           | Purpose                                                           |
+| -------------------------- | ----------------- | ----------------------------------------------------------------- |
+| `DATABASE_URL`             | embedded database | Postgres connection string. `POSTGRES_URL` is accepted as well    |
+| `CARBONPASS_DATA_DIR`      | `.data`           | Where the embedded database lives when `DATABASE_URL` is unset    |
+| `CARBONPASS_SIGNUP`        | `open`            | `invite` allows new accounts only through an invitation link      |
+| `APP_URL`                  | from the request  | Base URL for invitation and supplier links                        |
+| `CARBONPASS_MAX_UPLOAD_MB` | `4`               | Largest accepted upload                                           |
+| `ANTHROPIC_API_KEY`        | unset             | Enables the model for mapping, triage and the memo                |
+| `CARBONPASS_MODEL`         | `claude-opus-5`   | Model used when a key is set                                      |
+| `CARBONPASS_ETS_PRICE_EUR` | `75`              | Price for quarters not yet published; each workspace can override |
+| `CARBONPASS_INR_PER_EUR`   | `92`              | For showing cost in rupees                                        |
 
 ---
 
 ## Methodology
 
-Calculations follow Regulation (EU) 2023/956 and Implementing Regulation (EU) 2023/1773.
+Implemented against the definitive-period acts. Each constant carries its source in code, and the
+app renders the full set at `/methodology`.
 
-- **Direct emissions** (Annex III): fuel combustion via net calorific value × combustion factor,
-  plus process emissions from carbonates and electrodes, plus measurable heat imported, less
-  exported.
-- **Specific embedded emissions** (Annex IV):
-  `(attributed emissions + Σ precursor mass × precursor SEE) ÷ activity level`.
-- **On-site precursors** resolved in dependency order — sponge iron before steel, steel before
-  rebar. Without this the rolling mill looks nearly emission-free, because it only burns reheating
-  fuel while every real tonne of CO₂ sits two processes upstream.
-- **Annex II**: for iron & steel, aluminium and hydrogen only _direct_ emissions create an
-  obligation. Indirect emissions are still reported in full — operators routinely read "not counted"
-  as "not reported", and it is not.
-- **Carbon price paid at origin** (Art. 9): deductible, capped at the certificate price, refused
-  without documentary evidence. India has no qualifying economy-wide scheme today.
-- **CBAM factor**: 2.5% in 2026 rising to 100% in 2034. A tonne saved in 2026 is worth 2.5% of a
-  tonne saved in 2034 — the honest answer to "should I invest in abatement now".
+| What                                          | Source                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------- |
+| Scope, obligation, Art. 9 carbon price credit | Regulation (EU) 2023/956, as amended by Regulation (EU) 2025/2083           |
+| Calculation of embedded emissions             | Implementing Regulation (EU) 2025/2547                                      |
+| Benchmarks, CBAM factor, free allocation      | Implementing Regulation (EU) 2025/2620 (Commission table of 06.02.2026)     |
+| Default values and mark-ups                   | Implementing Regulation (EU) 2025/2621, corrected by (EU) 2026/1740         |
+| Verification                                  | Implementing Regulation (EU) 2025/2546, Delegated Regulation (EU) 2025/2551 |
+| Certificate price                             | Implementing Regulation (EU) 2025/2548 (published 2026 quarterly prices)    |
 
-Factors are IPCC 2006 Vol. 2 defaults and CEA CO₂ Baseline Database grid factors, each carrying its
-source, edition and uncertainty. The full library, rule catalogue and CN code list are rendered in
-the app at `/methodology`.
+- **Attributed emissions per process**: fuel combustion (activity × NCV × emission factor ×
+  oxidation), process emissions from carbonates and electrodes, measurable heat imported less
+  exported, and electricity for indirect emissions.
+- **Specific embedded emissions**: (attributed emissions + Σ precursor mass × precursor SEE) ÷
+  activity level. On-site precursors are resolved in dependency order. Bought-in precursors use
+  supplier actuals when a supplier has submitted them, and otherwise the default value for their
+  country of origin.
+- **Direct only for iron and steel, aluminium and hydrogen** (Annex II). Indirect emissions are
+  still reported in full; they just do not create an obligation.
+- **Free allocation adjustment**: `SEFA = CBAM factor × CSCF × benchmark + Σ precursor mass ×
+precursor SEFA`.
+  - The benchmark comes from column A of the Commission table, chosen by production route and year.
+  - Where default values are used, column B applies with the route from the default-value table.
+- **CBAM factor** (the share of free allocation still granted): 97.5% in 2026, 95% in 2027, 90% in
+  2028, 77.5% in 2029, 51.5% in 2030, 39% in 2031, 26.5% in 2032, 14% in 2033, 0% from 2034. CSCF is 1.
+- **Certificates** = Σ max(0, SEE − SEFA) × EU-bound tonnes − carbon price credit. The price is the
+  Commission's for published quarters (2026-Q1 €75.36, 2026-Q2 €75.28) and your assumption for the
+  rest.
+- **Default values** include the mark-up: 10% in 2026, 20% in 2027, 30% from 2028 (1% for
+  fertilisers).
+- **Output made and consumed on site** carries its emissions downstream as a precursor. It is never
+  charged twice.
 
-One India-specific adjustment: coal NCV is set to 18.0 GJ/t rather than the IPCC 25.8 GJ/t default,
-which assumes internationally traded bituminous coal and overstates energy input from high-ash
-domestic supply by roughly 40%.
+The benchmark and default-value tables are imported from the Commission's workbooks by
+`npm run regulatory:import`. The workbooks are committed under `data/regulatory/source/` with their
+SHA-256, so the import is reproducible. To update, replace a workbook and re-run the import;
+nothing in the engine is edited by hand.
 
-> **On the benchmark values.** The comparison figures are indicative sector benchmarks assembled
-> from public literature, **not** the Commission's published default values, and the app says so
-> beside every comparison and in every export. They catch an implausible number; they never
-> substitute for primary data in a filed declaration.
-
----
-
-## Commands
-
-| Command             | What it does                                                   |
-| ------------------- | -------------------------------------------------------------- |
-| `make check`        | Everything CI runs: lint, format, types, data, tests, eval     |
-| `make test`         | 87 unit and architecture tests                                 |
-| `make eval`         | Mapping eval, deterministic baseline, records the run          |
-| `make eval-model`   | Adds the LLM mapper column (needs an API key)                  |
-| `make seed`         | Regenerate demo fixtures and refresh their checksum manifest   |
-| `make data-verify`  | Fail if fixtures drift from the manifest                       |
-| `make screenshots`  | Drive the running app in Chromium and capture every screen     |
-| `make docker-build` | Build the container image                                      |
-| `make reset`        | Discard workspace state; demo reseeds with every defect intact |
+One India-specific adjustment: the coal NCV is 18.0 GJ/t rather than the IPCC 25.8 GJ/t default.
+The IPCC value assumes internationally traded bituminous coal and overstates the energy content of
+high-ash domestic coal by about 40%.
 
 ---
 
-## Layout
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph IN["Plant data"]
+        A["CSV / XLSX exports<br/>SAP · DISCOM bills · despatch register"]
+        S["Supplier portal<br/>precursor SEE, SEFA, verification"]
+        V["Evidence<br/>reports, bills, certificates"]
+    end
+
+    subgraph ING["Ingest - src/lib/ingest"]
+        B["Header + sheet detection<br/>column profiling"]
+        C["Mapper<br/>model or deterministic"]
+        F["VALIDATION GATE<br/>fields, factors, processes<br/>checked against engine tables"]
+        R["Operator review<br/>draft → confirmed"]
+    end
+
+    subgraph ENG["Engine - src/lib/cbam (pure: no I/O, no clock, no model)"]
+        T["Commission tables<br/>benchmarks · default values"]
+        I["Attributed emissions"]
+        K["SEE per CN code<br/>precursors in order"]
+        SF["SEFA<br/>benchmark × CBAM factor"]
+        L["20 rules · readiness"]
+        N["Certificates · cost<br/>2026 → 2034"]
+    end
+
+    subgraph OUT["Outputs"]
+        O["Emissions report .xlsx · communication JSON · CSV"]
+        P["Monitoring methodology · verifier pack .zip"]
+        Q["Audit trail: every figure → file and row"]
+    end
+
+    DB[("Postgres<br/>workspaces · files · audit log")]
+
+    A --> B --> C --> F --> R --> I
+    S --> K
+    T --> K
+    T --> SF
+    I --> K --> SF --> N
+    K --> L
+    N --> O
+    L --> P
+    R --> Q
+    V --> P
+    R -.-> DB
+    S -.-> DB
+    V -.-> DB
+
+    classDef gate fill:#3a2418,stroke:#d95926,color:#f2f4f7
+    classDef engine fill:#16241e,stroke:#199e70,color:#e6e9ee
+    class F gate
+    class T,I,K,SF,L,N engine
+```
+
+### The model never produces a number
+
+This is a compliance tool, and a wrong figure is a misdeclaration.
+
+- **What the model may do**: map a column, resolve "NON COKING COAL (G11)" to a factor id, rank
+  findings and explain them, draft the methodology memo from figures the engine has already
+  computed.
+- **What stays in the engine**: every conversion, every emission, SEE, SEFA, certificate and euro.
+
+Model output is a proposal. It is validated against the engine's own tables, and anything it
+invents is dropped and reported. Two tests enforce this:
+[`guardrails.test.ts`](src/lib/ai/guardrails.test.ts) feeds deliberately bad model output through
+the validators; [`architecture.test.ts`](src/lib/cbam/architecture.test.ts) fails the build if an
+engine file imports the AI layer, reads the environment, touches the network or filesystem, or reads
+the clock.
+
+**The whole product works without an API key.** Every AI step has a deterministic twin, and the UI
+says which one produced each result.
+
+### Storage and security
+
+- **One Postgres database holds everything**: accounts, organisations, workspaces, uploaded files,
+  evidence and the audit log. A deployment is therefore one app and one database.
+- **Database drivers**: node-postgres when `DATABASE_URL` is set; otherwise PGlite, an embedded
+  Postgres compiled to WebAssembly.
+- **Migrations** run on first request under an advisory lock, so several instances can start at
+  once.
+- **Workspace state** is one JSONB document per installation and year, written with a
+  version-checked compare-and-swap. Two people editing at once cannot overwrite each other silently.
+- **Passwords** are hashed with scrypt.
+- **Sessions** are random tokens stored hashed, in `HttpOnly`, `SameSite=Lax` cookies that are
+  `Secure` over HTTPS.
+- **Writes** are refused unless they come from the app's own origin.
+- **Sign-in** is rate-limited per IP and per e-mail, and **sign-up** per IP.
+- **Responses** carry a strict Content-Security-Policy and `frame-ancestors 'none'`.
+- **Roles** are checked on every route. Viewers and verifiers can read and download but cannot
+  change anything.
+- **The supplier portal** needs no account. Each request gets an unguessable link that expires
+  and can be revoked. The supplier can correct a submission until you accept or reject it.
+
+---
+
+## Development
+
+```bash
+make check       # lint, format, types, fixture checksums, 119 tests, mapping eval
+make build && make start          # production build, served the way the container serves it
+make smoke                        # end-to-end over HTTP against the running server
+```
+
+| Command            | What it does                                                               |
+| ------------------ | -------------------------------------------------------------------------- |
+| `make check`       | Everything CI's quality job runs                                           |
+| `make test`        | Engine, rules, SEFA, regulatory-table and PGlite integration tests         |
+| `make smoke`       | Signs up, opens the demo, exports everything, runs the supplier round trip |
+| `make screenshots` | Drives the running app in Chromium and captures every screen               |
+| `make eval`        | Mapping eval; gates on the column **error** rate                           |
+| `make regulatory`  | Rebuilds the engine's tables from the Commission workbooks                 |
+| `make seed`        | Regenerates the demo fixtures and their checksum manifest                  |
+| `make compose-up`  | App plus Postgres in Docker                                                |
+
+CI runs the quality job on Node 22 and 24. It runs the smoke test against the production build on
+both Postgres and the embedded database, builds the app as Vercel does, and builds the container and
+smoke-tests it.
+
+### Layout
 
 ```
-.github/workflows/ci.yml   Lint, format, types, fixtures, tests, eval, build, smoke, image
-config/                    Reserved for deployment overlays
-data/demo/                 Seeded dataset + manifest.json (SHA-256 per fixture)
+data/regulatory/source/    Commission workbooks (benchmarks, default values), checksummed
+data/demo/                 Demo plant exports + manifest.json (SHA-256 per file)
 scripts/
-  generate-fixtures.ts     Deterministic demo data generator
-  fixtures.ts              Checksum manifest write/verify
-  screenshot.mjs           Playwright capture of every screen
+  import-regulatory.ts     Workbooks → src/lib/cbam/regulatory/generated/*.json
+  smoke.mjs                End-to-end test over HTTP
+  start-standalone.mjs     Serve the standalone build as the container does
 src/
-  config/env.ts            Zod-validated environment; nothing else reads process.env
-  lib/cbam/                THE ENGINE — pure, deterministic, no I/O, no model
-    types.ts               Domain model; every quantity carries lineage to a source row
-    units.ts               MU / MT / KL and Indian digit grouping; throws, never guesses
-    factors.ts             Emission factors with source, vintage, uncertainty
-    goods.ts               CN codes and the Annex II direct-only flag
-    calc.ts                Attributed emissions and specific embedded emissions
-    internal.ts            On-site precursor flows in dependency order
-    cost.ts                CBAM factor schedule, certificates, Art. 9 credit
-    rules.ts               13 data-quality rules
-    readiness.ts           Weighted to what a verifier tests first
-    declaration.ts         Assembly and JSON / CSV / Registry-XML exports
-    architecture.test.ts   Fails the build if the engine stops being pure
-  lib/ingest/              Messy world → canonical schema
-  lib/ai/                  Model layer, entirely optional
-    mapper.ts              Structured-output mapping + id validation
-    triage.ts              Finding triage + the merge that contains it
-    memo.ts                Streaming memo, with a deterministic twin
-    guardrails.test.ts     Feeds bad model output through the validators
-  evals/                   Gold fixtures, scorer, runner, JSONL run tracker
-  app/                     Next.js App Router — 7 screens, 7 API routes
+  config/env.ts            Validated environment; nothing else reads process.env
+  lib/cbam/                THE ENGINE - pure and deterministic
+    regulatory/            Commission tables, CBAM factors, mark-ups, published prices
+    calc.ts                Attributed emissions and SEE
+    precursors.ts          Supplier actuals vs default values per precursor
+    sefa.ts                Free allocation adjustment per good
+    cost.ts                Certificates, Art. 9 credit, 2026-2034 trajectory
+    rules.ts               20 data-quality rules
+    declaration.ts         Assembly and machine-readable exports
+  lib/ingest/              Upload reading, mapping, materialisation
+  lib/ai/                  Optional model layer with deterministic twins
+  lib/db/                  Postgres / PGlite driver and migrations
+  lib/auth/                Accounts, sessions, roles
+  lib/workspace/           Versioned workspace state, datasets, demo seed
+  lib/exports/             XLSX report, monitoring methodology, verifier pack
+  app/(app)/               The signed-in product
+  app/(auth)/              Sign-in, sign-up, onboarding, invitations, setup
+  app/(public)/supplier/   The supplier portal
+  app/api/                 Route handlers
 ```
 
 ---
 
 ## Limitations, stated plainly
 
-- **It does not file anything.** It computes and documents a declaration. Submission to the CBAM
-  Registry and verification by an accredited verifier remain human steps. Not legal advice.
-- **Benchmark values are indicative, not the Commission's published defaults.**
-- **The Registry XML mirrors the quarterly report's structure** but is not claimed schema-valid
-  against the DG TAXUD XSD, which is versioned and distributed separately.
-- **The CN code catalogue is a working subset** of Annex I covering what Indian exporters ship in
-  volume.
-- **The LLM path is implemented and its guardrails are unit-tested, but has not been executed
-  against a live API** — no credentials were available in the development environment. Every figure
-  and screenshot here came from the deterministic path.
-- **Shared site activities are attributed by configured alias, not allocated.** Diesel for material
-  handling lands on the DRI kiln because the installation config says so; a real deployment would
-  want proper allocation across processes.
+- **It does not file anything.** The authorised CBAM declarant (the EU importer) files the annual
+  declaration in the CBAM Registry. An accredited verifier verifies the operator's emissions. This
+  tool prepares and documents the data for both. It is a calculation aid, not legal advice.
+- **The Commission publishes its tables as informational.** The Official Journal text is
+  authoritative. The engine records each table's version and checksum, and every export says so.
+- **The XLSX report follows the structure of the communication template**; it is not the
+  Commission's own file. The monitoring methodology is a document for the verifier, not a
+  Commission-format monitoring plan.
+- **It reads CSV and XLSX only.** PDFs are accepted as evidence and included in the verifier pack,
+  but figures are not extracted from them.
+- **It sends no e-mail.** Invitation and supplier links are copied and sent by you. There is no
+  self-service password reset yet.
+- **Production route per process is operator-configured** (Settings → Installation), and it selects
+  the benchmark. A wrong route gives a wrong SEFA. The full calculation export records the benchmark
+  value, column and route indicator used for each good.
+- **Shared site activities are attributed by configured alias, not allocated.** For example, diesel
+  for material handling lands on the DRI kiln because the installation configuration says so.
+- **The model path has not been run against a live API here**: no key was available during
+  development. Every figure above came from the deterministic path.
 
 ---
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

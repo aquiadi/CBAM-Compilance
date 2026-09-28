@@ -57,7 +57,8 @@ export function assessReadiness(
   const traced = activities.filter((a) => a.lineage?.fileName && a.lineage.row > 0).length;
   const traceability = activities.length === 0 ? 0 : clamp((traced / activities.length) * 100);
 
-  // 3. Method tier - measurement beats calculation beats defaults.
+  // 3. Data-quality tier - operator-measured or verified values beat
+  //    country-specific factors, which beat international defaults.
   const tierScores = activities.map((a) => (a.tier === 3 ? 100 : a.tier === 2 ? 70 : 35));
   const methodTier = tierScores.length
     ? clamp(tierScores.reduce((s, v) => s + v, 0) / tierScores.length)
@@ -65,7 +66,8 @@ export function assessReadiness(
 
   // 4. Primary data - defaults and estimates are where declarations get challenged.
   const primary = activities.filter(
-    (a) => a.provenance === "measured" || a.provenance === "calculated",
+    (a) =>
+      a.provenance === "measured" || a.provenance === "calculated" || a.provenance === "supplier",
   ).length;
   const primaryData = activities.length === 0 ? 0 : clamp((primary / activities.length) * 100);
 
@@ -118,7 +120,7 @@ export function assessReadiness(
       label: "Primary data share",
       score: primaryData,
       weight: 0.15,
-      detail: `${primary} of ${activities.length} records are measured or calculated from primary activity data.`,
+      detail: `${primary} of ${activities.length} records are measured, calculated from primary data, or supplier actuals.`,
       nextAction:
         primaryData < 90
           ? "Chase suppliers for actual precursor data to displace defaults."
@@ -145,10 +147,12 @@ export function assessReadiness(
 
   const score = Math.round(components.reduce((s, c) => s + c.score * c.weight, 0));
 
+  // "Verification ready" means nothing is left that a verifier would question,
+  // so any open warning caps the band at "defensible" however high the score.
   const band: ReadinessResult["band"] =
     blockers > 0
       ? "not_filable"
-      : score >= 85
+      : score >= 85 && warnings === 0
         ? "verification_ready"
         : score >= 70
           ? "defensible"

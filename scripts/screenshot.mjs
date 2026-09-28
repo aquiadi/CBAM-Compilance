@@ -1,11 +1,13 @@
 /**
- * Screenshots every screen against a running dev server.
+ * Screenshots every screen against a running server.
  *
  *   npm run dev            # in one terminal
  *   npm run screenshots    # in another
  *
- * Used to eyeball the design after a change: a palette validator checks colour,
- * not layout, and label collisions and overflow only show up in a real browser.
+ * Signs up a throwaway account through the real UI, opens the demo plant and
+ * captures each screen. Used to eyeball the design after a change: a palette
+ * validator checks colour, not layout, and label collisions and overflow only
+ * show up in a real browser.
  *
  * Set PLAYWRIGHT_CHROMIUM_PATH when Chromium lives somewhere Playwright does not
  * look by default (CI images that pre-install browsers, for example).
@@ -13,17 +15,22 @@
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
-const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const OUT = process.env.SHOT_DIR ?? "artifacts/screenshots";
 
 const SCREENS = [
   ["/", "01-overview"],
-  ["/ingest", "02-ingest"],
+  ["/ingest", "02-data"],
   ["/review", "03-review"],
   ["/calculate", "04-calculate"],
   ["/declaration", "05-declaration"],
   ["/audit", "06-audit"],
-  ["/methodology", "07-methodology"],
+  ["/suppliers", "07-suppliers"],
+  ["/evidence", "08-evidence"],
+  ["/activity", "09-activity"],
+  ["/methodology", "10-methodology"],
+  ["/settings", "11-installation"],
+  ["/settings/team", "12-team"],
 ];
 
 mkdirSync(OUT, { recursive: true });
@@ -41,28 +48,52 @@ page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 page.on("pageerror", (e) => errors.push(String(e)));
 
 let failures = 0;
+
+// Sign up through the form, then open the demo from onboarding.
+await page.goto(`${BASE}/signup`, { waitUntil: "networkidle" });
+await page.screenshot({ path: `${OUT}/00-signup.png`, fullPage: true });
+const stamp = Date.now().toString(36);
+await page.getByLabel("Your name").fill("Screenshot User");
+await page.getByLabel("Work e-mail").fill(`shots-${stamp}@example.com`);
+await page.getByLabel("Password").fill("screenshot password");
+await page.getByLabel("Organisation").fill("Shakti Steel & Power Ltd");
+await page.getByRole("button", { name: "Create account" }).click();
+await page.waitForURL(`${BASE}/onboarding`, { timeout: 30_000 });
+await page.screenshot({ path: `${OUT}/00-onboarding.png`, fullPage: true });
+await page.getByRole("button", { name: "Open the demo" }).click();
+await page.waitForURL(`${BASE}/`, { timeout: 60_000 });
+
 for (const [path, name] of SCREENS) {
   try {
     const response = await page.goto(`${BASE}${path}`, {
       waitUntil: "networkidle",
       timeout: 60_000,
     });
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(400);
     await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
     const status = response?.status() ?? 0;
     if (status !== 200) failures++;
-    console.log(`${status} ${path.padEnd(14)} -> ${name}.png`);
+    console.log(`${status} ${path.padEnd(22)} -> ${name}.png`);
   } catch (error) {
     failures++;
     console.error(`FAIL ${path}: ${error instanceof Error ? error.message : error}`);
   }
 }
 
-if (errors.length > 0) {
-  console.error(`\n${errors.length} console error(s):`);
-  for (const e of errors.slice(0, 10)) console.error(`  ${e}`);
-  failures++;
+// The mapping review screen for the first dataset.
+await page.goto(`${BASE}/ingest`, { waitUntil: "networkidle" });
+const review = page.getByRole("link", { name: /Open →|Review →/ }).first();
+if (await review.count()) {
+  await review.click();
+  await page.waitForLoadState("networkidle");
+  await page.screenshot({ path: `${OUT}/02b-mapping-review.png`, fullPage: true });
+  console.log(`200 ${page.url().replace(BASE, "").padEnd(22)} -> 02b-mapping-review.png`);
 }
 
 await browser.close();
-process.exit(failures > 0 ? 1 : 0);
+
+if (errors.length > 0) {
+  console.error(`\n${errors.length} browser error(s):`);
+  for (const e of errors.slice(0, 10)) console.error(`  ${e}`);
+}
+process.exit(failures > 0 || errors.length > 0 ? 1 : 0);

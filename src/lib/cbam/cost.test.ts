@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { abatementValueEur, carbonPriceCredit, cbamFactor, computeExposure } from "./cost";
-import type { CarbonPriceActivity, DeclarationLine, Lineage } from "./types";
+import { carbonPriceCredit, computeExposure, defaultScenarioFor } from "./cost";
+import { cbamFactor } from "./regulatory";
+import type { CarbonPriceActivity, DeclarationLine, Lineage, ProductionActivity } from "./types";
 
 const lineage: Lineage = { datasetId: "d", fileName: "f.csv", row: 1, raw: {} };
 
 const steelLine: DeclarationLine = {
-  cnCode: "72071100",
+  cnCode: "72071114",
   description: "Semi-finished steel",
   category: "crude_steel",
   sector: "iron_steel",
   directOnly: true,
   processId: "p1",
-  processName: "BOF",
+  processName: "Melt shop",
   quantityT: 10000,
   quantityEuT: 10000,
   quantityInternalT: 0,
@@ -23,6 +24,8 @@ const steelLine: DeclarationLine = {
   seeIndirect: 0.5,
   seeTotal: 2.5,
   seeForObligation: 2.0,
+  sefa: 0.5,
+  sefaIssues: [],
   embeddedTotalT: 25000,
   embeddedForObligationT: 20000,
   embeddedEuT: 20000,
@@ -30,91 +33,146 @@ const steelLine: DeclarationLine = {
   lowestTier: 2,
 };
 
+function euShipment(month: string, tonnes: number, cnCode = "72071114"): ProductionActivity {
+  return {
+    id: `p-${month}`,
+    kind: "production",
+    processId: "p1",
+    cnCode,
+    quantityT: tonnes,
+    destination: "eu_export",
+    periodStart: `${month}-01`,
+    periodEnd: `${month}-28`,
+    provenance: "measured",
+    tier: 3,
+    lineage,
+  };
+}
+
 const assumptions = { etsPriceEur: 80, inrPerEur: 90, year: 2026 };
 
-describe("cbamFactor", () => {
-  it("follows the free-allocation phase-out schedule", () => {
-    expect(cbamFactor(2025)).toBe(0);
-    expect(cbamFactor(2026)).toBe(0.025);
-    expect(cbamFactor(2030)).toBe(0.485);
-    expect(cbamFactor(2034)).toBe(1);
-    expect(cbamFactor(2040)).toBe(1);
+describe("CBAM factor", () => {
+  it("is the share of EU free allocation still granted, not the share charged", () => {
+    // Guidance Document 4, Table 2-1.
+    expect(cbamFactor(2026)).toBe(0.975);
+    expect(cbamFactor(2027)).toBe(0.95);
+    expect(cbamFactor(2030)).toBe(0.515);
+    expect(cbamFactor(2033)).toBe(0.14);
+    expect(cbamFactor(2034)).toBe(0);
+    expect(cbamFactor(2040)).toBe(0);
   });
 });
 
 describe("computeExposure", () => {
-  it("charges only the CBAM factor share in the phase-in years", () => {
-    const r = computeExposure([steelLine], [], assumptions);
-    // 20,000 t obligation x 2.5% = 500 certificates x EUR 80 = EUR 40,000
+  it("charges embedded emissions less the free allocation adjustment", () => {
+    const r = computeExposure({
+      lines: [steelLine],
+      production: [euShipment("2026-11", 10000)],
+      claims: [],
+      assumptions,
+      country: "IN",
+    });
+    // 10,000 t x (2.0 - 0.5) = 15,000 certificates - not 2.5% of 20,000.
     expect(r.obligationEmissionsT).toBe(20000);
-    expect(r.grossCertificates).toBeCloseTo(500, 6);
-    expect(r.netCostEur).toBeCloseTo(40000, 6);
-    expect(r.netCostInr).toBeCloseTo(3600000, 3);
+    expect(r.freeAllocationAdjustmentT).toBeCloseTo(5000, 6);
+    expect(r.grossCertificates).toBeCloseTo(15000, 6);
+    // Q4 2026 has no published price yet, so the assumption applies.
+    expect(r.netCostEur).toBeCloseTo(15000 * 80, 6);
+    expect(r.netCostInr).toBeCloseTo(15000 * 80 * 90, 3);
+  });
+
+  it("prices each quarter at the Commission's published certificate price", () => {
+    const r = computeExposure({
+      lines: [steelLine],
+      production: [euShipment("2026-02", 4000), euShipment("2026-05", 6000)],
+      claims: [],
+      assumptions,
+      country: "IN",
+    });
+    // Q1 2026 EUR 75.36 and Q2 2026 EUR 75.28, as published.
+    const expected = 4000 * 1.5 * 75.36 + 6000 * 1.5 * 75.28;
+    expect(r.grossCostEur).toBeCloseTo(expected, 6);
+    expect(r.pricing.every((p) => p.basis === "published")).toBe(true);
+  });
+
+  it("never lets the allowance turn a line into a negative obligation", () => {
+    const efficient = { ...steelLine, seeForObligation: 0.3, seeDirect: 0.3, sefa: 0.5 };
+    const r = computeExposure({
+      lines: [efficient],
+      production: [euShipment("2026-11", 10000)],
+      claims: [],
+      assumptions,
+      country: "IN",
+    });
+    expect(r.grossCertificates).toBe(0);
   });
 
   it("excludes indirect emissions from the obligation for Annex II goods but still reports them", () => {
-    const r = computeExposure([steelLine], [], assumptions);
+    const r = computeExposure({
+      lines: [steelLine],
+      production: [euShipment("2026-11", 10000)],
+      claims: [],
+      assumptions,
+      country: "IN",
+    });
     expect(r.totalEmbeddedT).toBe(25000);
-    expect(r.obligationEmissionsT).toBe(20000);
     expect(r.notes.join(" ")).toContain("excluded from the obligation under Annex II");
   });
 
-  it("projects the full phase-in trajectory", () => {
-    const r = computeExposure([steelLine], [], assumptions);
-    expect(r.trajectory).toHaveLength(9);
-    expect(r.trajectory[0]).toMatchObject({ year: 2026 });
-    const last = r.trajectory.at(-1)!;
-    expect(last.year).toBe(2034);
-    expect(last.costEur).toBeCloseTo(20000 * 80, 3);
-    // Cost is monotonically increasing across the phase-in.
-    for (let i = 1; i < r.trajectory.length; i++) {
-      expect(r.trajectory[i]!.costEur).toBeGreaterThan(r.trajectory[i - 1]!.costEur);
-    }
-  });
-
-  it("reports zero certificates in the transitional period", () => {
-    const r = computeExposure([steelLine], [], { ...assumptions, year: 2025 });
-    expect(r.netCertificates).toBe(0);
-    expect(r.notes.join(" ")).toContain("Transitional period");
-  });
-});
-
-describe("EU-bound volume", () => {
   it("charges only the share actually shipped to the EU", () => {
-    // Same plant, but only a quarter of output goes to Europe.
-    const partial = {
+    const partly = {
       ...steelLine,
       quantityEuT: 2500,
       embeddedEuT: 5000,
+      quantityInternalT: 5000,
     };
-    const r = computeExposure([partial], [], assumptions);
-    expect(r.obligationEmissionsT).toBe(5000);
-    expect(r.nonEuEmissionsT).toBe(15000);
-    expect(r.grossCertificates).toBeCloseTo(125, 6);
+    const r = computeExposure({
+      lines: [partly],
+      production: [euShipment("2026-11", 2500)],
+      claims: [],
+      assumptions,
+      country: "IN",
+    });
+    expect(r.grossCertificates).toBeCloseTo(2500 * 1.5, 6);
+    expect(r.nonEuEmissionsT).toBeCloseTo(15000, 6);
+    expect(r.notes.join(" ")).toContain("consumed on site");
   });
 
-  it("never charges output consumed on site as a precursor", () => {
-    // Sponge iron produced and fed straight into the melt shop. Its emissions
-    // travel downstream inside the steel line; charging them here as well
-    // would double count.
-    const internalOnly = {
-      ...steelLine,
-      cnCode: "72031000",
-      quantityEuT: 0,
-      quantityInternalT: 10000,
-      embeddedEuT: 0,
-    };
-    const r = computeExposure([internalOnly], [], assumptions);
-    expect(r.obligationEmissionsT).toBe(0);
-    expect(r.netCostEur).toBe(0);
-    expect(r.lines).toHaveLength(0);
-    expect(r.notes.join(" ")).toContain("not counted twice");
+  it("shows what the same goods would cost on default values", () => {
+    const r = computeExposure({
+      lines: [{ ...steelLine, cnCode: "72142000" }],
+      production: [euShipment("2026-11", 10000, "72142000")],
+      claims: [],
+      assumptions,
+      country: "IN",
+    });
+    // Annex I India, 7214 20 00: 4.270 + 10% = 4.697; column B (C) 1.364 x 0.975.
+    const perTonne = 4.27 * 1.1 - 0.975 * 1.364;
+    expect(r.defaultScenario.certificates).toBeCloseTo(10000 * perTonne, 3);
+    expect(r.defaultScenario.complete).toBe(true);
+  });
+});
+
+describe("defaultScenarioFor", () => {
+  it("follows the route the Default Values Act gives for the country", () => {
+    const s = defaultScenarioFor("72142000", "IN", 2026);
+    if ("error" in s) throw new Error(s.error);
+    expect(s.seeWithMarkup).toBeCloseTo(4.697, 6);
+    expect(s.sefa).toBeCloseTo(0.975 * 1.364, 6);
+    expect(s.reference).toContain("(C)");
+  });
+
+  it("uses the 30% mark-up from 2028", () => {
+    const s = defaultScenarioFor("72142000", "IN", 2028);
+    if ("error" in s) throw new Error(s.error);
+    expect(s.seeWithMarkup).toBeCloseTo(4.27 * 1.3, 6);
+    expect(s.sefa).toBeCloseTo(0.9 * 1.364, 6);
   });
 });
 
 describe("carbonPriceCredit", () => {
-  const claim = (over: Partial<CarbonPriceActivity>): CarbonPriceActivity => ({
-    id: "cp1",
+  const claim = (overrides: Partial<CarbonPriceActivity>): CarbonPriceActivity => ({
+    id: "c1",
     kind: "carbon_price",
     processId: "p1",
     periodStart: "2026-01-01",
@@ -122,60 +180,55 @@ describe("carbonPriceCredit", () => {
     provenance: "measured",
     tier: 3,
     lineage,
-    scheme: "CCTS",
-    amount: 900000,
-    currency: "INR",
-    tonnesCovered: 1000,
+    scheme: "Test scheme",
+    amount: 0,
+    currency: "EUR",
+    tonnesCovered: 0,
     evidenceAttached: true,
-    ...over,
+    ...overrides,
   });
 
-  it("credits a documented payment at its effective rate", () => {
-    // INR 900,000 / 90 = EUR 10,000 over 1,000 t = EUR 10/t.
-    // At a EUR 80 certificate price that offsets 10/80 = 12.5% of those tonnes.
-    const { credit } = carbonPriceCredit([claim({})], assumptions);
-    expect(credit).toBeCloseTo(125, 6);
+  it("refuses to credit a claim without evidence", () => {
+    const r = carbonPriceCredit(
+      [claim({ amount: 10000, tonnesCovered: 1000, evidenceAttached: false })],
+      assumptions,
+      1,
+    );
+    expect(r.credit).toBe(0);
+    expect(r.notes[0]).toContain("no documentary evidence");
   });
 
-  it("refuses to credit a claim with no evidence", () => {
-    const { credit, notes } = carbonPriceCredit([claim({ evidenceAttached: false })], assumptions);
-    expect(credit).toBe(0);
-    expect(notes[0]).toContain("no documentary evidence");
+  it("credits a documented payment at its effective rate, on the EU-bound share", () => {
+    // EUR 40/t on 1,000 t against an EUR 80 certificate: 500 certificates, half EU-bound.
+    const r = carbonPriceCredit([claim({ amount: 40000, tonnesCovered: 1000 })], assumptions, 0.5);
+    expect(r.credit).toBeCloseTo(250, 6);
   });
 
   it("caps the credit at the certificate price", () => {
-    const { credit, notes } = carbonPriceCredit(
-      [claim({ amount: 90000000, tonnesCovered: 1000 })], // EUR 1,000/t
+    const r = carbonPriceCredit([claim({ amount: 200000, tonnesCovered: 1000 })], assumptions, 1);
+    expect(r.credit).toBeCloseTo(1000, 6);
+    expect(r.notes.join(" ")).toContain("capped");
+  });
+
+  it("does not convert USD at a made-up rate", () => {
+    const r = carbonPriceCredit(
+      [claim({ amount: 1000, tonnesCovered: 10, currency: "USD" })],
       assumptions,
+      1,
     );
-    expect(credit).toBeCloseTo(1000, 6);
-    expect(notes.join(" ")).toContain("capped at the certificate price");
+    expect(r.credit).toBe(0);
+    expect(r.notes[0]).toContain("EUR equivalent");
   });
 
   it("never lets the credit push the obligation below zero", () => {
-    // EUR 1,000/t paid over 1,000,000 t: the credit far exceeds the obligation.
-    const huge = claim({ amount: 90_000_000_000, tonnesCovered: 1_000_000 });
-    const r = computeExposure([steelLine], [huge], assumptions);
+    const r = computeExposure({
+      lines: [steelLine],
+      production: [euShipment("2026-11", 10000)],
+      claims: [claim({ amount: 10_000_000, tonnesCovered: 100_000 })],
+      assumptions,
+      country: "IN",
+    });
     expect(r.netCertificates).toBe(0);
     expect(r.netCostEur).toBe(0);
-  });
-
-  it("scales the credit by the same CBAM factor as the obligation", () => {
-    // Both sides of the subtraction must be in post-factor certificate units,
-    // otherwise a small origin carbon price wipes out the whole early-year
-    // obligation. EUR 10/t over 1,000 t offsets 125 t of emissions, which is
-    // 125 x 2.5% = 3.125 certificates in 2026.
-    const r = computeExposure([steelLine], [claim({})], assumptions);
-    expect(r.carbonPriceCredit).toBeCloseTo(3.125, 6);
-    expect(r.netCertificates).toBeCloseTo(500 - 3.125, 6);
-  });
-});
-
-describe("abatementValueEur", () => {
-  it("prices a tonne avoided against the phase-in, not the headline ETS price", () => {
-    const values = abatementValueEur(1000, assumptions);
-    expect(values[0]).toMatchObject({ year: 2026 });
-    expect(values[0]!.valueEur).toBeCloseTo(1000 * 0.025 * 80, 6);
-    expect(values.at(-1)!.valueEur).toBeCloseTo(1000 * 1 * 80, 6);
   });
 });

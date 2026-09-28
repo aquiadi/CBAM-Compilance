@@ -16,6 +16,8 @@ const lineage = (row: number): Lineage => ({
   raw: {},
 });
 
+const OPTS = { year: 2026 };
+
 const base = {
   periodStart: "2026-01-01",
   periodEnd: "2026-12-31",
@@ -67,7 +69,7 @@ describe("computeProcessEmissions", () => {
         lineage: lineage(1),
       },
     ];
-    const em = computeProcessEmissions(eaf, activities);
+    const em = computeProcessEmissions(eaf, activities, OPTS);
     expect(em.directT).toBeCloseTo(1702.8, 3);
     expect(em.errors).toHaveLength(0);
     expect(em.contributions.fuel[0]?.energyTJ).toBeCloseTo(18, 6);
@@ -88,7 +90,7 @@ describe("computeProcessEmissions", () => {
         lineage: lineage(1),
       },
     ];
-    const em = computeProcessEmissions(eaf, activities);
+    const em = computeProcessEmissions(eaf, activities, OPTS);
     expect(em.directT).toBeCloseTo(22 * 94.6, 3);
     expect(em.contributions.fuel[0]?.formula).toContain("plant-measured NCV");
   });
@@ -116,7 +118,7 @@ describe("computeProcessEmissions", () => {
         lineage: lineage(2),
       },
     ];
-    const em = computeProcessEmissions(eaf, activities);
+    const em = computeProcessEmissions(eaf, activities, OPTS);
     expect(em.directT).toBeCloseTo((10 - 4) * 66.7, 3);
     expect(em.heatImportedT).toBeCloseTo(667, 3);
     expect(em.heatExportedT).toBeCloseTo(266.8, 3);
@@ -135,7 +137,7 @@ describe("computeProcessEmissions", () => {
         lineage: lineage(1),
       },
     ];
-    const em = computeProcessEmissions(eaf, activities);
+    const em = computeProcessEmissions(eaf, activities, OPTS);
     expect(em.directT).toBe(0);
     expect(em.indirectT).toBeCloseTo(716, 3);
   });
@@ -153,7 +155,7 @@ describe("computeProcessEmissions", () => {
         lineage: lineage(1),
       },
     ];
-    const em = computeProcessEmissions(eaf, activities);
+    const em = computeProcessEmissions(eaf, activities, OPTS);
     expect(em.directT).toBe(0);
     expect(em.errors[0]).toContain("unobtanium");
   });
@@ -183,7 +185,7 @@ describe("computeProcessEmissions", () => {
         lineage: lineage(2),
       },
     ];
-    expect(computeProcessEmissions(eaf, activities).lowestTier).toBe(1);
+    expect(computeProcessEmissions(eaf, activities, OPTS).lowestTier).toBe(1);
   });
 });
 
@@ -217,7 +219,7 @@ describe("specific embedded emissions (Annex IV)", () => {
       id: "pr1",
       kind: "production",
       processId: "p_eaf",
-      cnCode: "72071100",
+      cnCode: "72071114",
       quantityT: 10000,
       destination: "eu_export",
       lineage: lineage(3),
@@ -225,7 +227,7 @@ describe("specific embedded emissions (Annex IV)", () => {
   ];
 
   it("divides attributed emissions by the activity level", () => {
-    const em = [computeProcessEmissions(eaf, activities)];
+    const em = [computeProcessEmissions(eaf, activities, OPTS)];
     const [line] = buildDeclarationLines(installation, activities, em);
     expect(line).toBeDefined();
     expect(line!.seeDirect).toBeCloseTo(0.17028, 6);
@@ -234,7 +236,7 @@ describe("specific embedded emissions (Annex IV)", () => {
   });
 
   it("counts only direct emissions towards the obligation for Annex II goods", () => {
-    const em = [computeProcessEmissions(eaf, activities)];
+    const em = [computeProcessEmissions(eaf, activities, OPTS)];
     const [line] = buildDeclarationLines(installation, activities, em);
     // Steel is direct-only for the obligation, but indirect is still reported.
     expect(line!.directOnly).toBe(true);
@@ -278,7 +280,7 @@ describe("specific embedded emissions (Annex IV)", () => {
         lineage: lineage(3),
       },
     ];
-    const em = [computeProcessEmissions(cementProcess, cementActivities)];
+    const em = [computeProcessEmissions(cementProcess, cementActivities, OPTS)];
     const [line] = buildDeclarationLines(cementInstallation, cementActivities, em);
     expect(line!.directOnly).toBe(false);
     expect(line!.seeForObligation).toBeCloseTo(line!.seeTotal, 9);
@@ -294,13 +296,11 @@ describe("specific embedded emissions (Annex IV)", () => {
         processId: "p_eaf",
         cnCode: "72031000",
         quantityT: 5000,
-        seeDirect: 1.05,
-        seeIndirect: 0.09,
-        seeSource: "supplier",
+        supplier: { seeDirect: 1.05, seeIndirect: 0.09, verified: true },
         lineage: lineage(4),
       },
     ];
-    const em = [computeProcessEmissions(eaf, withPrecursor)];
+    const em = [computeProcessEmissions(eaf, withPrecursor, OPTS)];
     const [line] = buildDeclarationLines(installation, withPrecursor, em);
     // 5,000 t x 1.05 = 5,250 tCO2e direct over 10,000 t of output = 0.525 tCO2e/t
     expect(line!.seeDirectPrecursor).toBeCloseTo(0.525, 6);
@@ -325,7 +325,7 @@ describe("specific embedded emissions (Annex IV)", () => {
         id: "pr1",
         kind: "production",
         processId: "p_eaf",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 7500,
         lineage: lineage(2),
       },
@@ -334,12 +334,12 @@ describe("specific embedded emissions (Annex IV)", () => {
         id: "pr2",
         kind: "production",
         processId: "p_eaf",
-        cnCode: "72071900",
+        cnCode: "72071116",
         quantityT: 2500,
         lineage: lineage(3),
       },
     ];
-    const em = [computeProcessEmissions(eaf, twoProducts)];
+    const em = [computeProcessEmissions(eaf, twoProducts, OPTS)];
     const lines = buildDeclarationLines(installation, twoProducts, em);
     expect(lines).toHaveLength(2);
     // Intensity is identical; the split shows up in the tonnage-weighted totals.
@@ -350,8 +350,56 @@ describe("specific embedded emissions (Annex IV)", () => {
 
   it("produces no line when there is no production, rather than dividing by zero", () => {
     const noOutput = activities.filter((a) => a.kind !== "production");
-    const em = [computeProcessEmissions(eaf, noOutput)];
+    const em = [computeProcessEmissions(eaf, noOutput, OPTS)];
     expect(buildDeclarationLines(installation, noOutput, em)).toHaveLength(0);
+  });
+});
+
+describe("bought-in precursors without supplier data", () => {
+  const precursor = (overrides: Partial<Extract<ActivityRecord, { kind: "precursor" }>>) =>
+    ({
+      ...base,
+      id: "pc1",
+      kind: "precursor",
+      processId: "p_eaf",
+      cnCode: "72031000",
+      quantityT: 1000,
+      lineage: lineage(1),
+      ...overrides,
+    }) as ActivityRecord;
+
+  it("applies the Commission default for the country of production plus the year's mark-up", () => {
+    // Annex I, India, CN 7203: 4.200 tCO2e/t; +10% mark-up in 2026.
+    const em = computeProcessEmissions(eaf, [precursor({ originCountry: "IN" })], OPTS);
+    const resolved = em.precursorResolutions.pc1;
+    expect(resolved?.status).toBe("default");
+    expect(resolved?.seeDirect).toBeCloseTo(4.62, 6);
+    expect(em.precursorDirectT).toBeCloseTo(4620, 3);
+    expect(resolved?.reference).toContain("India");
+  });
+
+  it("raises the mark-up with the production year", () => {
+    const em2027 = computeProcessEmissions(eaf, [precursor({ originCountry: "IN" })], {
+      year: 2027,
+    });
+    const em2028 = computeProcessEmissions(eaf, [precursor({ originCountry: "IN" })], {
+      year: 2028,
+    });
+    expect(em2027.precursorResolutions.pc1?.seeDirect).toBeCloseTo(4.2 * 1.2, 6);
+    expect(em2028.precursorResolutions.pc1?.seeDirect).toBeCloseTo(4.2 * 1.3, 6);
+  });
+
+  it("falls back to the highest default (Annex IV) when the origin is unknown", () => {
+    const em = computeProcessEmissions(eaf, [precursor({})], OPTS);
+    expect(em.precursorResolutions.pc1?.status).toBe("default");
+    expect(em.precursorResolutions.pc1?.reference).toContain("Annex IV");
+  });
+
+  it("never invents a value for a good with no published default", () => {
+    const em = computeProcessEmissions(eaf, [precursor({ cnCode: "27160000" })], OPTS);
+    expect(em.precursorResolutions.pc1?.status).toBe("unresolved");
+    expect(em.precursorDirectT).toBe(0);
+    expect(em.errors.join(" ")).toContain("27160000");
   });
 });
 
@@ -373,7 +421,7 @@ describe("buildDeclaration", () => {
         id: "pr1",
         kind: "production",
         processId: "p_eaf",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 10000,
         lineage: lineage(2),
       },

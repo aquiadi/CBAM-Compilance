@@ -1,6 +1,7 @@
-import { getBenchmark } from "./defaults";
-import { lookupGoods, TYPICAL_PRECURSORS } from "./goods";
+import { getPlausibilityBand } from "./plausibility";
+import { goodsUnderHeading, lookupGoods, TYPICAL_PRECURSORS } from "./goods";
 import type { ProcessEmissions } from "./calc";
+import type { SefaResult } from "./sefa";
 import type {
   ActivityRecord,
   DeclarationLine,
@@ -80,6 +81,10 @@ export interface RuleContext {
   rejectedRowCount?: number;
   /** Records the operator excluded after review. */
   excludedCount?: number;
+  /** Free allocation results, for the benchmark-route and SEFA checks. */
+  sefa?: SefaResult;
+  /** Rows skipped at ingest because the goods are outside CBAM scope. */
+  outOfScopeRows?: { fileName: string; row: number; cnCode: string; description: string }[];
 }
 
 type Rule = (ctx: RuleContext) => Finding[];
@@ -129,9 +134,9 @@ const fuelCalorificValue: Rule = ({ emissions }) =>
 /** CP-003 Specific emissions outside the plausible band for the goods category. */
 const plausibility: Rule = ({ lines }) =>
   lines.flatMap((l) => {
-    const benchmark = getBenchmark(l.category);
-    if (!benchmark) return [];
-    const [min, max] = benchmark.plausibleDirect;
+    const band = getPlausibilityBand(l.category);
+    if (!band) return [];
+    const [min, max] = band.plausibleDirect;
     if (l.seeDirect >= min && l.seeDirect <= max) return [];
     const direction = l.seeDirect < min ? "below" : "above";
     // Severity scales with how far out the figure is. A plant genuinely 20%
@@ -158,7 +163,7 @@ const plausibility: Rule = ({ lines }) =>
               "input has been attributed to a different process."
             : "Check for a unit misread (kg vs t, MU vs MWh) and confirm the production tonnage " +
               "covers the same period as the fuel data.",
-        reference: "Verification of plausibility, IR Art. 8",
+        reference: "Plausibility check (indicative band, not a regulatory value)",
       },
     ];
   });
@@ -282,13 +287,18 @@ const duplicates: Rule = ({ activities }) => {
 };
 
 /**
- * CP-007 Precursor embedded emissions taken from a default rather than the
- * supplier. Aggregated per CN code and supplier: twelve monthly deliveries from
- * one vendor is one problem to chase, not twelve.
+ * CP-007 Precursor embedded emissions taken from the Commission's default
+ * values rather than the supplier. Aggregated per CN code and supplier: twelve
+ * monthly deliveries from one vendor is one problem to chase, not twelve.
  */
-const precursorDefaults: Rule = ({ activities }) => {
+const precursorDefaults: Rule = ({ activities, emissions }) => {
+  const resolutions = Object.assign({}, ...emissions.map((e) => e.precursorResolutions)) as Record<
+    string,
+    ProcessEmissions["precursorResolutions"][string]
+  >;
   const defaults = activities.filter(
-    (a): a is PrecursorActivity => a.kind === "precursor" && a.seeSource === "default",
+    (a): a is PrecursorActivity =>
+      a.kind === "precursor" && resolutions[a.id]?.status === "default",
   );
   const groups = new Map<string, PrecursorActivity[]>();
   for (const a of defaults) {
@@ -298,27 +308,27 @@ const precursorDefaults: Rule = ({ activities }) => {
 
   return [...groups.entries()].flatMap(([key, records]) => {
     const [first] = records;
-    // A group only exists because something was pushed into it, but proving
-    // that to the compiler beats asserting it away.
     if (!first) return [];
+    const resolved = resolutions[first.id];
     const tonnes = records.reduce((s, r) => s + r.quantityT, 0);
-    const see = first.seeDirect + first.seeIndirect;
+    const see = (resolved?.seeDirect ?? 0) + (resolved?.seeIndirect ?? 0);
     const supplier = key.split("|")[1] ?? "unknown supplier";
     return {
       code: "CP-007",
       severity: "warning" as const,
-      title: `Default emissions used for ${records.length} ${lookupGoods(first.cnCode)?.description ?? first.cnCode} deliveries`,
+      title: `Default values used for ${records.length} ${lookupGoods(first.cnCode)?.description ?? first.cnCode} deliveries`,
       detail:
-        `${tonnes.toLocaleString("en-IN", { maximumFractionDigits: 0 })} t from ${supplier} is ` +
-        `carrying a default of ${see.toFixed(3)} tCO2e/t across ${records.length} deliveries. ` +
-        `Defaults are set at a mark-up over typical actual values, so this almost certainly ` +
-        `overstates your obligation.`,
+        `${tonnes.toLocaleString("en-IN", { maximumFractionDigits: 0 })} t from ${supplier} carries ` +
+        `the Commission default of ${see.toFixed(3)} tCO2e/t including the mark-up ` +
+        `(${resolved?.reference ?? "default value"}). Defaults are set to avoid underestimating ` +
+        `emissions, so they usually overstate this plant's obligation.`,
       activityIds: records.map((r) => r.id),
       processId: first.processId,
       remedy:
-        `Request a CBAM communication from ${supplier}. On ${tonnes.toLocaleString("en-IN", { maximumFractionDigits: 0 })} t ` +
-        `this is usually the single highest-value data request you can make before filing.`,
-      reference: "Art. 7(2) and Annex IV(4)",
+        `Request a verified CBAM communication from ${supplier}, including its specific embedded ` +
+        `emissions and free allocation (SEFA). On ${tonnes.toLocaleString("en-IN", { maximumFractionDigits: 0 })} t ` +
+        `this is usually the highest-value data request available before filing.`,
+      reference: "IR (EU) 2025/2621 Annex I/IV; mark-up per Guidance Document 3, s. 4.10",
     };
   });
 };
@@ -411,8 +421,12 @@ const missingPrecursors: Rule = ({ installation, activities, emissions }) =>
     ];
   });
 
-/** CP-011 Grid average used where a supplier-specific factor is expected. */
-const gridFactorSpecificity: Rule = ({ activities }) => {
+/**
+ * CP-011 Grid electricity on a national average rather than the Commission's
+ * Annex II default or an evidenced supplier factor.
+ */
+const gridFactorSpecificity: Rule = ({ activities, installation }) => {
+  if (installation.gridEmissionFactor) return [];
   const generic = activities.filter(
     (a): a is ElectricityActivity =>
       a.kind === "electricity" && a.supply === "grid" && a.factorId.startsWith("grid_in"),
@@ -425,13 +439,16 @@ const gridFactorSpecificity: Rule = ({ activities }) => {
       severity: "info",
       title: "National grid average applied to purchased electricity",
       detail:
-        `${totalMWh.toLocaleString("en-IN", { maximumFractionDigits: 0 })} MWh is using a published ` +
-        `grid average rather than an emission factor evidenced by your supplier.`,
+        `${totalMWh.toLocaleString("en-IN", { maximumFractionDigits: 0 })} MWh uses the CEA national ` +
+        `grid average. In the definitive period the default for grid electricity is the ` +
+        `Commission's country factor (Annex II to IR (EU) 2025/2621); a lower actual factor needs ` +
+        `the evidence required for power purchase agreements or a direct technical link.`,
       activityIds: generic.map((a) => a.id),
       remedy:
-        "Ask the DISCOM or captive supplier for a certified emission factor. On an " +
-        "electricity-intensive route this is usually the cheapest accuracy improvement available.",
-      reference: "IR Annex III, emission factor for electricity",
+        "Enter the Annex II factor for India under Settings, or evidence a supplier-specific " +
+        "factor. For goods where only direct emissions count this changes what is reported, not " +
+        "what is charged.",
+      reference: "IR (EU) 2025/2621 Annex II; IR (EU) 2025/2547",
     },
   ];
 };
@@ -448,19 +465,33 @@ const scopeCheck: Rule = ({ activities }) => {
       seen.add(a.cnCode);
       return true;
     })
-    .map((a) => ({
-      code: "CP-012",
-      severity: "info" as const,
-      title: `CN code ${a.cnCode} is not a CBAM good`,
-      detail:
-        `Row ${a.lineage.row} of ${a.lineage.fileName} declares ${a.cnCode}, which does not ` +
-        `appear in Annex I. It has been excluded from the declaration.`,
-      activityIds: outOfScope.filter((x) => x.cnCode === a.cnCode).map((x) => x.id),
-      processId: a.processId,
-      allowExclusion: true,
-      remedy: "Confirm the CN code. If the goods are in scope, correct the code and re-run.",
-      reference: "Annex I, list of goods",
-    }));
+    .map((a) => {
+      const candidates = a.cnCode.length < 8 ? goodsUnderHeading(a.cnCode) : [];
+      const partial = a.cnCode.length < 8;
+      return {
+        code: "CP-012",
+        severity: (partial && candidates.length > 0 ? "blocker" : "info") as Severity,
+        title: partial
+          ? `CN code ${a.cnCode} is not specific enough`
+          : `CN code ${a.cnCode} is not a CBAM good`,
+        detail: partial
+          ? `Row ${a.lineage.row} of ${a.lineage.fileName} declares ${a.cnCode}. Declarations are ` +
+            `made per 8-digit CN code; under this heading ${candidates.length} codes are in scope ` +
+            `(e.g. ${candidates
+              .slice(0, 3)
+              .map((c) => c.cnCode)
+              .join(", ")}). The goods are left out until the full code is given.`
+          : `Row ${a.lineage.row} of ${a.lineage.fileName} declares ${a.cnCode}, which is not in ` +
+            `Annex I. It has been left out of the declaration.`,
+        activityIds: outOfScope.filter((x) => x.cnCode === a.cnCode).map((x) => x.id),
+        processId: a.processId,
+        allowExclusion: !partial,
+        remedy: partial
+          ? "Correct the CN code in the source file to the 8-digit code on the customs invoice and re-import."
+          : "Confirm the CN code. If the goods are in scope, correct the code and re-import.",
+        reference: "Annex I, list of goods",
+      };
+    });
 };
 
 /**
@@ -488,6 +519,183 @@ const rejectedRows: Rule = ({ rejectedRowCount }) => {
   ];
 };
 
+/**
+ * CP-014 Reporting period shorter than a calendar year. The definitive regime
+ * reports embedded emissions per calendar year of production; a part-year is a
+ * provisional estimate, not a figure a verifier can sign.
+ */
+const partialYear: Rule = ({ period }) => {
+  const full = period.start.endsWith("-01-01") && period.end.endsWith("-12-31");
+  if (full || period.start.slice(0, 4) !== period.end.slice(0, 4)) return [];
+  return [
+    {
+      code: "CP-014",
+      severity: "warning",
+      title: `Reporting period covers ${monthsBetween(period.start, period.end)} of 12 months`,
+      detail:
+        `Figures cover ${period.start} to ${period.end}. Embedded emissions are determined per ` +
+        `calendar year of production, so these are provisional until the year is complete.`,
+      activityIds: [],
+      remedy:
+        "Use these figures for planning and supplier conversations; recompute on the full year's " +
+        "data before verification.",
+      reference: "IR (EU) 2025/2547 Art. 7; Guidance Document 1, s. 2.4.5",
+    },
+  ];
+};
+
+/**
+ * CP-015 The free allocation adjustment could not be determined - most often
+ * because the benchmark depends on the production route and none is set.
+ */
+const freeAllocationDetermined: Rule = ({ lines, sefa }) => {
+  if (!sefa) return [];
+  return lines
+    .filter((l) => l.sefaIssues.length > 0)
+    .map((l) => {
+      const routeMissing = l.sefaIssues.some((i) => i.includes("production route"));
+      return {
+        code: "CP-015",
+        severity: (routeMissing ? "blocker" : "warning") as Severity,
+        title: routeMissing
+          ? `Production route needed for the benchmark of CN ${l.cnCode}`
+          : `Free allocation incomplete for CN ${l.cnCode}`,
+        detail: l.sefaIssues.join(" "),
+        activityIds: [],
+        processId: l.processId,
+        remedy: routeMissing
+          ? `Set the benchmark route for ${l.processName} under Settings > Installation.`
+          : "Check that every precursor of this good resolves to a value, then recompute.",
+        reference: "IR (EU) 2025/2620 Annex, point 5; Guidance Document 4, Table 2-2",
+      };
+    });
+};
+
+/** CP-016 Supplier actual values without a verification report. */
+const unverifiedSupplierData: Rule = ({ activities }) => {
+  const unverified = activities.filter(
+    (a): a is PrecursorActivity => a.kind === "precursor" && !!a.supplier && !a.supplier.verified,
+  );
+  const bySupplier = new Map<string, PrecursorActivity[]>();
+  for (const a of unverified) {
+    const key = a.supplierName ?? "unknown supplier";
+    bySupplier.set(key, [...(bySupplier.get(key) ?? []), a]);
+  }
+  return [...bySupplier.entries()].map(([supplier, records]) => ({
+    code: "CP-016",
+    severity: "warning" as const,
+    title: `Actual values from ${supplier} are not verified`,
+    detail:
+      `${records.length} deliveries use values communicated by ${supplier} without an accredited ` +
+      `verifier's report. Actual data can be used in a CBAM declaration only once verified; ` +
+      `otherwise the declarant must fall back to default values.`,
+    activityIds: records.map((r) => r.id),
+    processId: records[0]?.processId,
+    remedy: `Ask ${supplier} for the verification report covering these values and attach it as evidence.`,
+    reference: "Regulation (EU) 2023/956 Art. 8; IR (EU) 2025/2546",
+  }));
+};
+
+/** CP-017 A precursor with no supplier value and no published default. */
+const unresolvedPrecursors: Rule = ({ activities, emissions }) => {
+  const findings: Finding[] = [];
+  for (const e of emissions) {
+    const unresolved = activities.filter(
+      (a): a is PrecursorActivity =>
+        a.kind === "precursor" &&
+        a.processId === e.processId &&
+        e.precursorResolutions[a.id]?.status === "unresolved",
+    );
+    if (unresolved.length === 0) continue;
+    const first = unresolved[0];
+    findings.push({
+      code: "CP-017",
+      severity: "blocker",
+      title: `${unresolved.length} precursor deliveries have no embedded emissions value`,
+      detail:
+        `${first ? e.precursorResolutions[first.id]?.issue : ""} Without a supplier value or a ` +
+        `published default these deliveries contribute nothing, which understates ${e.processName}.`,
+      activityIds: unresolved.map((a) => a.id),
+      processId: e.processId,
+      remedy:
+        "Obtain the supplier's CBAM communication, or record the full CN code and country of " +
+        "production so the correct default value applies.",
+      reference: "IR (EU) 2025/2621 Annex I and IV",
+    });
+  }
+  return findings;
+};
+
+/** CP-018 Supplier gave SEE but not SEFA, so a default benchmark stands in. */
+const supplierSefaMissing: Rule = ({ activities }) => {
+  const missing = activities.filter(
+    (a): a is PrecursorActivity =>
+      a.kind === "precursor" && !!a.supplier && a.supplier.sefa === undefined,
+  );
+  if (missing.length === 0) return [];
+  const suppliers = [...new Set(missing.map((a) => a.supplierName ?? "unknown supplier"))];
+  return [
+    {
+      code: "CP-018",
+      severity: "info",
+      title: "Precursor free allocation (SEFA) not communicated by suppliers",
+      detail:
+        `${missing.length} deliveries from ${suppliers.join(", ")} carry actual emissions but no ` +
+        `specific embedded free allocation. The column B benchmark is used instead, as the Free ` +
+        `Allocation Adjustment Act provides.`,
+      activityIds: missing.map((a) => a.id),
+      remedy:
+        "Ask suppliers to include SEFA in their communication; it is part of the verified report.",
+      reference: "IR (EU) 2025/2620; Guidance Document 4, s. 2.2.1.1",
+    },
+  ];
+};
+
+/** CP-019 Installation details the communication template asks for. */
+const installationDetails: Rule = ({ installation }) => {
+  const missing = [
+    !installation.unlocode && "UN/LOCODE",
+    (installation.latitude === undefined || installation.longitude === undefined) &&
+      "coordinates of the main emission source",
+    !installation.economicActivity && "economic activity",
+    !installation.contactEmail && "contact e-mail",
+  ].filter((x): x is string => Boolean(x));
+  if (missing.length === 0) return [];
+  return [
+    {
+      code: "CP-019",
+      severity: "warning",
+      title: "Installation details incomplete for the communication",
+      detail: `The communication to importers is missing: ${missing.join(", ")}.`,
+      activityIds: [],
+      remedy: "Complete the installation details under Settings > Installation.",
+      reference: "Commission communication template for installations, sheet A_InstData",
+    },
+  ];
+};
+
+/** CP-020 Rows skipped at ingest because their goods are outside CBAM scope. */
+const outOfScopeInputs: Rule = ({ outOfScopeRows }) => {
+  if (!outOfScopeRows || outOfScopeRows.length === 0) return [];
+  const codes = [
+    ...new Set(outOfScopeRows.map((r) => `${r.cnCode} (${r.description || "no description"})`)),
+  ];
+  return [
+    {
+      code: "CP-020",
+      severity: "info",
+      title: `${outOfScopeRows.length} rows are goods outside CBAM scope`,
+      detail:
+        `Rows declaring ${codes.slice(0, 4).join("; ")}${codes.length > 4 ? "; ..." : ""} were ` +
+        `recorded but carry no embedded emissions, because the goods are not in Annex I.`,
+      activityIds: [],
+      remedy:
+        "Nothing to do if the CN codes are right. If a code is wrong, correct it and re-import.",
+      reference: "Annex I to Regulation (EU) 2023/956",
+    },
+  ];
+};
+
 const RULES: Rule[] = [
   rejectedRows,
   activityLevelPresent,
@@ -502,6 +710,13 @@ const RULES: Rule[] = [
   missingPrecursors,
   gridFactorSpecificity,
   scopeCheck,
+  partialYear,
+  freeAllocationDetermined,
+  unverifiedSupplierData,
+  unresolvedPrecursors,
+  supplierSefaMissing,
+  installationDetails,
+  outOfScopeInputs,
 ];
 
 const SEVERITY_ORDER: Record<Severity, number> = { blocker: 0, warning: 1, info: 2 };
@@ -521,11 +736,22 @@ export const RULE_CATALOGUE = [
   { code: "CP-004", title: "Reporting period fully covered", severity: "warning" },
   { code: "CP-005", title: "Order-of-magnitude outliers", severity: "warning" },
   { code: "CP-006", title: "Duplicate records", severity: "warning" },
-  { code: "CP-007", title: "Precursor defaults in use", severity: "warning" },
+  { code: "CP-007", title: "Precursor default values in use", severity: "warning" },
   { code: "CP-008", title: "Carbon price evidence attached", severity: "blocker" },
   { code: "CP-009", title: "Electricity intensity plausible", severity: "warning" },
   { code: "CP-010", title: "Expected precursors present", severity: "warning" },
-  { code: "CP-011", title: "Supplier-specific grid factor", severity: "info" },
-  { code: "CP-012", title: "Goods within CBAM scope", severity: "info" },
+  { code: "CP-011", title: "Grid factor is the Commission default or evidenced", severity: "info" },
+  {
+    code: "CP-012",
+    title: "Goods within CBAM scope, at 8-digit CN level",
+    severity: "info / blocker",
+  },
   { code: "CP-013", title: "All source rows imported", severity: "blocker" },
+  { code: "CP-014", title: "Full calendar year reported", severity: "warning" },
+  { code: "CP-015", title: "Free allocation adjustment determined", severity: "blocker / warning" },
+  { code: "CP-016", title: "Supplier actual values verified", severity: "warning" },
+  { code: "CP-017", title: "Every precursor has a value", severity: "blocker" },
+  { code: "CP-018", title: "Supplier SEFA communicated", severity: "info" },
+  { code: "CP-019", title: "Installation details complete", severity: "warning" },
+  { code: "CP-020", title: "Out-of-scope inputs recorded", severity: "info" },
 ] as const;

@@ -25,26 +25,64 @@ const EnvSchema = z.object({
   CARBONPASS_MODEL: z.string().min(1).default("claude-opus-5"),
 
   /**
-   * Default EU ETS certificate price in EUR. Bounded rather than merely
-   * numeric: a price of 0 or 10,000 is a configuration error, and silently
-   * accepting it would produce a confidently wrong exposure figure.
+   * Certificate price in EUR assumed for quarters the Commission has not yet
+   * published (the published 2026 quarterly prices are built in). Bounded
+   * rather than merely numeric: a price of 0 or 10,000 is a configuration
+   * error, and silently accepting it would produce a confidently wrong figure.
+   * Each workspace can override it.
    */
-  CARBONPASS_ETS_PRICE_EUR: z.coerce.number().positive().max(1000).default(78),
+  CARBONPASS_ETS_PRICE_EUR: z.coerce.number().positive().max(1000).default(75),
 
   /** INR per EUR, for reporting exposure in the currency the operator budgets in. */
   CARBONPASS_INR_PER_EUR: z.coerce.number().positive().max(1000).default(92),
 
-  /** Compliance year driving the CBAM factor. */
-  CARBONPASS_YEAR: z.coerce.number().int().min(2023).max(2040).default(2026),
+  /**
+   * Postgres connection string (Neon, Railway, RDS, local). When unset the app
+   * runs on an embedded Postgres (PGlite) stored under CARBONPASS_DATA_DIR,
+   * which suits local use and a single server with a persistent volume.
+   */
+  DATABASE_URL: z
+    .string()
+    .regex(/^postgres(ql)?:\/\//, "must be a postgres:// or postgresql:// connection string")
+    .optional(),
 
-  /** Where workspace state is persisted. */
+  /** Where the embedded database keeps its files when DATABASE_URL is unset. */
   CARBONPASS_DATA_DIR: z.string().default(".data"),
+
+  /**
+   * Who may create an account: "open" lets anyone sign up and create an
+   * organisation; "invite" allows sign-up only through an invitation link.
+   */
+  CARBONPASS_SIGNUP: z.enum(["open", "invite"]).default("open"),
+
+  /** Public base URL, used in invitation and supplier links. Derived from the request when unset. */
+  APP_URL: z.string().url().optional(),
+
+  /** Largest accepted upload. Serverless hosts cap request bodies at about 4.5 MB. */
+  CARBONPASS_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(4),
+
+  /** Set by Vercel on its build and runtime; used to require an external database there. */
+  VERCEL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
 
+/** Vercel's Postgres integrations expose POSTGRES_URL; accept it as an alias. */
+function withAliases(
+  input: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = { ...input };
+  if (!out.DATABASE_URL && out.POSTGRES_URL) out.DATABASE_URL = out.POSTGRES_URL;
+  // An empty variable (a blank line copied from .env.example, a cleared field
+  // in a dashboard) means "not set", not "set to nothing".
+  for (const key of Object.keys(out)) {
+    if (out[key] === "") delete out[key];
+  }
+  return out;
+}
+
 function load(): Env {
-  const parsed = EnvSchema.safeParse(process.env);
+  const parsed = EnvSchema.safeParse(withAliases(process.env));
 
   if (!parsed.success) {
     const detail = parsed.error.issues
@@ -61,12 +99,15 @@ export const env: Env = load();
 /** True when a model API key is configured. */
 export const hasModelKey = (): boolean => Boolean(env.ANTHROPIC_API_KEY);
 
+/** True when running on Vercel, where the filesystem is not persistent. */
+export const onVercel = (): boolean => Boolean(env.VERCEL);
+
 /**
  * Exported for tests so the validation rules can be exercised without mutating
  * the real process environment.
  */
 export function parseEnv(input: Record<string, string | undefined>): Env {
-  const parsed = EnvSchema.safeParse(input);
+  const parsed = EnvSchema.safeParse(withAliases(input));
   if (!parsed.success) {
     throw new Error(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   }

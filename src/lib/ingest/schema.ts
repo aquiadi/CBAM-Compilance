@@ -283,13 +283,40 @@ export const DATASET_SCHEMAS: Record<
         aliases: ["see indirect", "indirect emissions", "embedded indirect"],
       },
       {
+        id: "see_sefa",
+        label: "Supplier SEFA",
+        required: false,
+        type: "number",
+        description:
+          "Specific embedded free allocation communicated by the supplier, tCO2e per tonne. Blank means the column B benchmark is used.",
+        aliases: ["sefa", "supplier sefa", "free allocation", "embedded free allocation"],
+      },
+      {
+        id: "origin_country",
+        label: "Country of production",
+        required: false,
+        type: "text",
+        description:
+          "Where the precursor was produced. Selects the Commission's default-value table; unknown origin means the highest default (Annex IV).",
+        aliases: ["country of origin", "origin", "country", "coo", "made in", "origin country"],
+      },
+      {
         id: "communication_received",
         label: "CBAM communication received",
         required: false,
         type: "boolean",
         description:
-          "Whether the supplier has provided a CBAM communication. Without one, a default value with a mark-up applies.",
+          "Whether the supplier has provided a CBAM communication. Without one, the Commission default value with its mark-up applies.",
         aliases: ["cbam communication", "communication recd", "cbam data", "declaration received"],
+      },
+      {
+        id: "verified",
+        label: "Verified",
+        required: false,
+        type: "boolean",
+        description:
+          "Whether the supplier's values are covered by an accredited verifier's report. Unverified actual values cannot be used by the declarant.",
+        aliases: ["verified", "verified y n", "verification", "verification report"],
       },
       UNIT,
       NOTES,
@@ -341,4 +368,12 @@ export interface DatasetMapping {
   /** Fields the schema requires that no column was mapped to. */
   missingRequired: string[];
   warnings: string[];
+  /**
+   * File-level facts the operator states during mapping review, applied to
+   * every row that does not carry its own value - e.g. "all these precursors
+   * were produced in India". Recorded, never inferred.
+   */
+  defaults?: {
+    originCountry?: string;
+  };
 }

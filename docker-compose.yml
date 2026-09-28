@@ -1,20 +1,47 @@
+# The app and a Postgres database, as they run in production.
+#
+#   docker compose up --build        # http://localhost:3000
+#
+# To run without the database service, drop DATABASE_URL: the app falls back
+# to its embedded Postgres under /app/.data (kept in the carbonpass-data volume).
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: carbonpass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass}
+      POSTGRES_DB: carbonpass
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carbonpass -d carbonpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
   carbonpass:
     build: .
     image: carbonpass-ai:local
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "${PORT:-3000}:3000"
     environment:
-      # Optional. Without it every AI step uses its deterministic fallback and
-      # the UI labels the provenance accordingly.
+      DATABASE_URL: postgres://carbonpass:${POSTGRES_PASSWORD:-carbonpass}@db:5432/carbonpass
+      # Public address, used in invitation and supplier links.
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      CARBONPASS_SIGNUP: ${CARBONPASS_SIGNUP:-open}
+      # Optional. Without a key every AI step uses its deterministic fallback
+      # and the UI labels the provenance accordingly.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CARBONPASS_MODEL: ${CARBONPASS_MODEL:-claude-opus-5}
-      CARBONPASS_ETS_PRICE_EUR: ${CARBONPASS_ETS_PRICE_EUR:-78}
-      CARBONPASS_YEAR: ${CARBONPASS_YEAR:-2026}
+      CARBONPASS_ETS_PRICE_EUR: ${CARBONPASS_ETS_PRICE_EUR:-75}
     volumes:
-      # Workspace state survives a container restart.
       - carbonpass-data:/app/.data
     restart: unless-stopped
 
 volumes:
+  postgres-data:
   carbonpass-data:

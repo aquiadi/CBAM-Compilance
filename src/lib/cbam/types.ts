@@ -95,6 +95,12 @@ export interface EmissionFactor {
   vintage: string;
   /** Relative uncertainty, as a fraction (0.05 = +/- 5%). */
   uncertainty: number;
+  /**
+   * Monitoring tier of the calculation factor itself: 1 for an international
+   * default (IPCC), 2 for a country-specific value (e.g. CEA grid, Indian coal
+   * NCV), 3 for an operator-measured or contractually evidenced value.
+   */
+  tier: MethodTier;
   notes?: string;
 }
 
@@ -172,17 +178,35 @@ export interface ProductionActivity extends ActivityBase {
   destination?: "eu_export" | "domestic" | "other_export" | "internal_transfer";
 }
 
-/** A CBAM precursor consumed, carrying its own embedded emissions. */
+/**
+ * Actual values a supplier communicated for a precursor. Only these are stored
+ * on the record: where they are absent the engine resolves the Commission's
+ * default value (with the year's mark-up) at calculation time, so a change to
+ * the published tables flows through without re-importing data.
+ */
+export interface SupplierDeclaredValues {
+  /** Specific embedded emissions, tCO2e per tonne of precursor. */
+  seeDirect: number;
+  seeIndirect: number;
+  /** Specific embedded free allocation, tCO2e per tonne, if communicated. */
+  sefa?: number;
+  /**
+   * Whether the values are covered by a verification report from an
+   * accredited verifier. Unverified actual values cannot be used by the
+   * declarant (Art. 8), so the rules flag them.
+   */
+  verified: boolean;
+}
+
+/** A CBAM precursor bought in and consumed, carrying its own embedded emissions. */
 export interface PrecursorActivity extends ActivityBase {
   kind: "precursor";
   cnCode: string;
   quantityT: number;
-  /** Specific embedded emissions of the precursor, tCO2e/t. */
-  seeDirect: number;
-  seeIndirect: number;
-  /** Where the precursor's SEE came from. "default" triggers a markup warning. */
-  seeSource: "supplier" | "default" | "own_installation";
   supplierName?: string;
+  /** ISO 3166-1 alpha-2 country of production, when known. Drives default values. */
+  originCountry?: string;
+  supplier?: SupplierDeclaredValues;
 }
 
 /** A carbon price already paid in the country of origin, deductible under Art. 9. */
@@ -221,6 +245,12 @@ export interface ProductionProcess {
    * resolve "Material Handling" without guessing.
    */
   aliases?: string[];
+  /**
+   * Route indicator used to select the CBAM benchmark where it depends on the
+   * production route (C/D/E for carbon steel, F-J for alloy steel, K/L for
+   * aluminium, A/B for grey or white clinker). See ROUTE_INDICATORS.
+   */
+  benchmarkRoute?: string;
 }
 
 /**
@@ -249,6 +279,19 @@ export interface Installation {
   country: string;
   /** UN/LOCODE of the nearest port, required on the CBAM declaration. */
   unlocode?: string;
+  /** Coordinates of the main emission source, requested by the communication template. */
+  latitude?: number;
+  longitude?: number;
+  /** Economic activity (e.g. NIC/NACE description), for the communication template. */
+  economicActivity?: string;
+  /** Operator's identifier in the CBAM Registry, once registered. */
+  registryOperatorId?: string;
+  /**
+   * Emission factor for grid electricity, when the operator has one that
+   * should replace the library value - typically the Commission's Annex II
+   * country default, or a factor evidenced under the Annex rules on PPAs.
+   */
+  gridEmissionFactor?: { value: number; source: string };
   contactName: string;
   contactEmail: string;
   processes: ProductionProcess[];
@@ -298,9 +341,20 @@ export interface DeclarationLine {
   embeddedForObligationT: number;
   /** Embedded emissions of the EU-bound share only - what actually gets charged. */
   embeddedEuT: number;
-  /** EU default value for comparison, where one is published. */
+  /**
+   * Specific embedded free allocation, tCO2e per tonne: the benchmark-based
+   * amount deducted from the obligation (Implementing Regulation (EU) 2025/2620).
+   */
+  sefa: number;
+  /** Why SEFA could not be fully determined, if it could not. */
+  sefaIssues: string[];
+  /**
+   * The Commission default value for this good from the installation's country,
+   * including the year's mark-up - what the importer would have to use without
+   * verified actual data.
+   */
   defaultSee?: number;
-  /** Fractional delta vs the default; negative means the plant beats the default. */
+  /** Fractional delta vs the default; negative means actual data beats the default. */
   vsDefault?: number;
   /** Aggregate uncertainty of the line, as a fraction. */
   uncertainty: number;

@@ -13,28 +13,43 @@ If you are about to let model output reach a calculation, stop.
 
 ## Conventions
 
-- **Factors are data with provenance.** Emission factors, benchmarks and CN codes live in
-  `src/lib/cbam/`. Adding one means adding its `source`, `sourceRef`, `vintage` and `uncertainty`
-  too. A number without a source cannot be defended to a verifier.
+- **Regulatory data is imported, never typed in.** Benchmarks and default values come from the
+  Commission's workbooks in `data/regulatory/source/` through `npm run regulatory:import`, which
+  records each workbook's SHA-256 in the generated tables. Constants that come from the legal text
+  (CBAM factor, mark-ups, published prices) live in `src/lib/cbam/regulatory/index.ts`, each beside
+  the act and article it comes from.
+- **Factors are data with provenance.** An emission factor needs its `source`, `sourceRef`,
+  `vintage` and `uncertainty`. A number without a source cannot be defended to a verifier.
 - **Never silently drop a row.** `materialise` rejects with a reason and rule CP-013 surfaces the
   count. A row missing from a declaration is an understatement, and understatements carry penalties.
 - **Never assume a unit.** `normaliseQuantity` throws rather than guess, and callers turn that into
   a rejected row. Reading MU as MWh is a 1000× error.
-- **Chart colours come from `src/lib/palette.ts`**, which is a plain module on purpose — an export
-  from a `"use client"` module read by a server component resolves to a client reference rather than
-  the value, and paints the mark black. The palette _order_ is the colourblind-safety mechanism;
-  re-run the validator before changing a hue.
+- **Every change to a workspace goes through the store.** `src/lib/workspace/store.ts` writes with a
+  version check and appends to the audit log in the same transaction. A route handler that writes
+  state any other way bypasses both.
+- **Every route checks its role.** Start a handler with `apiWorkspaceContext(request, { write:
+true })` (or `roles: ["owner"]`) from `src/lib/auth/context.ts`; it also refuses cross-origin
+  writes. Viewers and verifiers are read-only.
+- **SQL runs on both drivers.** Tests use PGlite, production usually uses Postgres. Stick to
+  standard Postgres SQL; a new table is a new entry in `src/lib/db/migrations.ts`, never an edit to
+  an applied one.
+- **Chart colours come from `src/lib/palette.ts`**, which is a plain module on purpose. An export
+  from a `"use client"` module read by a server component resolves to a client reference rather
+  than the value, and paints the mark black. The palette _order_ is the colourblind-safety
+  mechanism; re-run the validator before changing a hue.
 - **Confidence must be calibrated.** It decides what a human is asked to review, so inflating it
   defeats the review step. The deterministic mapper caps itself at 0.90 for this reason.
 
 ## Before committing
 
 ```bash
-make check   # lint, format, typecheck, fixture checksums, tests, mapping eval
+make check                 # lint, format, typecheck, fixture checksums, tests, mapping eval
+make build && make start   # then, in another terminal:
+make smoke                 # sign-up to verifier pack, over HTTP, against the production build
 ```
 
-That is exactly what CI runs, so "it passes locally" and "it passes in CI" mean the same thing.
-`make help` lists every target.
+`make check` is exactly what CI's quality job runs, and CI runs the smoke test against Postgres, the
+embedded database and the container image. `make help` lists every target.
 
 The eval gate is the column **error** rate, not accuracy. A column mapped to the wrong field
 corrupts a calculation silently; a column left unmapped surfaces in the UI and gets fixed in ten
@@ -53,7 +68,8 @@ figures quoted in the README were produced from those exact bytes. After an inte
 make seed    # regenerate fixtures, then refresh the manifest
 ```
 
-Then re-check any figure quoted in the README — `make dev` and read the Overview screen.
+Then re-check every figure quoted in the README: run `make dev`, open the demo, and read the
+Declaration screen before and after excluding the two seeded defects.
 
 ## Project layout
 

@@ -66,7 +66,17 @@ export default tseslint.config(
   },
   {
     files: ["**/*.mjs", "scripts/**/*.mjs"],
-    languageOptions: { globals: { process: "readonly", console: "readonly" } },
+    // Node 22 scripts: the runtime globals they use, and nothing browser-only.
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        URL: "readonly",
+        fetch: "readonly",
+        FormData: "readonly",
+        Blob: "readonly",
+      },
+    },
   },
   prettier,
 );

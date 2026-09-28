@@ -21,7 +21,8 @@ Absolute rules:
 
 - Use ONLY figures that appear in the data you are given. Never calculate a new number, never round differently, never introduce a figure from your own knowledge of the industry. If something is not in the input, say it is not determined rather than estimating it.
 - State the weaknesses. A memo that hides its data gaps fails verification the moment the verifier finds them, and they will. Every default value used, every month missing, every unresolved finding gets named.
-- Cite the methodology properly: Regulation (EU) 2023/956 and Implementing Regulation (EU) 2023/1773, by Annex where relevant.
+- Cite the methodology properly: Regulation (EU) 2023/956 as amended by Regulation (EU) 2025/2083; the methodology act, Implementing Regulation (EU) 2025/2547; default values, Implementing Regulation (EU) 2025/2621 (as corrected by 2026/1740); the free allocation adjustment, Implementing Regulation (EU) 2025/2620.
+- The certificate obligation is embedded emissions minus the free allocation adjustment (specific embedded free allocation, SEFA, times mass), not a percentage of embedded emissions. Describe it that way.
 - No marketing language. No "robust", "comprehensive", "state of the art". A verifier reads this looking for overstatement.
 
 Structure, using markdown headings:
@@ -80,7 +81,10 @@ function buildPrompt(result: DeclarationResult): string {
         `- CN ${l.cnCode} (${l.description}): ${l.quantityT.toFixed(0)} t produced, ${l.quantityEuT.toFixed(0)} t to the EU. ` +
         `SEE direct ${l.seeDirect.toFixed(4)} tCO2e/t (own ${l.seeDirectOwn.toFixed(4)}, precursors ${l.seeDirectPrecursor.toFixed(4)}), ` +
         `SEE indirect ${l.seeIndirect.toFixed(4)}. Obligation basis: ${l.directOnly ? "direct only, Annex II" : "direct and indirect"}. ` +
-        `Chargeable embedded emissions ${l.embeddedEuT.toFixed(1)} tCO2e.`,
+        `SEFA ${l.sefa.toFixed(4)} tCO2e/t. EU-bound embedded emissions ${l.embeddedEuT.toFixed(1)} tCO2e.` +
+        (l.defaultSee !== undefined
+          ? ` Commission default value incl. mark-up for comparison: ${l.defaultSee.toFixed(4)} tCO2e/t.`
+          : ""),
     )
     .join("\n");
 
@@ -111,8 +115,10 @@ ${goodsLines}
 - Direct emissions: ${result.totals.directT.toFixed(1)} tCO2e
 - Indirect emissions: ${result.totals.indirectT.toFixed(1)} tCO2e
 - Bought-in precursor emissions: ${result.totals.precursorT.toFixed(1)} tCO2e
-- Chargeable EU-bound embedded emissions: ${result.totals.obligationT.toFixed(1)} tCO2e
-- Certificates required (${result.exposure.year}, CBAM factor ${(result.exposure.cbamFactor * 100).toFixed(1)}%): ${result.exposure.netCertificates.toFixed(1)}
+- EU-bound embedded emissions: ${result.totals.obligationT.toFixed(1)} tCO2e
+- Free allocation adjustment (${result.exposure.year}, CBAM factor ${(result.exposure.cbamFactor * 100).toFixed(1)}%, CSCF ${result.exposure.cscf}): ${result.exposure.freeAllocationAdjustmentT.toFixed(1)} tCO2e
+- Certificates required: ${result.exposure.netCertificates.toFixed(1)}
+- Certificates on default values instead, for comparison: ${result.exposure.defaultScenario.certificates.toFixed(1)}
 
 # Data quality
 
@@ -190,7 +196,7 @@ export function fallbackMemo(result: DeclarationResult): string {
       (l) =>
         `| ${l.cnCode} | ${l.description} | ${l.quantityT.toLocaleString("en-IN", { maximumFractionDigits: 0 })} | ` +
         `${l.quantityEuT.toLocaleString("en-IN", { maximumFractionDigits: 0 })} | ${l.seeDirect.toFixed(4)} | ` +
-        `${l.seeIndirect.toFixed(4)} | ${l.directOnly ? "Direct only (Annex II)" : "Direct + indirect"} |`,
+        `${l.seeIndirect.toFixed(4)} | ${l.directOnly ? "Direct only (Annex II)" : "Direct + indirect"} | ${l.sefa.toFixed(4)} |`,
     )
     .join("\n");
 
@@ -208,11 +214,13 @@ The installation boundary comprises ${installation.processes.length} production 
 
 ## Methodology
 
-Emissions were determined using the calculation-based approach of Annex III to Regulation (EU) 2023/956, as implemented by Implementing Regulation (EU) 2023/1773.
+Emissions were determined using the calculation-based approach of Regulation (EU) 2023/956 as amended by Regulation (EU) 2025/2083, following the definitive-period methodology act, Implementing Regulation (EU) 2025/2547.
 
 Direct emissions are the sum of fuel combustion, process emissions from carbonate and carbon-bearing materials, and measurable heat crossing the installation boundary, with exported heat netted off. Fuel quantities were converted to energy using net calorific values, then multiplied by the applicable combustion emission factor. Indirect emissions are electricity consumed multiplied by the emission factor of the supply.
 
-Specific embedded emissions were calculated per Annex IV as attributed emissions plus the embedded emissions of precursors, divided by the activity level of the process. Where a single process yields more than one CN code, attributed emissions were allocated across them by mass.
+Specific embedded emissions were calculated per Annex IV as attributed emissions plus the embedded emissions of precursors, divided by the activity level of the process. Where a single process yields more than one CN code, attributed emissions were allocated across them by mass. Precursors without supplier data carry the Commission default value for their country of production (Implementing Regulation (EU) 2025/2621, as corrected by 2026/1740) increased by the mark-up for the production year.
+
+The free allocation adjustment follows Implementing Regulation (EU) 2025/2620: the specific embedded free allocation of each good is the CBAM factor times the cross-sectoral correction factor times the process benchmark (column A), plus the free allocation embedded in its precursors per tonne of good.
 
 ## Emission factors and data sources
 
@@ -240,8 +248,8 @@ ${[
 
 ## Specific embedded emissions
 
-| CN code | Description | Produced (t) | To EU (t) | SEE direct | SEE indirect | Obligation basis |
-| --- | --- | --- | --- | --- | --- | --- |
+| CN code | Description | Produced (t) | To EU (t) | SEE direct | SEE indirect | Obligation basis | SEFA |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 ${goods}
 
 ${processes}
@@ -260,11 +268,11 @@ Total emissions of the installation for the period were ${totals.directT.toLocal
 
 Of that, ${totals.obligationT.toLocaleString("en-IN", { maximumFractionDigits: 0 })} tCO2e is embedded in goods shipped to the European Union and forms the basis of the obligation. For goods listed in Annex II — iron and steel, aluminium and hydrogen — only direct emissions count towards the obligation, although indirect emissions are reported in full above.
 
-Applying the ${exposure.year} CBAM factor of ${(exposure.cbamFactor * 100).toFixed(1)}%, ${exposure.netCertificates.toLocaleString("en-IN", { maximumFractionDigits: 1 })} certificates would be surrendered, costing EUR ${exposure.netCostEur.toLocaleString("en-IN", { maximumFractionDigits: 0 })} at an assumed certificate price of EUR ${exposure.etsPriceEur}.
+The free allocation adjustment for ${exposure.year} (CBAM factor ${(exposure.cbamFactor * 100).toFixed(1)}%, CSCF ${exposure.cscf}) deducts ${exposure.freeAllocationAdjustmentT.toLocaleString("en-IN", { maximumFractionDigits: 0 })} tCO2e, leaving ${exposure.netCertificates.toLocaleString("en-IN", { maximumFractionDigits: 1 })} certificates for the EU importer to surrender, costing EUR ${exposure.netCostEur.toLocaleString("en-IN", { maximumFractionDigits: 0 })} at an average certificate price of EUR ${exposure.effectivePriceEur.toFixed(2)} (published quarterly prices where available). Declared on default values instead, the same goods would require ${exposure.defaultScenario.certificates.toLocaleString("en-IN", { maximumFractionDigits: 0 })} certificates.
 
 ${exposure.notes.map((n) => `> ${n}`).join("\n\n")}
 
 ---
 
-_Generated by CarbonPass AI on ${new Date(result.computedAt).toISOString().slice(0, 10)} from the activity data listed in the audit trail. Every figure above is traceable to a source file and row._`;
+_Generated by CarbonPass on ${new Date(result.computedAt).toISOString().slice(0, 10)} from the activity data listed in the audit trail. Every figure above is traceable to a source file and row._`;
 }

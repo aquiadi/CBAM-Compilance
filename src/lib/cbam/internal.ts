@@ -26,7 +26,7 @@ export interface InternalPrecursorResult {
 }
 
 /** Kahn's algorithm. A cycle means the plant routing is misdeclared, not that we should loop forever. */
-function topologicalOrder(
+export function topologicalOrder(
   processIds: string[],
   links: { fromProcessId: string; toProcessId: string }[],
 ): { order: string[]; cyclic: string[] } {

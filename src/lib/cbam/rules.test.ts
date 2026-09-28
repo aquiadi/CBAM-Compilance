@@ -27,7 +27,15 @@ const installation: Installation = {
   country: "IN",
   contactName: "n",
   contactEmail: "e@x.com",
-  processes: [{ id: "p1", name: "EAF", category: "crude_steel", route: "EAF (scrap)" }],
+  processes: [
+    {
+      id: "p1",
+      name: "EAF",
+      category: "crude_steel",
+      route: "EAF (scrap)",
+      benchmarkRoute: "E",
+    },
+  ],
 };
 
 const period: ReportingPeriod = {
@@ -76,7 +84,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 100000,
         lineage: lineage(2),
       },
@@ -102,7 +110,7 @@ describe("rules engine", () => {
       id: "pr1",
       kind: "production",
       processId: "p1",
-      cnCode: "72071100",
+      cnCode: "72071114",
       quantityT: 50000,
       lineage: lineage(9),
     });
@@ -139,7 +147,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 5000,
         lineage: lineage(6),
       },
@@ -166,9 +174,7 @@ describe("rules engine", () => {
         processId: "p1",
         cnCode: "72031000",
         quantityT: 1000,
-        seeDirect: 1.4,
-        seeIndirect: 0.1,
-        seeSource: "default",
+        originCountry: "IN",
         lineage: lineage(2),
       },
       {
@@ -176,7 +182,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 5000,
         lineage: lineage(3),
       },
@@ -201,7 +207,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 5000,
         lineage: lineage(2),
       },
@@ -240,7 +246,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 5000,
         lineage: lineage(2),
       },
@@ -265,7 +271,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 5000,
         lineage: lineage(2),
       },
@@ -301,7 +307,7 @@ describe("rules engine", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 100000,
         lineage: lineage(2),
       },
@@ -381,9 +387,7 @@ describe("readiness", () => {
         processId: "p1",
         cnCode: "72031000",
         quantityT: 3000,
-        seeDirect: 1.0,
-        seeIndirect: 0.08,
-        seeSource: "supplier",
+        supplier: { seeDirect: 1.0, seeIndirect: 0.08, sefa: 0.29, verified: true },
         lineage: lineage(3),
       },
       {
@@ -393,7 +397,7 @@ describe("readiness", () => {
         id: "pr1",
         kind: "production",
         processId: "p1",
-        cnCode: "72071100",
+        cnCode: "72071114",
         quantityT: 10000,
         lineage: lineage(4),
       },
@@ -401,5 +405,97 @@ describe("readiness", () => {
     const result = buildDeclaration(installation, period, good);
     expect(result.readiness.blockers).toBe(0);
     expect(result.readiness.score).toBeGreaterThan(70);
+  });
+});
+
+describe("definitive-period rules", () => {
+  const fuel: ActivityRecord = {
+    ...base,
+    id: "f1",
+    kind: "fuel",
+    processId: "p1",
+    factorId: "coal_bituminous_in",
+    quantity: 500,
+    unit: "t",
+    lineage: lineage(1),
+  };
+  const production = (cnCode: string): ActivityRecord => ({
+    ...base,
+    id: "pr1",
+    kind: "production",
+    processId: "p1",
+    cnCode,
+    quantityT: 5000,
+    destination: "eu_export",
+    lineage: lineage(2),
+  });
+
+  it("CP-012 blocks a heading-level CN code instead of guessing the subheading", () => {
+    const result = buildDeclaration(installation, period, [fuel, production("7207")]);
+    const cp012 = result.findings.find((f) => f.code === "CP-012");
+    expect(cp012?.severity).toBe("blocker");
+    expect(cp012?.title).toContain("not specific enough");
+    expect(result.lines).toHaveLength(0);
+  });
+
+  it("CP-014 warns that a part-year is provisional", () => {
+    expect(codes([fuel, production("72071114")])).toContain("CP-014");
+  });
+
+  it("CP-015 blocks when the benchmark depends on a route that is not set", () => {
+    const noRoute: Installation = {
+      ...installation,
+      processes: [{ id: "p1", name: "EAF", category: "crude_steel" }],
+    };
+    const result = buildDeclaration(noRoute, period, [fuel, production("72071114")]);
+    const cp015 = result.findings.find((f) => f.code === "CP-015");
+    expect(cp015?.severity).toBe("blocker");
+    expect(cp015?.detail).toContain("production route");
+  });
+
+  it("CP-016 warns that unverified supplier values cannot be relied on", () => {
+    const found = codes([
+      fuel,
+      production("72071114"),
+      {
+        ...base,
+        id: "pc1",
+        kind: "precursor",
+        processId: "p1",
+        cnCode: "72031000",
+        quantityT: 1000,
+        supplierName: "Vendor A",
+        supplier: { seeDirect: 2.1, seeIndirect: 0, verified: false },
+        lineage: lineage(3),
+      },
+    ]);
+    expect(found).toContain("CP-016");
+    expect(found).toContain("CP-018");
+  });
+
+  it("CP-017 blocks a precursor with no supplier value and no published default", () => {
+    const found = codes([
+      fuel,
+      production("72071114"),
+      {
+        ...base,
+        id: "pc1",
+        kind: "precursor",
+        processId: "p1",
+        cnCode: "27160000",
+        quantityT: 10,
+        lineage: lineage(3),
+      },
+    ]);
+    expect(found).toContain("CP-017");
+  });
+
+  it("CP-020 records inputs skipped as outside CBAM scope", () => {
+    const result = buildDeclaration(installation, period, [fuel, production("72071114")], {
+      outOfScopeRows: [
+        { fileName: "p.csv", row: 3, cnCode: "72022100", description: "FERRO SILICON 70%" },
+      ],
+    });
+    expect(result.findings.map((f) => f.code)).toContain("CP-020");
   });
 });

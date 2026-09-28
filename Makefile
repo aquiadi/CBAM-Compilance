@@ -11,7 +11,8 @@ TAG   ?= local
 PORT  ?= 3000
 
 .PHONY: help install dev build start check lint format test test-watch eval eval-model \
-        seed data-verify screenshots docker-build docker-run docker-stop clean reset
+        seed data-verify regulatory smoke screenshots docker-build docker-run docker-stop \
+        compose-up compose-down clean reset
 
 help: ## Show this help
 	@echo "CarbonPass AI"
@@ -24,14 +25,14 @@ help: ## Show this help
 install: ## Install dependencies from the lockfile
 	npm ci
 
-dev: ## Run the dev server (seeds the demo dataset on first request)
+dev: ## Run the dev server (embedded database under .data unless DATABASE_URL is set)
 	npm run dev
 
 build: ## Production build
 	npm run build
 
-start: ## Serve the production build
-	npm run start
+start: ## Serve the production build the way the container does
+	npm run start:standalone
 
 check: ## Everything CI runs: lint, format, types, data, tests, eval
 	npm run check
@@ -60,21 +61,34 @@ seed: ## Regenerate the demo fixtures, then refresh their manifest
 data-verify: ## Check the demo fixtures still match their checksums
 	npm run data:verify
 
-screenshots: ## Capture every screen (needs a dev server on $(PORT))
+regulatory: ## Rebuild the engine's tables from the Commission workbooks in data/regulatory/source
+	npm run regulatory:import
+
+smoke: ## End-to-end test over HTTP (needs a server on $(PORT))
+	BASE_URL=http://localhost:$(PORT) npm run smoke
+
+screenshots: ## Capture every screen (needs a server on $(PORT))
 	BASE_URL=http://localhost:$(PORT) npm run screenshots
 
 docker-build: ## Build the container image
 	docker build -t $(IMAGE):$(TAG) .
 
-docker-run: ## Run the image on $(PORT)
-	docker run --rm -d --name $(IMAGE) -p $(PORT):3000 \
+docker-run: ## Run the image on $(PORT) with the embedded database in a named volume
+	docker run --rm -d --name $(IMAGE) -p $(PORT):3000 -v $(IMAGE)-data:/app/.data \
 		-e ANTHROPIC_API_KEY=$${ANTHROPIC_API_KEY:-} $(IMAGE):$(TAG)
 	@echo "http://localhost:$(PORT)"
 
 docker-stop: ## Stop the running container
 	-docker stop $(IMAGE)
 
-reset: ## Discard workspace state and reseed the demo on next request
+compose-up: ## Run the app with a Postgres database (docker compose)
+	docker compose up --build -d
+	@echo "http://localhost:$(PORT)"
+
+compose-down: ## Stop the compose stack (data volumes are kept)
+	docker compose down
+
+reset: ## Delete the embedded database (every account and workspace)
 	rm -rf .data
 
 clean: ## Remove build output, state and artifacts

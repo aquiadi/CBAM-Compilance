@@ -12,9 +12,13 @@
  *   2. One coal row exported in kg while the unit column still says MT.
  *   3. A duplicated fuel delivery row.
  *   4. A missing month of electricity data.
- *   5. Sponge iron bought from a vendor with no CBAM communication.
+ *   5. Sponge iron bought from a vendor with no CBAM communication, so the
+ *      Commission default value (with its mark-up) applies.
  *   6. A non-CBAM CN code sitting in the despatch register.
  *   7. Indian digit grouping, "-"/"NA" nulls, and vendor/GRN noise columns.
+ *   8. Ferro-silicon (7202 21) among the precursors. It looks like a CBAM
+ *      ferro-alloy but is not in Annex I, so it must carry no embedded emissions.
+ *   9. A supplier's actual values that are not yet verified.
  *
  * Deterministic: the seeded PRNG means the same dataset every run, so the
  * numbers in the README and the screenshots stay true.
@@ -260,7 +264,7 @@ for (const m of MONTHS) {
     m.label,
     "Melt Shop (IF/EAF)",
     "MS BILLETS 125x125",
-    "7207 11 00",
+    "7207 11 14",
     inr(billet, 2),
     inr(billetEu, 2),
     inr(billet - billetEu - billetInternal, 2),
@@ -273,7 +277,7 @@ for (const m of MONTHS) {
     m.label,
     "Rolling Mill",
     "TMT REBAR Fe500D",
-    "7213 10 00",
+    "7214 20 00",
     inr(tmt, 2),
     inr(tmtEu, 2),
     inr(tmt - tmtEu, 2),
@@ -302,9 +306,12 @@ const precursorRows: string[][] = [
     "CN Code",
     "Qty Received (MT)",
     "Supplier",
+    "Country of Origin",
     "CBAM Communication Recd?",
+    "Verified (Y/N)",
     "Supplier SEE Direct (tCO2e/t)",
     "Supplier SEE Indirect",
+    "Supplier SEFA (tCO2e/t)",
   ],
 ];
 for (const m of MONTHS) {
@@ -315,9 +322,12 @@ for (const m of MONTHS) {
     "7203 10 00",
     inr(jitter(4_200, 0.15), 2),
     "Jindal Sponge (Raigarh)",
+    "India",
     "Yes",
-    "1.038",
+    m.key < "2026-05" ? "N" : "Y",
+    "2.412",
     "0.071",
+    "0.288",
   ]);
   precursorRows.push([
     m.label,
@@ -326,7 +336,10 @@ for (const m of MONTHS) {
     "7203 10 00",
     inr(jitter(1_950, 0.2), 2),
     "Maa Ambey Ispat",
+    "India",
     "No",
+    "-",
+    "-",
     "-",
     "-",
   ]);
@@ -337,9 +350,12 @@ for (const m of MONTHS) {
     "7202 21 00",
     inr(jitter(148, 0.14), 2),
     "Balasore Alloys",
+    "India",
     "Yes",
+    "N",
     "2.410",
     "1.580",
+    "-",
   ]);
 }
 writeFileSync(join(OUT, "precursor_receipts.csv"), toCsv(precursorRows));

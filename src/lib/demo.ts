@@ -1,5 +1,3 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import type { Installation, ReportingPeriod } from "./cbam/types";
 
 /**
@@ -19,7 +17,11 @@ export const DEMO_INSTALLATION: Installation = {
   state: "Chhattisgarh",
   postcode: "496001",
   country: "IN",
-  unlocode: "INIXY1",
+  // Left blank on purpose: the demo shows rule CP-019 asking for it.
+  unlocode: undefined,
+  latitude: 21.8974,
+  longitude: 83.395,
+  economicActivity: "Manufacture of basic iron and steel (NIC 2410)",
   contactName: "R. Deshpande",
   contactEmail: "cbam@shaktisteel.example",
   processes: [
@@ -38,6 +40,8 @@ export const DEMO_INSTALLATION: Installation = {
       name: "Melt Shop (IF/EAF)",
       category: "crude_steel",
       route: "DRI-EAF with scrap",
+      // Carbon steel on the DRI/EAF route selects the (D) benchmark.
+      benchmarkRoute: "D",
       aliases: ["Melt Shop", "Induction Furnace", "SMS", "Steel Melt Shop"],
     },
     {
@@ -45,6 +49,7 @@ export const DEMO_INSTALLATION: Installation = {
       name: "Rolling Mill",
       category: "iron_or_steel_products",
       route: "Hot rolling, TMT",
+      benchmarkRoute: "D",
       aliases: ["Rolling Mill", "Bar Mill", "TMT Mill", "Workshop"],
     },
   ],
@@ -53,7 +58,7 @@ export const DEMO_INSTALLATION: Installation = {
   // burns reheating fuel - every real tonne of CO2 is upstream.
   precursorLinks: [
     { fromProcessId: "proc_dri", toProcessId: "proc_eaf", cnCode: "72031000" },
-    { fromProcessId: "proc_eaf", toProcessId: "proc_rolling", cnCode: "72071100" },
+    { fromProcessId: "proc_eaf", toProcessId: "proc_rolling", cnCode: "72071114" },
   ],
 };
 
@@ -68,16 +73,3 @@ export const DEMO_PERIOD: ReportingPeriod = {
   end: "2026-08-31",
   regime: "definitive",
 };
-
-export interface DemoFile {
-  fileName: string;
-  content: string;
-}
-
-export function loadDemoFiles(): DemoFile[] {
-  const dir = join(process.cwd(), "data", "demo");
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".csv"))
-    .sort()
-    .map((fileName) => ({ fileName, content: readFileSync(join(dir, fileName), "utf8") }));
-}

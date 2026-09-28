@@ -2,7 +2,7 @@
   "description": "Checksums for the seeded demo dataset. Verified in CI so the figures in the README and screenshots always correspond to these exact bytes.",
   "generator": "scripts/generate-fixtures.ts",
   "seed": 20260101,
-  "generatedAt": "2026-09-08T20:06:58.069Z",
+  "generatedAt": "2026-09-28T05:07:55.572Z",
   "fixtures": [
     {
       "file": "fuel_consumption_register.csv",
@@ -18,8 +18,8 @@
     },
     {
       "file": "precursor_receipts.csv",
-      "sha256": "952749deeaddad29e0a77c216a50f75f922c66cc0404dd938f027194441b9c41",
-      "bytes": 2568,
+      "sha256": "bc81d72951a83c12ea4d2ae89dbbe40a8ebd919ab68f4be89ee2da431fb21964",
+      "bytes": 2897,
       "rows": 24
     },
     {
@@ -30,7 +30,7 @@
     },
     {
       "file": "production_despatch.csv",
-      "sha256": "ee2804981a8ddbcf77d47c1455b00fee205862fde4c8e3981d9758052bef0ca6",
+      "sha256": "ce22daaf89c388885e6aac45a756651b85afcc12a306d8a1367a1f8d2bc99f80",
       "bytes": 2322,
       "rows": 25
     }

@@ -1,11 +1,15 @@
+import { apiWorkspaceContext } from "@/lib/auth/context";
 import { streamMemo } from "@/lib/ai/memo";
-import { getDeclaration } from "@/lib/store";
+import { computeDeclaration } from "@/lib/workspace/declaration";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 /** Streams the methodology memo as plain text. */
-export async function POST() {
-  const declaration = getDeclaration();
+export async function POST(request: Request) {
+  const r = await apiWorkspaceContext(request);
+  if (!r.ok) return r.response;
+  const declaration = await computeDeclaration(r.ctx.db, r.ctx.workspace);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -27,9 +31,6 @@ export async function POST() {
   });
 
   return new Response(stream, {
-    headers: {
-      "content-type": "text/plain; charset=utf-8",
-      "cache-control": "no-store",
-    },
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
   });
 }

@@ -6,3 +6,4 @@ package-lock.json
 next-env.d.ts
 *.tsbuildinfo
 data/demo/*.csv
+src/lib/cbam/regulatory/generated/

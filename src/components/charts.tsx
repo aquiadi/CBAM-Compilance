@@ -212,7 +212,15 @@ export interface BenchmarkRow {
  * comparison on one axis and stops the eye reading it as two independent
  * quantities.
  */
-export function BenchmarkBars({ rows, unit = "tCO₂e/t" }: { rows: BenchmarkRow[]; unit?: string }) {
+export function BenchmarkBars({
+  rows,
+  unit = "tCO₂e/t",
+  benchmarkLabel = "Sector benchmark",
+}: {
+  rows: BenchmarkRow[];
+  unit?: string;
+  benchmarkLabel?: string;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(...rows.flatMap((r) => [r.value, r.benchmark ?? 0]), 0.001) * 1.15;
 
@@ -225,7 +233,7 @@ export function BenchmarkBars({ rows, unit = "tCO₂e/t" }: { rows: BenchmarkRow
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-[2px]" style={{ background: INK2 }} />
-          Sector benchmark
+          {benchmarkLabel}
         </span>
       </div>
 
@@ -275,7 +283,7 @@ export function BenchmarkBars({ rows, unit = "tCO₂e/t" }: { rows: BenchmarkRow
                   <div
                     className="absolute inset-y-[-2px] w-[2px]"
                     style={{ left: `${benchPct}%`, background: INK2 }}
-                    title={`Benchmark ${r.benchmark}`}
+                    title={`${benchmarkLabel}: ${r.benchmark?.toFixed(3)}`}
                   />
                 ) : null}
               </div>
@@ -295,6 +303,8 @@ export interface TrajectoryPoint {
   costEur: number;
   factor: number;
   certificates: number;
+  /** The same volumes declared on default values, for comparison. */
+  defaultCostEur?: number;
 }
 
 /**
@@ -314,7 +324,13 @@ function niceCeiling(value: number, steps: number): number {
   return stepped * magnitude * steps;
 }
 
-export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
+export function TrajectoryLine({
+  points,
+  defaultLabel = "On default values",
+}: {
+  points: TrajectoryPoint[];
+  defaultLabel?: string;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
   const width = 720;
@@ -324,20 +340,47 @@ export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
   const plotH = height - padding.top - padding.bottom;
 
   if (points.length === 0) return null;
+  const hasDefault = points.some((p) => p.defaultCostEur !== undefined);
 
   // Axis ticks must land on round numbers - "EUR 2867.61M" is noise where
-  // "EUR 3M" is a scale. Snap the top of the axis to a 1/2/5 x 10^n step.
-  const rawMax = Math.max(...points.map((p) => p.costEur)) * 1.05 || 1;
+  // "EUR 3M" is a scale. Snap the top of the axis to a 1/2/5 x 10^n step. Both
+  // lines are euros, so they share the one axis.
+  const rawMax = Math.max(...points.flatMap((p) => [p.costEur, p.defaultCostEur ?? 0])) * 1.05 || 1;
   const max = niceCeiling(rawMax, 4);
   const x = (i: number) => padding.left + (i / Math.max(1, points.length - 1)) * plotW;
   const y = (v: number) => padding.top + plotH - (v / max) * plotH;
 
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(p.costEur)}`).join(" ");
   const area = `${path} L ${x(points.length - 1)} ${padding.top + plotH} L ${x(0)} ${padding.top + plotH} Z`;
+  const defaultPath = hasDefault
+    ? points.map((p, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(p.defaultCostEur ?? 0)}`).join(" ")
+    : null;
   const last = points[points.length - 1]!;
 
   return (
     <div className="relative">
+      {hasDefault ? (
+        <div className="mb-2 flex items-center gap-4 text-[11px] text-ink-2">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-[2px] w-4" style={{ background: SERIES.indirect }} />
+            With this installation&apos;s data
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg width="16" height="4" aria-hidden>
+              <line
+                x1="0"
+                x2="16"
+                y1="2"
+                y2="2"
+                stroke={INK2}
+                strokeWidth="2"
+                strokeDasharray="4 3"
+              />
+            </svg>
+            {defaultLabel}
+          </span>
+        </div>
+      ) : null}
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img">
         <defs>
           <linearGradient id={`grad-${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -369,6 +412,16 @@ export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
         ))}
 
         <path d={area} fill={`url(#grad-${id})`} />
+        {defaultPath ? (
+          <path
+            d={defaultPath}
+            fill="none"
+            stroke={INK2}
+            strokeWidth="2"
+            strokeDasharray="5 4"
+            strokeLinejoin="round"
+          />
+        ) : null}
         <path
           d={path}
           fill="none"
@@ -421,7 +474,7 @@ export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
           </g>
         ))}
 
-        {/* Only the endpoint is directly labelled. */}
+        {/* Only the endpoints are directly labelled. */}
         <text
           x={x(points.length - 1) + 10}
           y={y(last.costEur) + 4}
@@ -431,6 +484,18 @@ export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
         >
           {fmtEur(last.costEur)}
         </text>
+        {last.defaultCostEur !== undefined &&
+        Math.abs(y(last.defaultCostEur) - y(last.costEur)) > 12 ? (
+          <text
+            x={x(points.length - 1) + 10}
+            y={y(last.defaultCostEur) + 4}
+            fill={MUTED}
+            fontSize="11"
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {fmtEur(last.defaultCostEur)}
+          </text>
+        ) : null}
       </svg>
 
       {hover !== null && points[hover] ? (
@@ -440,6 +505,11 @@ export function TrajectoryLine({ points }: { points: TrajectoryPoint[] }) {
         >
           <div className="font-medium tnum">{points[hover]!.year}</div>
           <div className="tnum mt-0.5">{fmtEur(points[hover]!.costEur)}</div>
+          {points[hover]!.defaultCostEur !== undefined ? (
+            <div className="tnum text-ink-2">
+              {fmtEur(points[hover]!.defaultCostEur!)} {defaultLabel.toLowerCase()}
+            </div>
+          ) : null}
           <div className="mt-0.5 text-[10.5px] text-ink-2">
             CBAM factor {(points[hover]!.factor * 100).toFixed(1)}% ·{" "}
             {fmt(points[hover]!.certificates)} certs

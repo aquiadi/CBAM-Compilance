@@ -1,6 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
+import { tryGetFactor } from "../cbam/factors";
 import { lookupGoods, normaliseCnCode } from "../cbam/goods";
-import { getBenchmark } from "../cbam/defaults";
+import { countryCode } from "../cbam/regulatory";
 import { normaliseQuantity, parseNumeric, resolveUnit } from "../cbam/units";
 import type {
   ActivityRecord,
@@ -17,8 +18,9 @@ import type { DatasetMapping } from "./schema";
  *
  * Entirely deterministic. The model's influence ends at the mapping object; from
  * here the transformation is pure code, so re-running this on the same mapping
- * always produces the same records - which is what makes the audit trail mean
- * anything.
+ * always produces the same records - with the same ids, derived from the
+ * dataset, row and record kind - which is what lets an exclusion or an
+ * acknowledgement survive a re-import and makes the audit trail mean anything.
  *
  * Rows that cannot be materialised are rejected with a reason rather than
  * skipped, because a row silently missing from a declaration is an
@@ -32,9 +34,19 @@ export interface RejectedRow {
   raw: Record<string, string>;
 }
 
+/** A row read correctly but deliberately left out: goods outside CBAM scope. */
+export interface SkippedRow {
+  fileName: string;
+  row: number;
+  cnCode: string;
+  description: string;
+  reason: string;
+}
+
 export interface MaterialiseResult {
   activities: ActivityRecord[];
   rejected: RejectedRow[];
+  skipped: SkippedRow[];
   /** Unit actually applied per column, after header/unit-column/model resolution. */
   appliedUnits: Record<string, string>;
 }
@@ -66,14 +78,24 @@ function resolveValue(
   return exact?.resolvedId ?? null;
 }
 
-/** Confidence in the mapping drives the monitoring tier of every record it produces. */
-function tierFor(mapping: DatasetMapping, fields: string[]): MethodTier {
-  const confidences = fields
-    .map((f) => mapping.columns.find((c) => c.targetField === f)?.confidence)
-    .filter((c): c is number => c !== undefined);
-  if (confidences.length === 0) return 1;
-  const min = Math.min(...confidences);
-  return min >= 0.9 ? 2 : min >= 0.7 ? 2 : 1;
+/**
+ * Stable record id: the same row of the same dataset always yields the same id,
+ * so operator decisions keyed on it (exclusions) survive a re-map.
+ */
+function recordId(datasetId: string, row: number, kind: string, part = 0): string {
+  return (
+    "act_" +
+    createHash("sha256").update(`${datasetId}:${row}:${kind}:${part}`).digest("hex").slice(0, 20)
+  );
+}
+
+function truthy(value: string): boolean | null {
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  if (["y", "yes", "true", "1", "verified", "received", "done"].includes(v)) return true;
+  if (["n", "no", "false", "0", "not verified", "pending", "-", "na", "n/a"].includes(v))
+    return false;
+  return null;
 }
 
 /**
@@ -106,6 +128,7 @@ export function materialise(
   const ctx: Ctx = { dataset, mapping, processes };
   const activities: ActivityRecord[] = [];
   const rejected: RejectedRow[] = [];
+  const skipped: SkippedRow[] = [];
   const appliedUnits: Record<string, string> = {};
 
   const periodCol = columnFor(mapping, "period");
@@ -144,7 +167,7 @@ export function materialise(
       periodEnd: end,
       lineage,
       provenance: "calculated" as Provenance,
-      tier: tierFor(mapping, ["quantity", "process"]),
+      tier: 2 as MethodTier,
     };
 
     // ------------------------------------------------------------- production
@@ -160,14 +183,31 @@ export function materialise(
         reject(`Production quantity "${cell(row, quantityCol)}" is not a usable number.`);
         return;
       }
-      const unit = unitFor(ctx, row, "quantity") ?? { unit: "t", source: "assumed tonnes" };
+      const unit = unitFor(ctx, row, "quantity");
+      if (!unit) {
+        reject(`No unit found for the production quantity. Refusing to assume tonnes.`);
+        return;
+      }
       appliedUnits[dataset.fileName] = unit.unit;
 
       const eu = parseNumeric(cell(row, columnFor(mapping, "quantity_eu"))) ?? 0;
       const internal = parseNumeric(cell(row, columnFor(mapping, "quantity_internal"))) ?? 0;
       const domestic = parseNumeric(cell(row, columnFor(mapping, "quantity_domestic"))) ?? 0;
 
-      const convert = (v: number) => normaliseQuantity(v, unit.unit, "mass").value;
+      let convert: (v: number) => number;
+      try {
+        normaliseQuantity(total, unit.unit, "mass");
+        convert = (v: number) => normaliseQuantity(v, unit.unit, "mass").value;
+      } catch (e) {
+        reject((e as Error).message);
+        return;
+      }
+      // Weighbridge and despatch records are measured quantities.
+      const productionBase = {
+        ...base,
+        provenance: "measured" as Provenance,
+        tier: 3 as MethodTier,
+      };
 
       // One production row can carry several destinations. Each becomes its own
       // record so the audit trail keeps them distinguishable.
@@ -179,11 +219,11 @@ export function materialise(
       const split = parts.reduce((s, [v]) => s + v, 0);
 
       if (split > 0) {
-        for (const [value, destination] of parts) {
+        for (const [index, [value, destination]] of parts.entries()) {
           if (value <= 0) continue;
           activities.push({
-            ...base,
-            id: randomUUID(),
+            ...productionBase,
+            id: recordId(dataset.datasetId, rowNumber, "production", index),
             kind: "production",
             cnCode,
             quantityT: convert(value),
@@ -199,8 +239,8 @@ export function materialise(
         const unallocated = total - split;
         if (unallocated > Math.max(0.5, total * 0.001)) {
           activities.push({
-            ...base,
-            id: randomUUID(),
+            ...productionBase,
+            id: recordId(dataset.datasetId, rowNumber, "production", 3),
             kind: "production",
             cnCode,
             quantityT: convert(unallocated),
@@ -209,8 +249,8 @@ export function materialise(
         }
       } else {
         activities.push({
-          ...base,
-          id: randomUUID(),
+          ...productionBase,
+          id: recordId(dataset.datasetId, rowNumber, "production", 0),
           kind: "production",
           cnCode,
           quantityT: convert(total),
@@ -230,34 +270,74 @@ export function materialise(
       }
       const goods = lookupGoods(cnCode);
       if (!goods) {
-        reject(`CN code ${cnCode} is not a CBAM good, so it carries no embedded emissions.`);
+        if (cnCode.length < 8) {
+          reject(
+            `CN code ${cnCode} is not specific enough; precursors are identified by 8-digit CN code.`,
+          );
+          return;
+        }
+        // Read correctly, but not a CBAM good: it carries no embedded
+        // emissions in CBAM. Recorded so the operator can see it was seen.
+        skipped.push({
+          fileName: dataset.fileName,
+          row: rowNumber,
+          cnCode,
+          description: cell(row, materialCol),
+          reason: `CN ${cnCode} is not listed in Annex I, so it carries no embedded emissions.`,
+        });
         return;
       }
-      const unit = unitFor(ctx, row, "quantity") ?? { unit: "t", source: "assumed tonnes" };
+      const unit = unitFor(ctx, row, "quantity");
+      if (!unit) {
+        reject(`No unit found for the precursor quantity. Refusing to assume tonnes.`);
+        return;
+      }
+      let quantityT: number;
+      try {
+        quantityT = normaliseQuantity(quantity, unit.unit, "mass").value;
+      } catch (e) {
+        reject((e as Error).message);
+        return;
+      }
 
       const seeDirect = parseNumeric(cell(row, columnFor(mapping, "see_direct")));
       const seeIndirect = parseNumeric(cell(row, columnFor(mapping, "see_indirect")));
-      const hasSupplierData = seeDirect !== null;
+      const sefa = parseNumeric(cell(row, columnFor(mapping, "see_sefa")));
+      const verified = truthy(cell(row, columnFor(mapping, "verified"))) ?? false;
+      const originRaw = cell(row, columnFor(mapping, "origin_country"));
+      const originCountry =
+        countryCode(originRaw) ?? countryCode(mapping.defaults?.originCountry) ?? undefined;
+      if (originRaw && !countryCode(originRaw)) {
+        reject(
+          `Country of production "${originRaw}" is not recognised. Use an ISO code (e.g. IN) or ` +
+            `the country's name as the Commission lists it.`,
+        );
+        return;
+      }
 
-      // No supplier communication means a default applies - and the default
-      // carries a mark-up, which the rules engine then flags as a cost saving
-      // the operator can go and claw back.
-      const benchmark = getBenchmark(goods.category);
-      const fallbackDirect = benchmark ? benchmark.direct * 1.2 : 0;
-      const fallbackIndirect = benchmark ? benchmark.indirect * 1.2 : 0;
+      // Supplier actual values are stored as communicated. Where there are
+      // none, nothing is stored: the engine applies the Commission default for
+      // the production year, so no figure here is invented.
+      const hasSupplierData = seeDirect !== null;
 
       activities.push({
         ...base,
-        id: randomUUID(),
+        id: recordId(dataset.datasetId, rowNumber, "precursor"),
         kind: "precursor",
-        cnCode,
-        quantityT: normaliseQuantity(quantity, unit.unit, "mass").value,
-        seeDirect: hasSupplierData ? seeDirect : fallbackDirect,
-        seeIndirect: hasSupplierData ? (seeIndirect ?? 0) : fallbackIndirect,
-        seeSource: hasSupplierData ? "supplier" : "default",
+        cnCode: goods.cnCode,
+        quantityT,
         supplierName: cell(row, columnFor(mapping, "supplier")) || undefined,
+        originCountry,
+        supplier: hasSupplierData
+          ? {
+              seeDirect,
+              seeIndirect: seeIndirect ?? 0,
+              sefa: sefa ?? undefined,
+              verified,
+            }
+          : undefined,
         provenance: hasSupplierData ? "supplier" : "default",
-        tier: hasSupplierData ? 2 : 1,
+        tier: hasSupplierData ? (verified ? 3 : 2) : 1,
       });
       return;
     }
@@ -294,12 +374,13 @@ export function materialise(
 
       activities.push({
         ...base,
-        id: randomUUID(),
+        id: recordId(dataset.datasetId, rowNumber, "electricity"),
         kind: "electricity",
         quantityMWh,
         supply,
         factorId,
         provenance: "measured",
+        tier: tryGetFactor(factorId)?.tier ?? 1,
       });
       return;
     }
@@ -331,7 +412,14 @@ export function materialise(
         reject((e as Error).message);
         return;
       }
-      activities.push({ ...base, id: randomUUID(), kind: "process_material", factorId, quantityT });
+      activities.push({
+        ...base,
+        id: recordId(dataset.datasetId, rowNumber, "process_material"),
+        kind: "process_material",
+        factorId,
+        quantityT,
+        tier: tryGetFactor(factorId)?.tier ?? 1,
+      });
       return;
     }
 
@@ -350,13 +438,14 @@ export function materialise(
 
     activities.push({
       ...base,
-      id: randomUUID(),
+      id: recordId(dataset.datasetId, rowNumber, "fuel"),
       kind: "fuel",
       factorId,
       quantity: normalised.value,
       unit: normalised.unit,
+      tier: tryGetFactor(factorId)?.tier ?? 1,
     });
   });
 
-  return { activities, rejected, appliedUnits };
+  return { activities, rejected, skipped, appliedUnits };
 }

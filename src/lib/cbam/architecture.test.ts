@@ -13,10 +13,16 @@ import { describe, expect, it } from "vitest";
 
 const ENGINE_DIR = join(process.cwd(), "src", "lib", "cbam");
 
-function engineSources(): { file: string; source: string }[] {
-  return readdirSync(ENGINE_DIR)
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
-    .map((file) => ({ file, source: readFileSync(join(ENGINE_DIR, file), "utf8") }));
+function engineSources(dir = ENGINE_DIR, prefix = ""): { file: string; source: string }[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory()) {
+      return engineSources(join(dir, entry.name), `${prefix}${entry.name}/`);
+    }
+    if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) return [];
+    return [
+      { file: `${prefix}${entry.name}`, source: readFileSync(join(dir, entry.name), "utf8") },
+    ];
+  });
 }
 
 describe("engine purity", () => {

@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
+import { apiWorkspaceContext } from "@/lib/auth/context";
 import { triageFindings } from "@/lib/ai/triage";
-import { getDeclaration } from "@/lib/store";
+import { errorResponse } from "@/lib/http";
+import { computeDeclaration } from "@/lib/workspace/declaration";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
-/** Runs AI triage over the current findings. */
-export async function POST() {
+/** Runs AI triage over the current findings. Editors only: it spends model tokens. */
+export async function POST(request: Request) {
+  const r = await apiWorkspaceContext(request, { write: true });
+  if (!r.ok) return r.response;
   try {
-    const result = await triageFindings(getDeclaration());
+    const result = await triageFindings(await computeDeclaration(r.ctx.db, r.ctx.workspace));
     return NextResponse.json({
       ok: true,
       summary: result.summary,
@@ -20,9 +25,6 @@ export async function POST() {
       })),
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Unexpected error" },
-      { status: 500 },
-    );
+    return errorResponse(error);
   }
 }

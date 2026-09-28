@@ -2,7 +2,11 @@
 #
 # Three stages so the runtime layer carries neither the toolchain nor the dev
 # dependencies: deps installs from the lockfile, builder compiles, runner ships
-# only Next's standalone output plus the seed data the app needs at runtime.
+# only Next's standalone output plus the demo files the app reads at runtime.
+#
+# Storage: set DATABASE_URL to use Postgres. Without it the app runs on an
+# embedded Postgres (PGlite) under /app/.data - mount a volume there or the
+# data goes when the container does.
 
 # ---------------------------------------------------------------- deps
 FROM node:22-alpine AS deps
@@ -32,8 +36,9 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     CARBONPASS_DATA_DIR=/app/.data
 
-# Run as a non-root user. The app writes workspace state, so that directory is
-# created and owned up front rather than left to fail at the first request.
+# Run as a non-root user. The embedded database writes under /app/.data, so
+# that directory is created and owned up front rather than left to fail at the
+# first request.
 RUN addgroup -g 1001 -S nodejs \
  && adduser -u 1001 -S nextjs -G nodejs \
  && mkdir -p /app/.data \
@@ -42,15 +47,15 @@ RUN addgroup -g 1001 -S nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-# The demo dataset is read at runtime to seed a fresh workspace.
-COPY --from=builder --chown=nextjs:nodejs /app/data ./data
+# The demo files are read at runtime when someone opens the demo workspace.
+COPY --from=builder --chown=nextjs:nodejs /app/data/demo ./data/demo
 
 USER nextjs
 EXPOSE 3000
 
-# Hits a real page rather than a synthetic endpoint: this proves the engine can
-# compute a declaration, not merely that a process is listening.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# /api/health answers only when the database is reachable and migrated and the
+# engine computes a declaration - not merely when a process is listening.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "server.js"]

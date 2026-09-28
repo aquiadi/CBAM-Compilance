@@ -92,9 +92,11 @@ Reporting period: ${result.period.start} to ${result.period.end}.
 
 Total direct emissions: ${result.totals.directT.toFixed(0)} tCO2e
 Total indirect emissions: ${result.totals.indirectT.toFixed(0)} tCO2e
-Chargeable (EU-bound) emissions: ${result.totals.obligationT.toFixed(0)} tCO2e
-Certificates at the ${result.exposure.year} CBAM factor of ${(result.exposure.cbamFactor * 100).toFixed(1)}%: ${result.exposure.netCertificates.toFixed(0)}
-Cost at EUR ${result.exposure.etsPriceEur}/certificate: EUR ${result.exposure.netCostEur.toFixed(0)}
+EU-bound embedded emissions: ${result.totals.obligationT.toFixed(0)} tCO2e
+Free allocation adjustment (${result.exposure.year}, CBAM factor ${(result.exposure.cbamFactor * 100).toFixed(1)}%): ${result.exposure.freeAllocationAdjustmentT.toFixed(0)} tCO2e
+Certificates (embedded minus free allocation adjustment): ${result.exposure.netCertificates.toFixed(0)}
+Cost at an average EUR ${result.exposure.effectivePriceEur.toFixed(2)}/certificate: EUR ${result.exposure.netCostEur.toFixed(0)}
+On default values instead: ${result.exposure.defaultScenario.certificates.toFixed(0)} certificates
 
 ## Goods
 

@@ -1,5 +1,6 @@
 import { getFactor, tryGetFactor } from "./factors";
 import { lookupGoods } from "./goods";
+import { resolvePrecursor, type ResolvedPrecursor } from "./precursors";
 import { fuelEnergyTJ } from "./units";
 import type {
   ActivityRecord,
@@ -23,10 +24,19 @@ import type {
  * columns and explains findings, and that separation is the whole reason a
  * number produced here can be defended to a verifier.
  *
- * Methodology follows Annex III (determination of emissions) and Annex IV
- * (specific embedded emissions) of Regulation (EU) 2023/956 and the
- * Implementing Regulation (EU) 2023/1773.
+ * Methodology follows Annex IV to Regulation (EU) 2023/956 and the
+ * definitive-period methodology act, Implementing Regulation (EU) 2025/2547:
+ * attributed emissions per production process, then specific embedded
+ * emissions including precursors.
  */
+
+/** Inputs that vary by declaration rather than by activity record. */
+export interface CalcOptions {
+  /** Production year; drives default-value mark-ups for precursors. */
+  year: number;
+  /** Replaces the library factor for grid electricity when set. */
+  gridEmissionFactor?: { value: number; source: string };
+}
 
 /** One term of a computed total, retained so the UI can show the arithmetic. */
 export interface Contribution {
@@ -44,6 +54,8 @@ export interface Contribution {
   emissionsT: number;
   formula: string;
   uncertainty: number;
+  /** Where the factor came from, when it is not a library factor. */
+  reference?: string;
 }
 
 export interface ProcessEmissions {
@@ -81,6 +93,8 @@ export interface ProcessEmissions {
   directUncertainty: number;
   /** Anything the calculation could not do, e.g. a fuel with no NCV. */
   errors: string[];
+  /** How each bought-in precursor's values were resolved, by activity id. */
+  precursorResolutions: Record<string, ResolvedPrecursor>;
 }
 
 function combineUncertainty(terms: { emissionsT: number; uncertainty: number }[]): number {
@@ -161,23 +175,31 @@ export function processMaterialContribution(
   };
 }
 
-export function electricityContribution(a: ElectricityActivity): Contribution | { error: string } {
+export function electricityContribution(
+  a: ElectricityActivity,
+  gridOverride?: { value: number; source: string },
+): Contribution | { error: string } {
   const factor = tryGetFactor(a.factorId);
   if (!factor) {
     return { error: `Electricity record ${a.id} references unknown factor "${a.factorId}"` };
   }
-  const emissionsT = a.quantityMWh * factor.value;
+  const overridden = gridOverride && a.supply === "grid";
+  const value = overridden ? gridOverride.value : factor.value;
+  const emissionsT = a.quantityMWh * value;
   return {
     activityId: a.id,
-    label: `${factor.name} (${a.supply})`,
+    label: overridden
+      ? `Grid electricity (${gridOverride.source})`
+      : `${factor.name} (${a.supply})`,
     quantity: a.quantityMWh,
     quantityUnit: "MWh",
     factorId: factor.id,
-    factorValue: factor.value,
+    factorValue: value,
     factorUnit: factor.unit,
     emissionsT: round(emissionsT),
-    formula: `${a.quantityMWh} MWh x ${factor.value} tCO2e/MWh`,
-    uncertainty: factor.uncertainty,
+    formula: `${a.quantityMWh} MWh x ${value} tCO2e/MWh`,
+    uncertainty: overridden ? 0.05 : factor.uncertainty,
+    reference: overridden ? gridOverride.source : undefined,
   };
 }
 
@@ -200,23 +222,36 @@ export function heatContribution(a: HeatActivity): Contribution | { error: strin
   };
 }
 
-export function precursorContribution(a: PrecursorActivity): Contribution {
+export function precursorContribution(
+  a: PrecursorActivity,
+  resolved: ResolvedPrecursor,
+): Contribution {
   const goods = lookupGoods(a.cnCode);
-  const see = a.seeDirect + a.seeIndirect;
-  // Applying a default precursor value instead of a supplier figure is a real
-  // source of error, so it carries a much wider uncertainty band.
-  const uncertainty = a.seeSource === "default" ? 0.3 : a.seeSource === "supplier" ? 0.1 : 0.05;
+  const see = resolved.seeDirect + resolved.seeIndirect;
+  // A default carries the Commission's mark-up and a wide band around the
+  // plant's real figure; a verified supplier value is the tightest available.
+  const uncertainty =
+    resolved.status === "default"
+      ? 0.3
+      : resolved.status === "supplier"
+        ? a.supplier?.verified
+          ? 0.05
+          : 0.1
+        : 1;
   return {
     activityId: a.id,
-    label: `${goods?.description ?? a.cnCode} (precursor, ${a.seeSource})`,
+    label: `${goods?.description ?? a.cnCode} (precursor, ${resolved.status})`,
     quantity: a.quantityT,
     quantityUnit: "t",
     factorId: `precursor:${a.cnCode}`,
-    factorValue: see,
+    factorValue: round(see, 6),
     factorUnit: "tCO2e/t",
     emissionsT: round(a.quantityT * see),
-    formula: `${a.quantityT} t x (${a.seeDirect} direct + ${a.seeIndirect} indirect) tCO2e/t`,
+    formula:
+      `${a.quantityT} t x (${resolved.seeDirect.toFixed(4)} direct + ` +
+      `${resolved.seeIndirect.toFixed(4)} indirect) tCO2e/t`,
     uncertainty,
+    reference: resolved.reference,
   };
 }
 
@@ -224,6 +259,7 @@ export function precursorContribution(a: PrecursorActivity): Contribution {
 export function computeProcessEmissions(
   process: ProductionProcess,
   activities: ActivityRecord[],
+  options: CalcOptions,
 ): ProcessEmissions {
   const mine = activities.filter((a) => a.processId === process.id);
   const errors: string[] = [];
@@ -251,12 +287,23 @@ export function computeProcessEmissions(
   );
   const electricity = collect(
     mine.filter((a): a is ElectricityActivity => a.kind === "electricity"),
-    electricityContribution,
+    (a) => electricityContribution(a, options.gridEmissionFactor),
   );
   const heatRecords = mine.filter((a): a is HeatActivity => a.kind === "heat");
   const heat = collect(heatRecords, heatContribution);
   const precursors = mine.filter((a): a is PrecursorActivity => a.kind === "precursor");
-  const precursor = precursors.map(precursorContribution);
+  const precursorResolutions: Record<string, ResolvedPrecursor> = {};
+  const precursor: Contribution[] = [];
+  for (const p of precursors) {
+    const resolved = resolvePrecursor(p, options.year);
+    precursorResolutions[p.id] = resolved;
+    precursor.push(precursorContribution(p, resolved));
+    if (resolved.status === "unresolved") {
+      errors.push(
+        `Precursor ${p.cnCode} (${p.lineage.fileName} row ${p.lineage.row}): ${resolved.issue ?? "no value"}`,
+      );
+    }
+  }
 
   const sum = (c: Contribution[]) =>
     round(
@@ -280,11 +327,14 @@ export function computeProcessEmissions(
   );
 
   const precursorDirectT = round(
-    precursors.reduce((s, p) => s + p.quantityT * p.seeDirect, 0),
+    precursors.reduce((s, p) => s + p.quantityT * (precursorResolutions[p.id]?.seeDirect ?? 0), 0),
     4,
   );
   const precursorIndirectT = round(
-    precursors.reduce((s, p) => s + p.quantityT * p.seeIndirect, 0),
+    precursors.reduce(
+      (s, p) => s + p.quantityT * (precursorResolutions[p.id]?.seeIndirect ?? 0),
+      0,
+    ),
     4,
   );
 
@@ -307,8 +357,9 @@ export function computeProcessEmissions(
     internalPrecursorDirectT: 0,
     internalPrecursorIndirectT: 0,
     lowestTier,
-    directUncertainty: combineUncertainty([...fuel, ...processMaterial, ...heat]),
+    directUncertainty: combineUncertainty([...fuel, ...processMaterial, ...heat, ...precursor]),
     errors,
+    precursorResolutions,
   };
 }
 
@@ -401,6 +452,10 @@ export function buildDeclarationLines(
         embeddedTotalT: round(quantityT * seeTotal, 3),
         embeddedForObligationT: round(quantityT * seeForObligation, 3),
         embeddedEuT: round(totals.eu * seeForObligation, 3),
+        // Filled in by the free allocation adjustment once every process's
+        // SEFA is known (see sefa.ts); a line on its own cannot know it.
+        sefa: 0,
+        sefaIssues: [],
         uncertainty: em.directUncertainty,
         lowestTier: em.lowestTier,
       });

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 /**
  * The application shell.
@@ -12,32 +13,93 @@ import { usePathname } from "next/navigation";
  * sidebar and understand what the product does.
  */
 
-const NAV = [
+const WORKFLOW = [
   { href: "/", label: "Overview", hint: "Where the declaration stands", step: null },
-  { href: "/ingest", label: "Ingest", hint: "Files and column mapping", step: 1 },
+  { href: "/ingest", label: "Data", hint: "Upload files, review mappings", step: 1 },
   { href: "/review", label: "Review", hint: "Findings and data quality", step: 2 },
   { href: "/calculate", label: "Calculate", hint: "How each number was derived", step: 3 },
-  { href: "/declaration", label: "Declaration", hint: "Goods, exposure, exports", step: 4 },
+  { href: "/declaration", label: "Declaration", hint: "Goods, cost, exports", step: 4 },
   { href: "/audit", label: "Audit trail", hint: "Every figure to its source row", step: 5 },
-  { href: "/methodology", label: "Methodology", hint: "Factors, rules, references", step: null },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+const SUPPORT = [
+  { href: "/suppliers", label: "Suppliers", hint: "Request precursor data" },
+  { href: "/evidence", label: "Evidence", hint: "Reports, bills, certificates" },
+  { href: "/activity", label: "Activity log", hint: "Who changed what" },
+  { href: "/methodology", label: "Methodology", hint: "Official tables and rules" },
+];
+
+const SETTINGS = [
+  { href: "/settings", label: "Installation", hint: "Processes, routes, period" },
+  { href: "/settings/team", label: "Team", hint: "Members and roles" },
+  { href: "/settings/workspaces", label: "Workspaces", hint: "Installations and years" },
+];
+
+interface Props {
+  children: React.ReactNode;
+  user: { name: string; email: string };
+  org: { id: string; name: string };
+  role: string;
+  canWrite: boolean;
+  workspaces: { id: string; name: string }[];
+  currentWorkspaceId: string | null;
+  model: string | null;
+  database: "postgres" | "embedded";
+}
+
+export function AppShell({
+  children,
+  user,
+  org,
+  role,
+  canWrite,
+  workspaces,
+  currentWorkspaceId,
+  model,
+  database,
+}: Props) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [switching, setSwitching] = useState(false);
+
+  async function selectWorkspace(id: string) {
+    if (id === "__new") {
+      router.push("/settings/workspaces#new");
+      return;
+    }
+    setSwitching(true);
+    await fetch("/api/workspaces/select", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workspaceId: id }),
+    });
+    setSwitching(false);
+    router.refresh();
+  }
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
+  const isActive = (href: string) =>
+    href === "/"
+      ? pathname === "/"
+      : href === "/settings"
+        ? pathname === "/settings"
+        : pathname.startsWith(href);
 
   return (
     <div className="flex min-h-screen">
       <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-line bg-surface">
-        <div className="border-b border-line px-5 py-5">
+        <div className="border-b border-line px-5 py-4">
           <Link href="/" className="group block">
             <div className="flex items-center gap-2.5">
               <Mark />
               <div>
                 <div className="text-[13px] font-semibold leading-none tracking-tight text-ink">
                   CarbonPass
-                  <span className="ml-1 text-[10px] font-medium tracking-[0.14em] text-accent">
-                    AI
-                  </span>
                 </div>
                 <div className="mt-1 text-[10.5px] leading-none text-muted">
                   CBAM declaration engine
@@ -47,65 +109,136 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="mb-2 px-2 text-[10px] font-medium uppercase tracking-[0.13em] text-muted">
-            Workflow
+        <div className="border-b border-line px-3 py-3">
+          <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.13em] text-muted">
+            {org.name}
           </div>
-          <ul className="space-y-0.5">
-            {NAV.map((item) => {
-              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={[
-                      "group flex items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors",
-                      active
-                        ? "bg-surface-3 text-ink"
-                        : "text-ink-2 hover:bg-surface-2 hover:text-ink",
-                    ].join(" ")}
-                  >
-                    <span
-                      className={[
-                        "mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded text-[9px] font-semibold tnum",
-                        active
-                          ? "bg-accent text-plane"
-                          : "border border-line text-muted group-hover:border-line-strong",
-                      ].join(" ")}
-                      aria-hidden
-                    >
-                      {item.step ?? "·"}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[12.5px] font-medium leading-tight">
-                        {item.label}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[10.5px] leading-tight text-muted">
-                        {item.hint}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <select
+            aria-label="Workspace"
+            value={currentWorkspaceId ?? ""}
+            disabled={switching}
+            onChange={(e) => selectWorkspace(e.target.value)}
+            className="w-full rounded-md border border-line-strong bg-surface-2 px-2 py-1.5 text-[12px] text-ink outline-none focus:border-accent"
+          >
+            {currentWorkspaceId === null ? <option value="">No workspace yet</option> : null}
+            {workspaces.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+            {canWrite ? <option value="__new">+ New workspace…</option> : null}
+          </select>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          <NavGroup title="Workflow">
+            {WORKFLOW.map((item) => (
+              <NavItem
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                hint={item.hint}
+                marker={item.step ?? "·"}
+                active={isActive(item.href)}
+              />
+            ))}
+          </NavGroup>
+          <NavGroup title="Supporting">
+            {SUPPORT.map((item) => (
+              <NavItem key={item.href} {...item} marker="·" active={isActive(item.href)} />
+            ))}
+          </NavGroup>
+          <NavGroup title="Settings">
+            {SETTINGS.map((item) => (
+              <NavItem key={item.href} {...item} marker="·" active={isActive(item.href)} />
+            ))}
+          </NavGroup>
         </nav>
 
         <div className="border-t border-line px-4 py-3">
-          <p className="text-[10px] leading-[1.5] text-muted">
-            Figures are computed by a deterministic engine. The model maps columns and explains
-            findings; it never produces a number.
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="truncate text-[11.5px] font-medium text-ink">{user.name}</div>
+              <div className="truncate text-[10.5px] text-muted">{user.email}</div>
+              <div className="mt-0.5 text-[10px] text-muted">{role}</div>
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              className="shrink-0 rounded border border-line-strong px-2 py-0.5 text-[10.5px] text-ink-2 hover:border-accent hover:text-ink"
+            >
+              Sign out
+            </button>
+          </div>
+          <p className="mt-2.5 text-[10px] leading-[1.5] text-muted">
+            {model ? `Model: ${model}` : "Deterministic mapping (no model key)"} ·{" "}
+            {database === "postgres" ? "Postgres" : "Embedded database"}
           </p>
         </div>
       </aside>
 
-      <main className="ml-60 flex-1 bg-plane">{children}</main>
+      <main className="ml-60 min-w-0 flex-1 bg-plane">{children}</main>
     </div>
   );
 }
 
+function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-3">
+      <div className="mb-1.5 px-2 text-[10px] font-medium uppercase tracking-[0.13em] text-muted">
+        {title}
+      </div>
+      <ul className="space-y-0.5">{children}</ul>
+    </div>
+  );
+}
+
+function NavItem({
+  href,
+  label,
+  hint,
+  marker,
+  active,
+}: {
+  href: string;
+  label: string;
+  hint: string;
+  marker: number | string;
+  active: boolean;
+}) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className={[
+          "group flex items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors",
+          active ? "bg-surface-3 text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded text-[9px] font-semibold tnum",
+            active
+              ? "bg-accent text-plane"
+              : "border border-line text-muted group-hover:border-line-strong",
+          ].join(" ")}
+          aria-hidden
+        >
+          {marker}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[12.5px] font-medium leading-tight">{label}</span>
+          <span className="mt-0.5 block truncate text-[10.5px] leading-tight text-muted">
+            {hint}
+          </span>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 /** A mark that reads as a border crossing: goods on the left, a levy at the line. */
-function Mark() {
+export function Mark() {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
       <rect x="0.5" y="0.5" width="25" height="25" rx="6" fill="#181b20" stroke="#2f333b" />
