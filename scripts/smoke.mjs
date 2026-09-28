@@ -114,6 +114,7 @@ async function main() {
     "/declaration",
     "/audit",
     "/methodology",
+    "/regulation",
     "/evidence",
     "/suppliers",
     "/activity",

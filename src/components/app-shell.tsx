@@ -29,6 +29,7 @@ const MORE = [
   { href: "/evidence", label: "Evidence" },
   { href: "/activity", label: "Activity log" },
   { href: "/methodology", label: "Methodology" },
+  { href: "/regulation", label: "Ask the regulation" },
   { href: "/settings", label: "Installation settings" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/workspaces", label: "Workspaces" },

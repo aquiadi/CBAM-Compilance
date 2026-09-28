@@ -71,7 +71,10 @@ async function post(body: Record<string, unknown>): Promise<Response> {
         },
         body: JSON.stringify(body),
       });
-    } catch {
+    } catch (error) {
+      // fetch rejects with a TypeError when the network fails; anything else
+      // (a replay harness refusing an unrecorded call, say) keeps its message.
+      if (!(error instanceof TypeError)) throw error;
       throw new GroqError("Could not reach the Groq API.", null);
     }
     if (res.ok) return res;

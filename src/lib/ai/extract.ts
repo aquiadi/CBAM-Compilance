@@ -179,6 +179,8 @@ Return one line per consumed or delivered item. Rules:
 - For electricity bills, report the energy consumed or billed in the period (kWh, MWh or MU), not maximum demand (kVA) and not the previous or current meter reading.
 - Indian number formats are common: 1,23,456.78 is one hundred twenty-three thousand four hundred fifty-six point seven eight.
 - "evidence" must be a short verbatim quote from the document that includes the number you report.
+- Codes are printed as groups of digits (CN/HSN "7203 10 00", GSTIN, account and invoice numbers). Never join a code's digits to a quantity printed next to it.
+- If a figure is struck through and another written beside it, the new figure is the quantity; mention the correction in warnings.
 - If a figure is unreadable, handwritten, crossed out or ambiguous, set quantity to null or lower the confidence, and say why in warnings. Never guess.
 - category: fuel (burned on site: coal, coke, diesel/HSD/LDO, furnace oil/FO/LSHS, LPG, natural gas), electricity, process_material (limestone, dolomite, electrodes, fluxes, ore), precursor (bought-in CBAM goods such as sponge iron/DRI, pig iron, billets, clinker, ammonia), otherwise other.`;
 

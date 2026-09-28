@@ -12,3 +12,6 @@ npm-debug.log*
 next-env.d.ts
 /.data/
 /artifacts/
+
+# Real bills and their recordings never enter this public repository.
+/evals/documents/private/

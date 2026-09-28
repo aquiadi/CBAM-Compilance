@@ -1,0 +1,17 @@
+{
+  "frozenAt": "2026-09-28T14:08:34.882Z",
+  "commit": "031192e",
+  "corpus": "public-synthetic",
+  "corpusHash": "f9f71f0f098406ff48ac5d39b0c9c9c5a38bfc57032e04496568e68688adeb6a",
+  "provider": "groq",
+  "models": ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
+  "cassettes": 10,
+  "metrics": {
+    "documents": 10,
+    "readRate": 1,
+    "lineRecall": 0.9230769230769231,
+    "unitAccuracy": 1,
+    "categoryAccuracy": 1,
+    "silentErrorRate": 0
+  }
+}

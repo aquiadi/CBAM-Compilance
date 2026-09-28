@@ -66,6 +66,9 @@ number traceable to the source file and row it came from.
   - a monitoring-methodology document;
   - a **verifier pack** (.zip) holding every export, every source file and every piece of evidence,
     each with a SHA-256 checksum.
+- **Ask the regulation.** Questions answered from the CBAM texts by an
+  [evalgate](https://github.com/aquiadi/CI-harness) service: every claim cites a passage, every
+  citation is checked against what was retrieved, and the passages sit under the answer to read.
 - **Teams.** Organisations, several installations and years each, and four roles: owner, editor,
   viewer and verifier. An append-only activity log records who changed what. Forgotten passwords
   are reset by e-mail when mail is configured; without mail, an owner creates a one-time reset link
@@ -201,6 +204,8 @@ validates them all at startup; a bad value stops the process with the variable n
 | `GROQ_API_KEY`             | unset                 | The free option, used when `ANTHROPIC_API_KEY` is unset                     |
 | `GROQ_MODEL`               | `openai/gpt-oss-120b` | Groq model for text, PDFs, mapping, triage and memo                         |
 | `GROQ_VISION_MODEL`        | `qwen/qwen3.8-27b`    | Groq model for photos                                                       |
+| `EVALGATE_URL`             | unset                 | An evalgate service for "Ask the regulation"                                |
+| `EVALGATE_API_KEY`         | unset                 | Sent as `x-api-key` when the evalgate service requires one                  |
 | `SMTP_URL`                 | unset                 | `smtps://user:pass@host:465`: e-mails invitations, supplier and reset links |
 | `MAIL_FROM`                | unset                 | Sender, e.g. `CarbonPass <cbam@yourplant.in>`; needed with `SMTP_URL`       |
 | `CARBONPASS_ETS_PRICE_EUR` | `75`                  | Price for quarters not yet published; each workspace can override           |
@@ -397,24 +402,103 @@ Restore by pointing `DATABASE_URL` at the restored database; migrations only eve
 
 ---
 
+## Quality gates, the evalgate way
+
+CarbonPass uses [evalgate](https://github.com/aquiadi/CI-harness) twice: its CI discipline gates
+document reading here, and its service answers regulation questions in the app.
+
+### The document-reading gate
+
+A model that reads bills needs a number behind it, and that number needs to hold on every change.
+The gate follows evalgate's design:
+
+- **A labelled corpus.** `evals/documents/` holds ten made-up documents in the layout of Indian
+  plant paperwork, PDFs and phone photos, each built around a trap: kVA demand beside kWh consumed,
+  meter readings, gross and tare beside net weight, MU, lakh grouping, rupee amounts beside every
+  quantity, a CN code printed next to a quantity, a figure struck through in ink.
+  `labels.json` records what a person would enter from each.
+- **Cassettes.** Every model call is recorded once as a reviewable JSON file (`cassettes/`).
+  Pull requests replay them: no key, no network, the same result every run, in under a second. A
+  call with no cassette is an error, never a network request, so a changed prompt, model or schema
+  fails until someone re-records, and what the model now says arrives as a diff to read.
+- **A frozen baseline** (`baseline.json`). Missing data fails; a changed corpus, provider or model
+  fails as "not comparable" instead of producing a number; every metric has its own floor.
+- **A nightly live run** (`.github/workflows/nightly.yml`) holds the real model to the same baseline
+  and keeps one issue open while it fails. It needs the `GROQ_API_KEY` repository secret. A
+  `freeze` dispatch records a candidate baseline for review; nothing in CI commits one.
+
+The headline metric is the **silent error rate**: lines that would be imported by default and are
+wrong (not on the document, wrong unit, wrong category) with nothing on screen to flag them. A
+wrong figure the text check flags is caught; an unflagged one is how a kVA figure reaches a
+declaration.
+
+Measured on Groq's free tier (`openai/gpt-oss-120b` for PDFs, `qwen/qwen3.8-27b` for photos):
+
+| prompt                                                             | lines read exactly | silent errors |
+| ------------------------------------------------------------------ | ------------------ | ------------- |
+| first version                                                      | 84.6%              | 7.7%          |
+| + never join a code's digits to a quantity; use the ink correction | 92.3%              | 0.0%          |
+
+The first run found two real faults: the PDF text layer printed "7203 10 00" beside "520.000" and
+the model fused them into 1,000,520 t (the text check flagged it), and on the handwritten challan
+the model read the struck-through figure, silently. The current baseline misses only the challan,
+which it now declines to read rather than getting wrong. Injecting a bug that rounds quantities
+drops exact reads to 30.8% and raises silent errors to 50%; the gate fails the build.
+
+```bash
+npm run eval:documents                           # replay and gate (what CI runs)
+npm run eval:documents -- --record --freeze      # re-record and freeze (needs GROQ_API_KEY)
+npm run eval:documents -- --live                 # live run, nothing saved (the nightly job)
+```
+
+**Real bills stay private.** Put them in `evals/documents/private/` (gitignored) with the same
+layout - `labels.json`, `corpus/` - and add `--private` to any of the commands: it keeps its own
+cassettes and baseline there. Blank out account numbers, GSTINs, names and addresses first; leave
+quantities, units and dates. Ten made-up documents rank changes against each other; only real bills
+give a number to quote to a customer or a verifier.
+
+### Ask the regulation
+
+The page relays questions to an evalgate service and renders its answer with the passages it cites,
+each marked checked or not supported. It adds nothing to the answer path, so what evalgate's own CI
+measures is what the reader gets. The response is validated against evalgate's contract; a
+different or changed service fails with a message rather than rendering.
+
+To connect one:
+
+1. On a machine that can reach the EU document servers, in a checkout of evalgate:
+   `make corpus PROFILE="+experiment=real"` then `make docker`. The documents are not in its
+   repository, so an image built straight from GitHub can only serve its synthetic corpus, and the
+   page says so in red.
+2. Run the image as a service (Railway: New → Docker image, after pushing it to a registry) with
+   `EVALGATE_OVERRIDES=+experiment=real` and `EVALGATE_API_KEY` set.
+3. Set `EVALGATE_URL` and the same `EVALGATE_API_KEY` on CarbonPass.
+
+evalgate's real corpus is Regulation (EU) 2023/956, the transitional-period Implementing Regulation
+2023/1773, the Commission's guidance and the ETS directive. The definitive-period acts this engine
+implements (2025/2547, 2025/2620, 2025/2621) are not in it yet, so for the method itself the
+Methodology page is the reference.
+
 ## Development
 
 ```bash
-make check       # lint, format, types, fixture checksums, 149 tests, mapping eval
+make check       # lint, format, types, fixture checksums, 178 tests, mapping and document gates
 make build && make start          # production build, served the way the container serves it
 make smoke                        # end-to-end over HTTP against the running server
 ```
 
-| Command            | What it does                                                               |
-| ------------------ | -------------------------------------------------------------------------- |
-| `make check`       | Everything CI's quality job runs                                           |
-| `make test`        | Engine, rules, SEFA, regulatory-table and PGlite integration tests         |
-| `make smoke`       | Signs up, opens the demo, exports everything, runs the supplier round trip |
-| `make screenshots` | Drives the running app in Chromium and captures every screen               |
-| `make eval`        | Mapping eval; gates on the column **error** rate                           |
-| `make regulatory`  | Rebuilds the engine's tables from the Commission workbooks                 |
-| `make seed`        | Regenerates the demo fixtures and their checksum manifest                  |
-| `make compose-up`  | App plus Postgres in Docker                                                |
+| Command                 | What it does                                                               |
+| ----------------------- | -------------------------------------------------------------------------- |
+| `make check`            | Everything CI's quality job runs                                           |
+| `make test`             | Engine, rules, SEFA, regulatory-table and PGlite integration tests         |
+| `make smoke`            | Signs up, opens the demo, exports everything, runs the supplier round trip |
+| `make screenshots`      | Drives the running app in Chromium and captures every screen               |
+| `make eval`             | Mapping eval; gates on the column **error** rate                           |
+| `make eval-documents`   | Document-reading gate, replayed from cassettes                             |
+| `make record-documents` | Re-record the document cassettes and freeze a baseline                     |
+| `make regulatory`       | Rebuilds the engine's tables from the Commission workbooks                 |
+| `make seed`             | Regenerates the demo fixtures and their checksum manifest                  |
+| `make compose-up`       | App plus Postgres in Docker                                                |
 
 CI runs the quality job on Node 22 and 24. It runs the smoke test against the production build on
 both Postgres and the embedded database, builds the app as Vercel does, and builds the container and
@@ -425,7 +509,9 @@ smoke-tests it.
 ```
 data/regulatory/source/    Commission workbooks (benchmarks, default values), checksummed
 data/demo/                 Demo plant exports + manifest.json (SHA-256 per file)
+evals/documents/           Document-reading gate: corpus, labels, cassettes, baseline
 scripts/
+  generate-eval-documents.mjs  The made-up bills and photos in evals/documents/corpus
   import-regulatory.ts     Workbooks → src/lib/cbam/regulatory/generated/*.json
   smoke.mjs                End-to-end test over HTTP
   start-standalone.mjs     Serve the standalone build as the container does
@@ -482,11 +568,11 @@ src/
   value, column and route indicator used for each good.
 - **Shared site activities are attributed by configured alias, not allocated.** For example, diesel
   for material handling lands on the DRI kiln because the installation configuration says so.
-- **Reading accuracy is not yet measured on real bills.** The Groq path has been run live on
-  generated invoices (a PDF and a photo, read correctly) and on the mapping eval (results above); the
-  Claude path has only been run against a stubbed client, since no key was available. Every
-  request and every kind of answer is unit-tested either way. Every figure above came from the
-  deterministic path.
+- **Reading accuracy is measured on made-up documents, not yet on real bills.** On the ten documents
+  in `evals/documents/` the free Groq models read 92.3% of lines exactly with no silent errors
+  (above). Made-up documents are cleaner than real ones, so that is a ceiling, not a claim; the
+  private corpus is where a quotable number comes from. The Claude path has only been run against
+  a stubbed client.
 
 ---
 

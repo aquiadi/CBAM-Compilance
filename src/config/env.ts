@@ -93,6 +93,17 @@ const EnvSchema = z.object({
   /** The From address for outgoing mail, e.g. "CarbonPass <cbam@yourcompany.com>". */
   MAIL_FROM: z.string().min(3).max(200).optional(),
 
+  /**
+   * An evalgate service (github.com/aquiadi/CI-harness) for "Ask the
+   * regulation": questions answered from the CBAM texts, each claim cited to a
+   * passage and every citation checked. Deploy it as its own service; unset
+   * hides the page's question box and explains how to set it up.
+   */
+  EVALGATE_URL: z.string().url("must be the evalgate service's address").optional(),
+
+  /** Sent as x-api-key when the evalgate service requires one (its EVALGATE_API_KEY). */
+  EVALGATE_API_KEY: z.string().min(1).optional(),
+
   /** Set by Vercel on its build and runtime; used to require an external database there. */
   VERCEL: z.string().optional(),
 });

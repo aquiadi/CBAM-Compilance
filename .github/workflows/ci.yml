@@ -63,6 +63,15 @@ jobs:
       - name: Mapping eval
         run: npm run eval
 
+      # Document reading, replayed from committed cassettes: the real model's
+      # recorded answers, scored against labelled documents and held to the
+      # frozen baseline. No key, no network, same result every run. A changed
+      # prompt, model or schema misses its cassette and fails until someone
+      # re-records - so a change in what the model reads is a diff a person
+      # reviews. The live run is nightly.yml.
+      - name: Document-reading gate
+        run: npm run eval:documents
+
       - name: Upload eval run
         if: always()
         uses: actions/upload-artifact@v4

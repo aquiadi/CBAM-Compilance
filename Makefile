@@ -11,6 +11,7 @@ TAG   ?= local
 PORT  ?= 3000
 
 .PHONY: help install dev build start check lint format test test-watch eval eval-model \
+        eval-documents record-documents \
         seed data-verify regulatory smoke screenshots docker-build docker-run docker-stop \
         compose-up compose-down clean reset
 
@@ -54,6 +55,12 @@ eval: ## Mapping eval, deterministic baseline
 
 eval-model: ## Mapping eval including the LLM mapper (needs an API key)
 	npm run eval:model
+
+eval-documents: ## Document-reading gate, replayed from cassettes (no key, no network)
+	npm run eval:documents
+
+record-documents: ## Re-record the document cassettes and freeze a baseline (needs GROQ_API_KEY)
+	npm run eval:documents -- --record --freeze
 
 seed: ## Regenerate the demo fixtures, then refresh their manifest
 	npm run seed && npm run data:manifest

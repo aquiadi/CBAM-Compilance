@@ -1,0 +1,102 @@
+name: Nightly document gate
+
+# The live half of the document-reading gate. Pull requests replay recorded
+# answers (ci.yml); this runs the same documents against the real model once a
+# night and holds it to the same baseline, to catch what replay cannot: the
+# provider changing a model, new refusal behaviour, rate limits.
+#
+# Needs the repository secret GROQ_API_KEY (the baseline was recorded on
+# Groq's free tier). Without it the job says so and passes.
+#
+# While the gate fails it keeps one issue open and comments on it; it closes
+# the issue when the gate passes again. A `freeze` dispatch records fresh
+# cassettes and a candidate baseline and uploads them for review - nothing in
+# CI commits a baseline.
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      freeze:
+        description: "Record new cassettes and a candidate baseline (uploaded, not committed)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nightly-documents
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: Live document-reading gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      - name: Check for a key
+        id: key
+        run: |
+          if [ -z "$GROQ_API_KEY" ]; then
+            echo "::notice::GROQ_API_KEY is not set as a repository secret, so the live gate did not run."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Live gate
+        id: gate
+        if: steps.key.outputs.present == 'true' && !inputs.freeze
+        run: npm run eval:documents -- --live --report artifacts/evals/documents-live.md
+
+      - name: Record a candidate baseline
+        if: steps.key.outputs.present == 'true' && inputs.freeze
+        run: npm run eval:documents -- --record --freeze --report artifacts/evals/documents-freeze.md
+
+      - name: Upload report and candidate
+        if: always() && steps.key.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: document-gate-${{ github.run_id }}
+          path: |
+            artifacts/evals/
+            evals/documents/baseline.json
+            evals/documents/cassettes/
+          retention-days: 30
+
+      - name: Open or update the failure issue
+        if: failure() && steps.gate.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Nightly document-reading gate is failing"
+          body="The live run on $(date -u +%F) failed the gate: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
+
+      - name: Close the failure issue
+        if: success() && steps.gate.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Nightly document-reading gate is failing"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue close "$number" --comment "The live gate passed again on $(date -u +%F)."
+          fi

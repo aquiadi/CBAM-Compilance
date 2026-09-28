@@ -1,0 +1,227 @@
+{
+  "recordedAt": "2026-09-28T14:06:40.716Z",
+  "key": "bd61cb218c289d9bb2515f3d16571433b186af96f12b698a5fdbb1839fe886b6",
+  "request": {
+    "url": "https://api.groq.com/openai/v1/chat/completions",
+    "model": "openai/gpt-oss-120b",
+    "body": {
+      "model": "openai/gpt-oss-120b",
+      "temperature": 0,
+      "max_completion_tokens": 8192,
+      "reasoning_effort": "medium",
+      "include_reasoning": false,
+      "messages": [
+        {
+          "role": "system",
+          "content": "You read industrial purchase and utility documents for a CBAM emissions inventory: fuel invoices, electricity bills, raw-material receipts, weighbridge slips and delivery notes from plants, mostly in India.\n\nReturn one line per consumed or delivered item. Rules:\n- Copy each quantity exactly as printed and its unit exactly as printed. Do not convert units, add up lines, or work out a figure the document does not state.\n- Quantities are physical amounts: tonnes, litres, kilolitres, kWh, MU, Nm3, kg. Never report prices, rates, taxes, totals in money, meter constants or sanctioned load.\n- For electricity bills, report the energy consumed or billed in the period (kWh, MWh or MU), not maximum demand (kVA) and not the previous or current meter reading.\n- Indian number formats are common: 1,23,456.78 is one hundred twenty-three thousand four hundred fifty-six point seven eight.\n- \"evidence\" must be a short verbatim quote from the document that includes the number you report.\n- Codes are printed as groups of digits (CN/HSN \"7203 10 00\", GSTIN, account and invoice numbers). Never join a code's digits to a quantity printed next to it.\n- If a figure is struck through and another written beside it, the new figure is the quantity; mention the correction in warnings.\n- If a figure is unreadable, handwritten, crossed out or ambiguous, set quantity to null or lower the confidence, and say why in warnings. Never guess.\n- category: fuel (burned on site: coal, coke, diesel/HSD/LDO, furnace oil/FO/LSHS, LPG, natural gas), electricity, process_material (limestone, dolomite, electrodes, fluxes, ore), precursor (bought-in CBAM goods such as sponge iron/DRI, pig iron, billets, clinker, ammonia), otherwise other.\n\nAnswer with a single JSON object that matches the schema you were given."
+        },
+        {
+          "role": "user",
+          "content": "File name: ht-bill-kva-trap.pdf\n\nThe document's text, as extracted from the file. Layout may be lost; figures are as printed.\n\n<document>\nCHHATTISGARH STATE POWER DISTRIBUTION CO. LTD\nHT Energy Bill · Consumer No. 1000234567 · Tariff HV-4 (Steel)\nBill month: March 2026 Bill date: 07.04.2026 Due date: 21.04.2026\nParticulars Value Unit\nContract Demand 5,000 kVA\nMaximum Demand Recorded 4,213 kVA\nBilling Demand 4,250 kVA\nPrevious Reading (KWH) 1,84,52,310\nPresent Reading (KWH) 1,96,17,450\nMultiplying Factor 1\nUnits Consumed 11,65,140 kWh\nPower Factor 0.97\nCharges Amount (Rs)\nDemand charges @ Rs 350/kVA 14,87,500.00\nEnergy charges @ Rs 6.10/kWh 71,07,354.00\nElectricity duty 5,68,588.32\nNet payable 91,63,442.32\n</document>\n\nExtract every consumed or delivered item from this document."
+        }
+      ],
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "document_reading",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "documentType": {
+                "type": "string",
+                "enum": [
+                  "fuel_invoice",
+                  "electricity_bill",
+                  "material_receipt",
+                  "weighbridge_slip",
+                  "delivery_note",
+                  "supplier_emissions_communication",
+                  "other"
+                ]
+              },
+              "issuer": {
+                "description": "Who issued the document (supplier, DISCOM).",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "documentNumber": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "documentDate": {
+                "description": "YYYY-MM-DD",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "billingPeriod": {
+                "description": "For bills: the consumption period, YYYY-MM-DD.",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string"
+                      },
+                      "end": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["start", "end"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "description": "The item exactly as printed, e.g. 'HSD', 'Non-coking coal G11'.",
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": ["fuel", "electricity", "process_material", "precursor", "other"]
+                    },
+                    "quantity": {
+                      "description": "The consumed or delivered quantity as printed. Null if unreadable. Never a price.",
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "description": "The unit exactly as printed next to the quantity (MT, KL, kWh, MU, Nm3). Never converted.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "date": {
+                      "description": "The date or billing month this line covers, as YYYY-MM-DD or YYYY-MM.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "cnCode": {
+                      "description": "CN/HS code if printed on the line, else null.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "supplySource": {
+                      "description": "Electricity only: grid/DISCOM, captive or open access, if stated.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "evidence": {
+                      "description": "A short verbatim quote from the document that contains the quantity.",
+                      "type": "string"
+                    },
+                    "page": {
+                      "description": "1-based page number the line was read from.",
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "confidence": {
+                      "description": "0 to 1: how sure you are that quantity and unit are read correctly.",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "description",
+                    "category",
+                    "quantity",
+                    "unit",
+                    "date",
+                    "cnCode",
+                    "supplySource",
+                    "evidence",
+                    "page",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "warnings": {
+                "description": "Anything a person should check: unreadable parts, handwriting, crossed-out figures.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "documentType",
+              "issuer",
+              "documentNumber",
+              "documentDate",
+              "billingPeriod",
+              "lines",
+              "warnings"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json",
+    "body": "{\"id\":\"chatcmpl-0dcf66bb-1e49-447b-85c1-07490e76edcc\",\"object\":\"chat.completion\",\"created\":1790604400,\"model\":\"openai/gpt-oss-120b\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"{\\\"documentType\\\":\\\"electricity_bill\\\",\\\"issuer\\\":\\\"CHHATTISGARH STATE POWER DISTRIBUTION CO. LTD\\\",\\\"documentNumber\\\":\\\"1000234567\\\",\\\"documentDate\\\":\\\"2026-04-07\\\",\\\"billingPeriod\\\":{\\\"start\\\":\\\"2026-03-01\\\",\\\"end\\\":\\\"2026-03-31\\\"},\\\"lines\\\":[{\\\"description\\\":\\\"Units Consumed\\\",\\\"category\\\":\\\"electricity\\\",\\\"quantity\\\":1165140,\\\"unit\\\":\\\"kWh\\\",\\\"date\\\":\\\"2026-03\\\",\\\"cnCode\\\":null,\\\"supplySource\\\":\\\"DISCOM\\\",\\\"evidence\\\":\\\"Units Consumed 11,65,140 kWh\\\",\\\"page\\\":1,\\\"confidence\\\":1.0}],\\\"warnings\\\":[]}\"},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"queue_time\":0.152590712,\"prompt_tokens\":1407,\"prompt_time\":0.080871688,\"completion_tokens\":573,\"completion_time\":1.2088924030000001,\"total_tokens\":1980,\"total_time\":1.289764091,\"completion_tokens_details\":{\"reasoning_tokens\":421}},\"usage_breakdown\":null,\"system_fingerprint\":\"fp_64b2f1c926\",\"x_groq\":{\"id\":\"req_01m3m5dmm2e0nt13jfsa3vthsw\",\"seed\":404203085},\"service_tier\":\"on_demand\"}\n"
+  }
+}

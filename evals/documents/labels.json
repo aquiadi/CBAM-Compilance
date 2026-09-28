@@ -1,0 +1,164 @@
+{
+  "corpus": "public-synthetic",
+  "note": "Made-up documents in the layout of Indian plant paperwork. Not real bills.",
+  "documents": [
+    {
+      "id": "fuel-invoice",
+      "file": "fuel-invoice.pdf",
+      "mediaType": "application/pdf",
+      "why": "A fuel invoice with two fuels, rupee rates beside every quantity and a freight line that is not a quantity at all.",
+      "expected": [
+        {
+          "item": "HSD",
+          "category": "fuel",
+          "quantity": 24.5,
+          "unit": "KL"
+        },
+        {
+          "item": "LSHS",
+          "category": "fuel",
+          "quantity": 61.32,
+          "unit": "MT"
+        }
+      ]
+    },
+    {
+      "id": "fuel-invoice-photo",
+      "file": "fuel-invoice-photo.jpg",
+      "mediaType": "image/jpeg",
+      "why": "The same invoice as a phone photo: tilted, soft and without a text layer, so nothing can be checked against the document's text.",
+      "expected": [
+        {
+          "item": "HSD",
+          "category": "fuel",
+          "quantity": 24.5,
+          "unit": "KL"
+        },
+        {
+          "item": "LSHS",
+          "category": "fuel",
+          "quantity": 61.32,
+          "unit": "MT"
+        }
+      ]
+    },
+    {
+      "id": "ht-bill-kva-trap",
+      "file": "ht-bill-kva-trap.pdf",
+      "mediaType": "application/pdf",
+      "why": "An HT electricity bill. Contract and maximum demand in kVA, and two meter readings, sit next to the one figure that matters: kWh consumed.",
+      "expected": [
+        {
+          "item": "units",
+          "category": "electricity",
+          "quantity": 1165140,
+          "unit": "kWh"
+        }
+      ]
+    },
+    {
+      "id": "ht-bill-mu-photo",
+      "file": "ht-bill-mu-photo.jpg",
+      "mediaType": "image/jpeg",
+      "why": "A monthly power statement in million units (MU). Reading MU as MWh understates power a thousandfold.",
+      "expected": [
+        {
+          "item": "energy",
+          "category": "electricity",
+          "quantity": 21.36,
+          "unit": "MU"
+        }
+      ]
+    },
+    {
+      "id": "weighbridge-coal",
+      "file": "weighbridge-coal.jpg",
+      "mediaType": "image/jpeg",
+      "why": "A weighbridge slip: gross and tare are printed as prominently as net. Only net weight was delivered.",
+      "expected": [
+        {
+          "item": "coal",
+          "category": "fuel",
+          "quantity": 27.44,
+          "unit": "MT"
+        }
+      ]
+    },
+    {
+      "id": "material-receipt",
+      "file": "material-receipt.pdf",
+      "mediaType": "application/pdf",
+      "why": "A goods receipt note for two process materials, with accepted and rejected quantities and rupee values alongside.",
+      "expected": [
+        {
+          "item": "limestone",
+          "category": "process_material",
+          "quantity": 312.5,
+          "unit": "MT"
+        },
+        {
+          "item": "dolomite",
+          "category": "process_material",
+          "quantity": 148.25,
+          "unit": "MT"
+        }
+      ]
+    },
+    {
+      "id": "natural-gas-lakh",
+      "file": "natural-gas-lakh.pdf",
+      "mediaType": "application/pdf",
+      "why": "A gas invoice with Indian lakh grouping (1,24,560.00): the digits must be read as one number.",
+      "expected": [
+        {
+          "item": "gas",
+          "category": "fuel",
+          "quantity": 124560,
+          "unit": "SCM"
+        }
+      ]
+    },
+    {
+      "id": "pump-receipt-litres",
+      "file": "pump-receipt-litres.jpg",
+      "mediaType": "image/jpeg",
+      "why": "A fuel-pump receipt in litres, with a rate and a total in rupees that are larger than the quantity.",
+      "expected": [
+        {
+          "item": "HSD",
+          "category": "fuel",
+          "quantity": 450,
+          "unit": "L"
+        }
+      ]
+    },
+    {
+      "id": "dri-precursor-invoice",
+      "file": "dri-precursor-invoice.pdf",
+      "mediaType": "application/pdf",
+      "why": "A bought-in precursor (sponge iron) with its CN code; it must be read as a precursor, not a fuel or material.",
+      "expected": [
+        {
+          "item": "sponge iron",
+          "category": "precursor",
+          "quantity": 520,
+          "unit": "MT"
+        }
+      ]
+    },
+    {
+      "id": "handwritten-challan",
+      "file": "handwritten-challan.jpg",
+      "mediaType": "image/jpeg",
+      "why": "A delivery challan filled in by hand, with a quantity corrected in ink.",
+      "expected": [
+        {
+          "item": "furnace oil",
+          "category": "fuel",
+          "quantity": 18.4,
+          "unit": "KL"
+        }
+      ]
+    }
+  ]
+}

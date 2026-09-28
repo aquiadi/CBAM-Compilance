@@ -1,0 +1,227 @@
+{
+  "recordedAt": "2026-09-28T14:07:04.478Z",
+  "key": "2db70df4a1729fe9e354d33f85ce474e42ba5aa0c36040cb17c58bd04fce041a",
+  "request": {
+    "url": "https://api.groq.com/openai/v1/chat/completions",
+    "model": "openai/gpt-oss-120b",
+    "body": {
+      "model": "openai/gpt-oss-120b",
+      "temperature": 0,
+      "max_completion_tokens": 8192,
+      "reasoning_effort": "medium",
+      "include_reasoning": false,
+      "messages": [
+        {
+          "role": "system",
+          "content": "You read industrial purchase and utility documents for a CBAM emissions inventory: fuel invoices, electricity bills, raw-material receipts, weighbridge slips and delivery notes from plants, mostly in India.\n\nReturn one line per consumed or delivered item. Rules:\n- Copy each quantity exactly as printed and its unit exactly as printed. Do not convert units, add up lines, or work out a figure the document does not state.\n- Quantities are physical amounts: tonnes, litres, kilolitres, kWh, MU, Nm3, kg. Never report prices, rates, taxes, totals in money, meter constants or sanctioned load.\n- For electricity bills, report the energy consumed or billed in the period (kWh, MWh or MU), not maximum demand (kVA) and not the previous or current meter reading.\n- Indian number formats are common: 1,23,456.78 is one hundred twenty-three thousand four hundred fifty-six point seven eight.\n- \"evidence\" must be a short verbatim quote from the document that includes the number you report.\n- Codes are printed as groups of digits (CN/HSN \"7203 10 00\", GSTIN, account and invoice numbers). Never join a code's digits to a quantity printed next to it.\n- If a figure is struck through and another written beside it, the new figure is the quantity; mention the correction in warnings.\n- If a figure is unreadable, handwritten, crossed out or ambiguous, set quantity to null or lower the confidence, and say why in warnings. Never guess.\n- category: fuel (burned on site: coal, coke, diesel/HSD/LDO, furnace oil/FO/LSHS, LPG, natural gas), electricity, process_material (limestone, dolomite, electrodes, fluxes, ore), precursor (bought-in CBAM goods such as sponge iron/DRI, pig iron, billets, clinker, ammonia), otherwise other.\n\nAnswer with a single JSON object that matches the schema you were given."
+        },
+        {
+          "role": "user",
+          "content": "File name: natural-gas-lakh.pdf\n\nThe document's text, as extracted from the file. Layout may be lost; figures are as printed.\n\n<document>\nGAIL (INDIA) LIMITED\nNatural Gas Sales Invoice · Invoice No. GL/NG/26/7751 · 01.04.2026\nCustomer: Gujarat Ferro Castings Ltd, Vapi · Contract No. NG-2231\nDescription Quantity Unit GCV (kcal/SCM) Amount (Rs)\nNatural Gas (APM) - March 2026 1,24,560.00 SCM 9,540 44,59,248.00\nEnergy supplied: 1,188.30 MMBTU (for reference)\n</document>\n\nExtract every consumed or delivered item from this document."
+        }
+      ],
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "document_reading",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "documentType": {
+                "type": "string",
+                "enum": [
+                  "fuel_invoice",
+                  "electricity_bill",
+                  "material_receipt",
+                  "weighbridge_slip",
+                  "delivery_note",
+                  "supplier_emissions_communication",
+                  "other"
+                ]
+              },
+              "issuer": {
+                "description": "Who issued the document (supplier, DISCOM).",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "documentNumber": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "documentDate": {
+                "description": "YYYY-MM-DD",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "billingPeriod": {
+                "description": "For bills: the consumption period, YYYY-MM-DD.",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string"
+                      },
+                      "end": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["start", "end"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "description": "The item exactly as printed, e.g. 'HSD', 'Non-coking coal G11'.",
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": ["fuel", "electricity", "process_material", "precursor", "other"]
+                    },
+                    "quantity": {
+                      "description": "The consumed or delivered quantity as printed. Null if unreadable. Never a price.",
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "description": "The unit exactly as printed next to the quantity (MT, KL, kWh, MU, Nm3). Never converted.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "date": {
+                      "description": "The date or billing month this line covers, as YYYY-MM-DD or YYYY-MM.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "cnCode": {
+                      "description": "CN/HS code if printed on the line, else null.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "supplySource": {
+                      "description": "Electricity only: grid/DISCOM, captive or open access, if stated.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "evidence": {
+                      "description": "A short verbatim quote from the document that contains the quantity.",
+                      "type": "string"
+                    },
+                    "page": {
+                      "description": "1-based page number the line was read from.",
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "confidence": {
+                      "description": "0 to 1: how sure you are that quantity and unit are read correctly.",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "description",
+                    "category",
+                    "quantity",
+                    "unit",
+                    "date",
+                    "cnCode",
+                    "supplySource",
+                    "evidence",
+                    "page",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "warnings": {
+                "description": "Anything a person should check: unreadable parts, handwriting, crossed-out figures.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "documentType",
+              "issuer",
+              "documentNumber",
+              "documentDate",
+              "billingPeriod",
+              "lines",
+              "warnings"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json",
+    "body": "{\"id\":\"chatcmpl-11df446c-93ab-4f5b-88dd-93fdd84835e2\",\"object\":\"chat.completion\",\"created\":1790604424,\"model\":\"openai/gpt-oss-120b\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"{\\\"documentType\\\":\\\"fuel_invoice\\\",\\\"issuer\\\":\\\"GAIL (INDIA) LIMITED\\\",\\\"documentNumber\\\":\\\"GL/NG/26/7751\\\",\\\"documentDate\\\":\\\"2026-04-01\\\",\\\"billingPeriod\\\":null,\\\"lines\\\":[{\\\"description\\\":\\\"Natural Gas (APM) - March 2026\\\",\\\"category\\\":\\\"fuel\\\",\\\"quantity\\\":124560.0,\\\"unit\\\":\\\"SCM\\\",\\\"date\\\":\\\"2026-03\\\",\\\"cnCode\\\":null,\\\"supplySource\\\":null,\\\"evidence\\\":\\\"1,24,560.00 SCM\\\",\\\"page\\\":1,\\\"confidence\\\":1.0}],\\\"warnings\\\":[]}\"},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"queue_time\":0.329379745,\"prompt_tokens\":1305,\"prompt_time\":0.121282944,\"completion_tokens\":518,\"completion_time\":1.652245054,\"total_tokens\":1823,\"total_time\":1.773527998,\"prompt_tokens_details\":{\"cached_tokens\":256},\"completion_tokens_details\":{\"reasoning_tokens\":384}},\"usage_breakdown\":null,\"system_fingerprint\":\"fp_87b3c396db\",\"x_groq\":{\"id\":\"req_01m3m5ebbtesdth131dw1w2q7g\",\"seed\":1678660539},\"service_tier\":\"on_demand\"}\n"
+  }
+}
