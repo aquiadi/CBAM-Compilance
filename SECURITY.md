@@ -24,8 +24,10 @@ Only the latest commit on `main` is supported; deployments track it.
 - Every write refused unless it comes from the app's own origin; roles checked
   on every route; sign-in, reset, upload and question endpoints rate-limited.
 - A strict Content-Security-Policy and `frame-ancestors 'none'`.
-- CI: `npm audit` on shipped dependencies, CodeQL (security-extended) on every
-  push and weekly, Dependabot for dependency and action updates.
+- CI: `npm audit` on shipped dependencies fails the build on a known high or
+  critical vulnerability, and CodeQL (security-extended) runs on every push and
+  weekly. Updates are applied by the maintainer rather than a bot, so every
+  commit has one author.
 
 ## Scope
 

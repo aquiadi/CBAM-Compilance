@@ -53,7 +53,7 @@ adjustment, the certificate cost and a verifier-ready evidence pack out.
 | End to end (`scripts/smoke.mjs`) | 17 steps           | Sign-up to sign-out over HTTP against the production build: every screen and export, uploads, supplier portal, roles, password reset and two-factor sign-in - on Postgres, the embedded database and the container |
 | Document-reading gate            | 10 documents       | Recorded model answers replayed and scored; fails on any rise in silent errors                                                                                                                                     |
 | Mapping eval                     | 9 cases            | The column mapper against labelled plant files; gated on the column **error** rate                                                                                                                                 |
-| CodeQL, `npm audit`, Dependabot  | every push; weekly | Security analysis of the code, known vulnerabilities in shipped dependencies, update pull requests                                                                                                                 |
+| CodeQL, `npm audit`              | every push; weekly | Security analysis of the code; known high or critical vulnerabilities in shipped dependencies fail the build                                                                                                       |
 
 <details>
 <summary><b>Contents</b></summary>
@@ -477,7 +477,7 @@ says which one produced each result.
   and can be revoked. The supplier can correct a submission until you accept or reject it.
 - **Server errors** are logged as one JSON line each, with the digest shown on the error page, so
   a support request can be matched to its log line. Request bodies are never logged.
-- **CI** runs CodeQL (security-extended), `npm audit` on shipped dependencies, and Dependabot; see
+- **CI** runs CodeQL (security-extended) and `npm audit` on shipped dependencies; see
   [SECURITY.md](SECURITY.md) for reporting a vulnerability.
 
 ### Your data
