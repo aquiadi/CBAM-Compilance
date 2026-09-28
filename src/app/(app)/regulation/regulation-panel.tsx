@@ -7,10 +7,12 @@ import type { RegulationAnswer } from "@/lib/regulation";
 import { answerSegments } from "@/lib/regulation-format";
 
 const EXAMPLES = [
-  "Who has to surrender CBAM certificates?",
-  "What must a verification report contain?",
-  "When is the annual CBAM declaration due?",
+  "How is the number of CBAM certificates calculated?",
+  "When is the first annual CBAM declaration due?",
+  "What is the CBAM factor for 2027?",
 ];
+
+type Answer = RegulationAnswer & { source?: "evalgate" | "rulebook"; notice?: string };
 
 export function RegulationPanel({
   corpus,
@@ -28,13 +30,13 @@ export function RegulationPanel({
 }) {
   const { send, pending, error } = useRequest();
   const [question, setQuestion] = useState(initialQuestion);
-  const [result, setResult] = useState<(RegulationAnswer & { question: string }) | null>(null);
+  const [result, setResult] = useState<(Answer & { question: string }) | null>(null);
 
   async function ask(q = question) {
     const text = q.trim();
     if (text.length < 3) return;
     setQuestion(text);
-    const r = await send<RegulationAnswer>("/api/regulation", { json: { question: text } });
+    const r = await send<Answer>("/api/regulation", { json: { question: text } });
     if (r) setResult({ ...r, question: text });
   }
 
@@ -89,6 +91,11 @@ export function RegulationPanel({
 
       {result ? (
         <Card title="Answer" subtitle={result.question}>
+          {result.notice ? (
+            <div className="mb-4">
+              <Note tone="warning">{result.notice}</Note>
+            </div>
+          ) : null}
           {result.unsupported.length > 0 ? (
             <div className="mb-4">
               <Note tone="warning">
@@ -117,8 +124,10 @@ export function RegulationPanel({
             )}
           </p>
           <p className="mt-4 text-[12.5px] text-muted">
-            Answered by {result.model} over {result.corpus} ({result.corpusHash.slice(0, 12)}),{" "}
-            {result.retriever}, in {result.seconds.toFixed(1)} s.
+            {result.model === "none" ? "Matched in" : `Answered by ${result.model} from`}{" "}
+            {result.corpus}
+            {result.corpusHash ? ` (${result.corpusHash.slice(0, 12)})` : ""}, {result.retriever},
+            in {result.seconds.toFixed(1)} s.
           </p>
         </Card>
       ) : null}
@@ -154,7 +163,29 @@ export function RegulationPanel({
         </Card>
       ) : null}
 
-      {result && others.length > 0 ? (
+      {result && cited.length === 0 && others.length > 0 ? (
+        <Card title="Matching passages" subtitle="Read the source before relying on it.">
+          <ul className="space-y-4">
+            {others.map((p) => (
+              <li
+                key={p.chunkId}
+                id={`passage-${p.chunkId}`}
+                className="rounded-xl border border-line bg-surface-2 p-4"
+              >
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="text-[13.5px] font-medium text-ink">{p.docTitle}</span>
+                  {p.section ? <span className="text-[13px] text-muted">{p.section}</span> : null}
+                </div>
+                <p className="whitespace-pre-line text-[13.5px] leading-[1.7] text-ink-2">
+                  {p.text}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {result && cited.length > 0 && others.length > 0 ? (
         <details className="rounded-2xl border border-line bg-surface px-6 py-4">
           <summary className="cursor-pointer text-[14px] font-medium text-ink">
             Other passages retrieved but not cited ({others.length})
@@ -177,7 +208,9 @@ export function RegulationPanel({
 
       {!result ? (
         <p className="text-[12.5px] text-muted">
-          Served by evalgate: {model}, corpus {corpus} ({corpusHash}).
+          {corpusHash
+            ? `Served by evalgate: ${model}, corpus ${corpus} (${corpusHash}).`
+            : `Answered from ${corpus}${model === "none" ? "" : ` by ${model}`}.`}
         </p>
       ) : null}
     </div>

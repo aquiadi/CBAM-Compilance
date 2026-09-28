@@ -425,6 +425,19 @@ async function main() {
   });
   step("two-factor: password alone refused, code signs in, recovery code turns it off");
 
+  // "Ask the regulation" answers with no evalgate service connected, from
+  // the built-in rulebook, with the passages behind the answer.
+  const asked = await owner.json("/api/regulation", {
+    method: "POST",
+    json: { question: "When is the first annual CBAM declaration due?" },
+  });
+  assert(asked.source === "rulebook", "answered from the built-in rulebook");
+  assert(
+    asked.passages.some((p) => p.text.includes("30 September 2027")),
+    "the passage with the deadline is returned",
+  );
+  step("ask the regulation: answered from the built-in rulebook with its passages");
+
   const log = await owner.request("/activity");
   const html = await log.text();
   assert(

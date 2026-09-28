@@ -1,6 +1,8 @@
 import { pageContext } from "@/lib/auth/context";
 import { isSyntheticCorpus, regulationConfigured, regulationHealth } from "@/lib/regulation";
-import { Card, Note, Page, PageHeader } from "@/components/ui";
+import { Note, Page, PageHeader } from "@/components/ui";
+import { aiLabel } from "@/lib/ai/client";
+import { rulebook } from "@/lib/rulebook";
 import { RegulationPanel } from "./regulation-panel";
 
 export const dynamic = "force-dynamic";
@@ -37,53 +39,45 @@ export default async function RegulationPage({
         }
       />
       <Page>
-        {!configured ? (
-          <Card
-            title="Not connected"
-            subtitle="Answers come from evalgate, a separate service that retrieves and cites the regulation."
-          >
-            <ol className="list-decimal space-y-2 pl-5 text-[14.5px] leading-[1.65] text-ink-2">
-              <li>
-                Build evalgate (<code>github.com/aquiadi/CI-harness</code>) with the real documents:
-                on a machine that can reach the EU sites, run{" "}
-                <code>make corpus PROFILE=&quot;+experiment=real&quot;</code> then{" "}
-                <code>make docker</code>. The documents are not in its repository, so an image built
-                straight from GitHub can only serve its synthetic test corpus.
-              </li>
-              <li>
-                Run that image as its own service (on Railway: New → Docker image) with{" "}
-                <code>EVALGATE_OVERRIDES=+experiment=real</code> and <code>EVALGATE_API_KEY</code>{" "}
-                set to a long random value.
-              </li>
-              <li>
-                On CarbonPass, set <code>EVALGATE_URL</code> to that service&apos;s address and{" "}
-                <code>EVALGATE_API_KEY</code> to the same value, then redeploy.
-              </li>
-            </ol>
-          </Card>
-        ) : !health ? (
-          <Note tone="warning">
-            The regulation service at the configured address is not answering. Check that it is
-            running and that <code>EVALGATE_URL</code> is right.
-          </Note>
-        ) : (
-          <div className="space-y-6">
-            {isSyntheticCorpus(health.corpus) ? (
-              <Note tone="critical">
-                <b>This service is serving its synthetic test corpus, which is not law.</b> Its
-                answers only show that the connection works. Start it with{" "}
-                <code>EVALGATE_OVERRIDES=+experiment=real</code> to answer from the real documents.
-              </Note>
-            ) : null}
-            <RegulationPanel
-              corpus={health.corpus}
-              corpusHash={health.corpus_hash.slice(0, 12)}
-              model={health.generator_model}
-              chunks={health.chunks}
-              initialQuestion={typeof q === "string" ? q.slice(0, 2000) : ""}
-            />
-          </div>
-        )}
+        <div className="space-y-6">
+          {configured && health && isSyntheticCorpus(health.corpus) ? (
+            <Note tone="critical">
+              <b>
+                The connected evalgate service is serving its synthetic test corpus, which is not
+                law.
+              </b>{" "}
+              Its answers only show that the connection works. Start it with{" "}
+              <code>EVALGATE_OVERRIDES=+experiment=real</code> to answer from the real documents.
+            </Note>
+          ) : null}
+          {configured && !health ? (
+            <Note tone="warning">
+              The evalgate service at <code>EVALGATE_URL</code> is not answering, so questions are
+              answered from the built-in rulebook for now.
+            </Note>
+          ) : null}
+          {!health ? (
+            <Note tone="accent">
+              Answers come from the <b>built-in rulebook</b>: the acts, CBAM factors, mark-ups,
+              prices and methods this calculator applies, each passage naming its source. For
+              answers from the full text of the regulation, connect an{" "}
+              <a
+                href="https://github.com/aquiadi/CI-harness"
+                className="text-accent underline underline-offset-2"
+              >
+                evalgate
+              </a>{" "}
+              service with <code>EVALGATE_URL</code> - see the README.
+            </Note>
+          ) : null}
+          <RegulationPanel
+            corpus={health ? health.corpus : "the CarbonPass rulebook"}
+            corpusHash={health ? health.corpus_hash.slice(0, 12) : ""}
+            model={health ? health.generator_model : (aiLabel() ?? "none")}
+            chunks={health ? health.chunks : rulebook().length}
+            initialQuestion={typeof q === "string" ? q.slice(0, 2000) : ""}
+          />
+        </div>
       </Page>
     </>
   );

@@ -41,7 +41,7 @@ adjustment, the certificate cost and a verifier-ready evidence pack out.
 | 🧮 **The EU's method, in tested code**      | Implementing Regulation 2025/2547 for emissions, 2025/2620 for free allocation, 2025/2621 for default values. AI never produces a figure.                                                       |
 | 🚦 **Twenty data-quality rules**            | kg read as tonnes, MU read as MWh, duplicates, gaps, implausible intensities - each with a severity; blockers cannot be waved away.                                                             |
 | 📏 **AI accuracy measured on every change** | A labelled document set replayed in CI; a change that makes reading worse fails the build. Numbers in the badges above.                                                                         |
-| 📖 **Ask the regulation**                   | Plain-language answers from [evalgate](https://github.com/aquiadi/CI-harness), every sentence cited to a passage and every citation checked.                                                    |
+| 📖 **Ask the regulation**                   | Plain-language answers, every sentence cited to a passage and every citation checked - from a built-in rulebook, or the full regulation via [evalgate](https://github.com/aquiadi/CI-harness).  |
 | 🧾 **Verifier-ready evidence**              | Emissions report (.xlsx), communication JSON, monitoring methodology and a verifier pack with SHA-256 checksums for every file.                                                                 |
 | 🔐 **Enterprise basics**                    | Organisations and four roles, two-factor sign-in, an append-only activity log, full export and deletion of an organisation's data.                                                              |
 
@@ -49,8 +49,8 @@ adjustment, the certificate cost and a verifier-ready evidence pack out.
 
 | Suite                            | Size               | What it proves                                                                                                                                                                                                     |
 | -------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit and integration (`vitest`)  | 190 tests          | Engine, SEFA, the 20 rules, regulatory tables, units, AI request handling for Claude and Groq, two-factor (RFC 6238 vectors), exports, and the database flows against a real embedded Postgres                     |
-| End to end (`scripts/smoke.mjs`) | 17 steps           | Sign-up to sign-out over HTTP against the production build: every screen and export, uploads, supplier portal, roles, password reset and two-factor sign-in - on Postgres, the embedded database and the container |
+| Unit and integration (`vitest`)  | 197 tests          | Engine, SEFA, the 20 rules, regulatory tables, units, AI request handling for Claude and Groq, two-factor (RFC 6238 vectors), exports, and the database flows against a real embedded Postgres                     |
+| End to end (`scripts/smoke.mjs`) | 18 steps           | Sign-up to sign-out over HTTP against the production build: every screen and export, uploads, supplier portal, roles, password reset and two-factor sign-in - on Postgres, the embedded database and the container |
 | Document-reading gate            | 10 documents       | Recorded model answers replayed and scored; fails on any rise in silent errors                                                                                                                                     |
 | Mapping eval                     | 9 cases            | The column mapper against labelled plant files; gated on the column **error** rate                                                                                                                                 |
 | CodeQL, `npm audit`              | every push; weekly | Security analysis of the code; known high or critical vulnerabilities in shipped dependencies fail the build                                                                                                       |
@@ -128,9 +128,10 @@ number traceable to the source file and row it came from.
   - a monitoring-methodology document;
   - a **verifier pack** (.zip) holding every export, every source file and every piece of evidence,
     each with a SHA-256 checksum.
-- **Ask the regulation.** Questions answered from the CBAM texts by an
-  [evalgate](https://github.com/aquiadi/CI-harness) service: every claim cites a passage, every
-  citation is checked against what was retrieved, and the passages sit under the answer to read.
+- **Ask the regulation.** Questions about the rules answered in plain words, every sentence cited
+  to a passage and every citation checked: from a built-in rulebook of the acts and tables the
+  engine applies, or from the full regulation text via an
+  [evalgate](https://github.com/aquiadi/CI-harness) service.
 - **Teams.** Organisations, several installations and years each, and four roles: owner, editor,
   viewer and verifier. An append-only activity log records who changed what. Two-factor sign-in
   with an authenticator app and recovery codes. Forgotten passwords are reset by e-mail when mail
@@ -569,12 +570,21 @@ give a number to quote to a customer or a verifier.
 
 ### Ask the regulation
 
-The page relays questions to an evalgate service and renders its answer with the passages it cites,
-each marked checked or not supported. It adds nothing to the answer path, so what evalgate's own CI
-measures is what the reader gets. The response is validated against evalgate's contract; a
-different or changed service fails with a message rather than rendering.
+The question box works on every installation, from one of two sources:
 
-To connect one:
+- **The built-in rulebook** (always there): 21 passages built from the same tables and statements
+  the engine applies - the acts it implements, the CBAM factor and CSCF per year, the default-value
+  mark-ups, published certificate prices, how SEE, SEFA and the obligation are calculated, the
+  data-quality rules - each naming its act. The configured AI (Groq or Claude) answers from the
+  passages that match and must cite them; a citation to anything it was not given is flagged. With
+  no AI configured, the matching passages are shown on their own.
+- **An evalgate service**, when `EVALGATE_URL` is set: answers from the full text of the
+  regulation it indexes, rendered with the passages it cites, each marked checked or not
+  supported. CarbonPass adds nothing to that answer path, so what evalgate's own CI measures is
+  what the reader gets; the response is validated against evalgate's contract. If the service is
+  down, questions fall back to the rulebook and say so.
+
+To connect evalgate:
 
 1. On a machine that can reach the EU document servers, in a checkout of evalgate:
    `make corpus PROFILE="+experiment=real"` then `make docker`. The documents are not in its
@@ -592,7 +602,7 @@ Methodology page is the reference.
 ## Development
 
 ```bash
-make check       # lint, format, types, fixture checksums, 190 tests, mapping and document gates
+make check       # lint, format, types, fixture checksums, 197 tests, mapping and document gates
 make build && make start          # production build, served the way the container serves it
 make smoke                        # end-to-end over HTTP against the running server
 ```
