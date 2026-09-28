@@ -96,7 +96,6 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgres://carbonpass:carbonpass@localhost:5432/carbonpass' || '' }}
-      CARBONPASS_DATA_DIR: ${{ runner.temp }}/carbonpass-data
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -112,7 +111,8 @@ jobs:
       # against the production server.
       - name: Start the production server
         run: |
-          PORT=3000 npm run start:standalone > server.log 2>&1 &
+          PORT=3000 CARBONPASS_DATA_DIR="$RUNNER_TEMP/carbonpass-data" \
+            npm run start:standalone > server.log 2>&1 &
           for i in $(seq 1 60); do
             curl -sf http://localhost:3000/api/health && exit 0
             sleep 2
