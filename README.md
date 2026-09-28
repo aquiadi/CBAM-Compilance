@@ -30,6 +30,14 @@ number traceable to the source file and row it came from.
   header row and sheet, maps columns to a canonical schema (a model if configured, otherwise a
   deterministic mapper), and shows you the mapping to review before any row counts. Units are never
   assumed: a row with no unit, or an unrecognised one, is rejected with a reason.
+- **Read documents.** Fuel invoices, electricity bills, material receipts and weighbridge slips,
+  as PDFs, scans or phone photos. With a model key, Claude reads each document into proposed line
+  items. Every item comes with the words it was read from, and a PDF's figures are cross-checked
+  against the document's own text; a figure the model reports but the text does not contain is
+  flagged. A person checks every line next to the document. Only then does it become a draft
+  dataset, which still goes through mapping, unit resolution, the rules and confirmation like any
+  spreadsheet. Without a key the same screen is for typing the figures in. Either way the document
+  is kept as evidence and linked to what was read from it.
 - **Calculate.** It applies the definitive-period methodology (Implementing Regulation (EU)
   2025/2547) to reach attributed emissions per process, then specific embedded emissions per CN
   code, resolving on-site precursors in dependency order: DRI → billets → rebar.
@@ -67,6 +75,10 @@ number traceable to the source file and row it came from.
   settings sit under **More**.
 - **Overview** always shows readiness, the single next step and the three figures that matter.
   Charts and tables that explain them are folded under **More detail**.
+- **Light, dark or automatic**: the switch is at the bottom of the menu (and top right on the landing
+  and sign-in pages). Automatic follows the device.
+- **Any screen**: on phones and tablets the menu slides in from the ☰ button, and every page
+  reflows to one column.
 
 ## The demo
 
@@ -176,7 +188,7 @@ validates them all at startup; a bad value stops the process with the variable n
 | `CARBONPASS_SIGNUP`        | `open`            | `invite` allows new accounts only through an invitation link      |
 | `APP_URL`                  | from the request  | Base URL for invitation and supplier links                        |
 | `CARBONPASS_MAX_UPLOAD_MB` | `4`               | Largest accepted upload                                           |
-| `ANTHROPIC_API_KEY`        | unset             | Enables the model for mapping, triage and the memo                |
+| `ANTHROPIC_API_KEY`        | unset             | Enables document reading, and the model for mapping, triage, memo |
 | `CARBONPASS_MODEL`         | `claude-opus-5`   | Model used when a key is set                                      |
 | `CARBONPASS_ETS_PRICE_EUR` | `75`              | Price for quarters not yet published; each workspace can override |
 | `CARBONPASS_INR_PER_EUR`   | `92`              | For showing cost in rupees                                        |
@@ -330,7 +342,7 @@ says which one produced each result.
 ## Development
 
 ```bash
-make check       # lint, format, types, fixture checksums, 119 tests, mapping eval
+make check       # lint, format, types, fixture checksums, 138 tests, mapping eval
 make build && make start          # production build, served the way the container serves it
 make smoke                        # end-to-end over HTTP against the running server
 ```
@@ -371,6 +383,7 @@ src/
     declaration.ts         Assembly and machine-readable exports
   lib/ingest/              Upload reading, mapping, materialisation
   lib/ai/                  Optional model layer with deterministic twins
+    extract.ts             Reading bills, receipts and photos, with the cross-check
   lib/db/                  Postgres / PGlite driver and migrations
   lib/auth/                Accounts, sessions, roles
   lib/workspace/           Versioned workspace state, datasets, demo seed
@@ -394,8 +407,10 @@ src/
 - **The XLSX report follows the structure of the communication template**; it is not the
   Commission's own file. The monitoring methodology is a document for the verifier, not a
   Commission-format monitoring plan.
-- **It reads CSV and XLSX only.** PDFs are accepted as evidence and included in the verifier pack,
-  but figures are not extracted from them.
+- **Document reading needs a model key** (`ANTHROPIC_API_KEY`). Without one, documents are stored
+  and figures are entered by hand. Photos and scans have no text layer, so their figures cannot be
+  cross-checked automatically and are marked "check by eye". iPhone HEIC photos must be shared as
+  JPEG. Word files must be saved as PDF.
 - **It sends no e-mail.** Invitation and supplier links are copied and sent by you. There is no
   self-service password reset yet.
 - **Production route per process is operator-configured** (Settings → Installation), and it selects
@@ -403,8 +418,10 @@ src/
   value, column and route indicator used for each good.
 - **Shared site activities are attributed by configured alias, not allocated.** For example, diesel
   for material handling lands on the DRI kiln because the installation configuration says so.
-- **The model path has not been run against a live API here**: no key was available during
-  development. Every figure above came from the deterministic path.
+- **The model paths have not been run against a live API here**: no key was available during
+  development. The requests and the handling of every kind of answer are unit-tested against a
+  stubbed client, but reading accuracy on real bills has not been measured yet. Every figure above
+  came from the deterministic path.
 
 ---
 

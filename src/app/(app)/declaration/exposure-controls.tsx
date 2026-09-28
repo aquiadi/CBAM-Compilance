@@ -78,7 +78,7 @@ export function ExposureControls({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
         <label className="block">
           <div className="flex items-baseline justify-between">
             <span className="text-[13px] font-medium text-ink-2">

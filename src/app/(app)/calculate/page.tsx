@@ -107,7 +107,7 @@ export default async function CalculatePage() {
                 }
                 padded={false}
               >
-                <div className="grid grid-cols-4 gap-px bg-line">
+                <div className="grid grid-cols-2 gap-px bg-line md:grid-cols-4">
                   {[
                     { label: "Direct", value: e.directT, unit: "tCO₂e" },
                     { label: "Indirect", value: e.indirectT, unit: "tCO₂e" },

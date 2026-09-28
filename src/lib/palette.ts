@@ -6,17 +6,18 @@
  * reading `SERIES.direct` in a server-rendered page would yield undefined and
  * silently paint the mark black. Plain data belongs in a plain module.
  *
- * These are the validated LIGHT categorical steps, checked against the card
- * surface (#ffffff): lightness band, chroma floor, adjacent-pair CVD and
- * normal-vision separation pass. Aqua and yellow are below 3:1 on white, so
- * charts using them carry visible labels. Assign by entity in this fixed
- * order; never cycle, never reassign by rank.
+ * Series and chart chrome are CSS variables defined in globals.css, so the same
+ * chart re-steps itself for light and dark mode: each mode's values are the
+ * validated categorical steps for that mode's card surface. Charts apply them
+ * through `style` (fill, stroke, background), never SVG presentation
+ * attributes, which not every browser resolves variables in. Assign by entity
+ * in this fixed order; never cycle, never reassign by rank.
  */
 export const SERIES = {
-  direct: "#eb6834", // orange - combustion
-  indirect: "#2a78d6", // blue - electricity
-  precursor: "#1baf7a", // aqua - precursors
-  other: "#eda100", // yellow - process chemistry
+  direct: "var(--color-series-1)", // orange - combustion
+  indirect: "var(--color-series-2)", // blue - electricity
+  precursor: "var(--color-series-3)", // aqua - precursors
+  other: "var(--color-series-4)", // yellow - process chemistry
 } as const;
 
 /** Reserved status steps for marks (bars, fills). Never reused as a series colour. */
@@ -27,26 +28,22 @@ export const STATUS = {
   critical: "#d03b3b",
 } as const;
 
-/**
- * Status as text on white. The mark steps above are too light to read as
- * type (warning is 1.8:1), so labels and headline figures use these darker
- * steps of the same hues.
- */
+/** Status as text, legible on both modes' surfaces (see globals.css). */
 export const STATUS_INK = {
-  good: "#117a2c",
-  warning: "#95610a",
-  serious: "#b04a1f",
-  critical: "#c0312f",
+  good: "var(--color-good)",
+  warning: "var(--color-warning)",
+  serious: "var(--color-serious)",
+  critical: "var(--color-critical)",
 } as const;
 
-export const NEUTRAL = "#9a9aa0";
+export const NEUTRAL = "var(--color-muted)";
 
 export const CHROME = {
-  surface: "#ffffff",
-  grid: "#ecebe5",
-  axis: "#d6d2c7",
-  muted: "#686c74",
-  ink2: "#4a4e56",
+  surface: "var(--color-surface)",
+  grid: "var(--color-chart-grid)",
+  axis: "var(--color-chart-axis)",
+  muted: "var(--color-muted)",
+  ink2: "var(--color-ink-2)",
 } as const;
 
 /** Score-to-colour for bar fills, shared by the meter, the mini bars and the readiness table. */
@@ -68,6 +65,6 @@ export function scoreColor(score: number): string {
 export function bandColor(band: string): string {
   if (band === "not_filable") return STATUS_INK.critical;
   if (band === "verification_ready") return STATUS_INK.good;
-  if (band === "defensible") return "#1f5bd8";
+  if (band === "defensible") return "var(--color-accent)";
   return STATUS_INK.warning;
 }

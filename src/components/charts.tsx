@@ -102,16 +102,17 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
               x2={width - padding.right}
               y1={y(t)}
               y2={y(t)}
-              stroke={t === 0 ? AXIS : GRID}
+
               strokeWidth="1"
+              style={{ stroke: t === 0 ? AXIS : GRID }}
             />
             <text
               x={padding.left - 8}
               y={y(t) + 3.5}
               textAnchor="end"
-              fill={MUTED}
+
               fontSize="11.5"
-              style={{ fontVariantNumeric: "tabular-nums" }}
+              style={{ fill: MUTED, fontVariantNumeric: "tabular-nums" }}
             >
               {fmt(Math.round(t))}
             </text>
@@ -132,9 +133,10 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
                   x2={padding.left + band * (i + 1) + band / 2 - barW / 2}
                   y1={y(b.end)}
                   y2={y(b.end)}
-                  stroke={AXIS}
+
                   strokeWidth="1"
                   strokeDasharray="2 2"
+                  style={{ stroke: AXIS }}
                 />
               ) : null}
               <rect
@@ -143,8 +145,9 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
                 width={barW}
                 height={h}
                 rx="3"
-                fill={b.color}
+
                 opacity={hover === null || isHover ? 1 : 0.45}
+                style={{ fill: b.color }}
               />
               {/* Hit target is wider than the mark. */}
               <rect
@@ -160,8 +163,9 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
                 x={cx}
                 y={height - padding.bottom + 15}
                 textAnchor="middle"
-                fill={INK2}
+
                 fontSize="12"
+                style={{ fill: INK2 }}
               >
                 {b.label.length > 16 ? `${b.label.slice(0, 15)}…` : b.label}
               </text>
@@ -169,9 +173,9 @@ export function Waterfall({ steps, unit = "tCO₂e" }: { steps: WaterfallStep[];
                 x={cx}
                 y={height - padding.bottom + 29}
                 textAnchor="middle"
-                fill={MUTED}
+
                 fontSize="11.5"
-                style={{ fontVariantNumeric: "tabular-nums" }}
+                style={{ fill: MUTED, fontVariantNumeric: "tabular-nums" }}
               >
                 {b.total ? fmt(b.value) : `${b.value >= 0 ? "+" : ""}${fmt(b.value)}`}
               </text>
@@ -369,9 +373,10 @@ export function TrajectoryLine({
                 x2="16"
                 y1="2"
                 y2="2"
-                stroke={INK2}
+
                 strokeWidth="2"
                 strokeDasharray="4 3"
+                style={{ stroke: INK2 }}
               />
             </svg>
             {defaultLabel}
@@ -381,8 +386,8 @@ export function TrajectoryLine({
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img">
         <defs>
           <linearGradient id={`grad-${id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={SERIES.indirect} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={SERIES.indirect} stopOpacity="0" />
+            <stop offset="0%" stopOpacity="0.18" style={{ stopColor: SERIES.indirect }} />
+            <stop offset="100%" stopOpacity="0" style={{ stopColor: SERIES.indirect }} />
           </linearGradient>
         </defs>
 
@@ -393,15 +398,15 @@ export function TrajectoryLine({
               x2={width - padding.right}
               y1={padding.top + plotH * (1 - f)}
               y2={padding.top + plotH * (1 - f)}
-              stroke={f === 0 ? AXIS : GRID}
+              style={{ stroke: f === 0 ? AXIS : GRID }}
             />
             <text
               x={padding.left - 8}
               y={padding.top + plotH * (1 - f) + 3.5}
               textAnchor="end"
-              fill={MUTED}
+
               fontSize="11.5"
-              style={{ fontVariantNumeric: "tabular-nums" }}
+              style={{ fill: MUTED, fontVariantNumeric: "tabular-nums" }}
             >
               {fmtEur(max * f)}
             </text>
@@ -413,19 +418,21 @@ export function TrajectoryLine({
           <path
             d={defaultPath}
             fill="none"
-            stroke={INK2}
+
             strokeWidth="2"
             strokeDasharray="5 4"
             strokeLinejoin="round"
+            style={{ stroke: INK2 }}
           />
         ) : null}
         <path
           d={path}
           fill="none"
-          stroke={SERIES.indirect}
+
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
+          style={{ stroke: SERIES.indirect }}
         />
 
         {points.map((p, i) => (
@@ -434,9 +441,9 @@ export function TrajectoryLine({
               x={x(i)}
               y={height - padding.bottom + 16}
               textAnchor="middle"
-              fill={hover === i ? INK2 : MUTED}
+
               fontSize="11.5"
-              style={{ fontVariantNumeric: "tabular-nums" }}
+              style={{ fill: hover === i ? INK2 : MUTED, fontVariantNumeric: "tabular-nums" }}
             >
               {p.year}
             </text>
@@ -446,17 +453,18 @@ export function TrajectoryLine({
                 x2={x(i)}
                 y1={padding.top}
                 y2={padding.top + plotH}
-                stroke={AXIS}
+
                 strokeWidth="1"
+                style={{ stroke: AXIS }}
               />
             ) : null}
             <circle
               cx={x(i)}
               cy={y(p.costEur)}
               r={hover === i ? 5 : 3.5}
-              fill={SERIES.indirect}
-              stroke={SURFACE}
+
               strokeWidth="2"
+              style={{ fill: SERIES.indirect, stroke: SURFACE }}
             />
             {/* Hit target far larger than the mark. */}
             <rect
@@ -475,9 +483,9 @@ export function TrajectoryLine({
         <text
           x={x(points.length - 1) + 10}
           y={y(last.costEur) + 4}
-          fill={INK2}
+
           fontSize="12.5"
-          style={{ fontVariantNumeric: "tabular-nums" }}
+          style={{ fill: INK2, fontVariantNumeric: "tabular-nums" }}
         >
           {fmtEur(last.costEur)}
         </text>
@@ -486,9 +494,9 @@ export function TrajectoryLine({
           <text
             x={x(points.length - 1) + 10}
             y={y(last.defaultCostEur) + 4}
-            fill={MUTED}
+
             fontSize="12.5"
-            style={{ fontVariantNumeric: "tabular-nums" }}
+            style={{ fill: MUTED, fontVariantNumeric: "tabular-nums" }}
           >
             {fmtEur(last.defaultCostEur)}
           </text>

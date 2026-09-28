@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
   agentRules: false,
   // Loaded with Node's own require at runtime: PGlite ships WebAssembly and a
   // data file it locates relative to itself, and exceljs pulls in Node streams.
-  serverExternalPackages: ["@electric-sql/pglite", "exceljs"],
+  serverExternalPackages: ["@electric-sql/pglite", "exceljs", "unpdf"],
   outputFileTracingIncludes: {
     // Creating the demo workspace reads the demo files from disk.
     "/api/workspaces": ["./data/demo/**/*"],

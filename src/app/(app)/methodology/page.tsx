@@ -61,7 +61,7 @@ export default async function MethodologyPage() {
             title="How a number is produced"
             subtitle="The division of labour between the engine and the model."
           >
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <h3 className="mb-2 text-[12.5px] font-medium uppercase tracking-[0.12em] text-muted">
                   The model may
@@ -138,7 +138,7 @@ export default async function MethodologyPage() {
             </Table>
           </Card>
 
-          <div className="grid grid-cols-3 gap-7">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
             <Card
               title="CBAM factor and CSCF"
               subtitle="Share of EU free allocation still granted; multiplies the benchmark in the free allocation adjustment."

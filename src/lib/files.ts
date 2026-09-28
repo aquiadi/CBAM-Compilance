@@ -35,12 +35,15 @@ export interface FileLinks {
   supplierName?: string;
   findingCode?: string;
   datasetId?: string;
+  /** Datasets read from this document (bills, receipts, photos). */
+  datasetIds?: string[];
 }
 
 export const EVIDENCE_CATEGORIES = {
   verification_report: "Verification report (accredited verifier)",
   supplier_communication: "Supplier CBAM communication",
   electricity_bill: "Electricity bill / DISCOM statement",
+  purchase_receipt: "Purchase receipt, delivery note or weighbridge slip",
   fuel_invoice: "Fuel invoice or lab analysis",
   carbon_price: "Carbon price payment evidence",
   monitoring_plan: "Monitoring plan / methodology document",
@@ -151,6 +154,20 @@ export async function getFile(
   const row = rows[0];
   if (!row) return null;
   return { ...toMeta(row), bytes: new Uint8Array(row.content) };
+}
+
+/** Merges links into a stored file's links, e.g. the datasets read from a document. */
+export async function addFileLinks(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+  links: FileLinks,
+): Promise<void> {
+  await q.query("UPDATE files SET links = links || $3::jsonb WHERE workspace_id = $1 AND id = $2", [
+    workspaceId,
+    id,
+    JSON.stringify(links),
+  ]);
 }
 
 export async function deleteFile(q: Queryable, workspaceId: string, id: string): Promise<boolean> {

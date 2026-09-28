@@ -67,8 +67,8 @@ export function NewWorkspace({ needsOrganisation }: { needsOrganisation: boolean
           One workspace per installation and reporting year. You will define the production
           processes next, then upload your files.
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <Field label="Installation name" className="col-span-2">
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Installation name" className="md:col-span-2">
             <Input
               required
               value={form.installationName}
@@ -76,7 +76,7 @@ export function NewWorkspace({ needsOrganisation }: { needsOrganisation: boolean
               placeholder="e.g. Raigarh Works"
             />
           </Field>
-          <Field label="Operator (legal entity)" className="col-span-2">
+          <Field label="Operator (legal entity)" className="md:col-span-2">
             <Input
               required
               value={form.operator}

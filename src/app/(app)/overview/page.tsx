@@ -164,9 +164,9 @@ export default async function OverviewPage() {
       <Page>
         <section
           data-tour="status"
-          className="grid animate-rise grid-cols-[260px_1fr] overflow-hidden rounded-3xl border border-line bg-surface shadow-[var(--shadow-card)]"
+          className="grid animate-rise grid-cols-1 md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr] overflow-hidden rounded-3xl border border-line bg-surface shadow-[var(--shadow-card)]"
         >
-          <div className="border-r border-line bg-surface-2 px-8 py-8">
+          <div className="border-b border-line bg-surface-2 px-6 py-7 md:border-b-0 md:border-r md:px-8 md:py-8">
             <div className="text-[13px] font-medium text-muted">Readiness</div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="font-display text-[72px] leading-none" style={{ color }}>
@@ -187,7 +187,7 @@ export default async function OverviewPage() {
               />
             </div>
           </div>
-          <div className="flex flex-col justify-between gap-8 px-9 py-8">
+          <div className="flex flex-col justify-between gap-8 px-6 py-7 md:px-9 md:py-8">
             <div>
               <div className="text-[13px] font-medium text-muted">Your next step</div>
               <h2 className="mt-2 font-display text-[30px] leading-tight text-ink">{next.title}</h2>
@@ -196,7 +196,7 @@ export default async function OverviewPage() {
                 {next.cta} <span aria-hidden>→</span>
               </Link>
             </div>
-            <ol className="grid grid-cols-5 gap-3 border-t border-line pt-6">
+            <ol className="grid grid-cols-2 gap-x-3 gap-y-5 border-t border-line pt-6 sm:grid-cols-3 xl:grid-cols-5">
               {path.map((p, i) => (
                 <li key={p.label}>
                   <Link href={p.href} className="group block">
@@ -225,7 +225,10 @@ export default async function OverviewPage() {
           </div>
         </section>
 
-        <div className="mt-8 grid grid-cols-3 gap-6" data-tour="key-figures">
+        <div
+          className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6"
+          data-tour="key-figures"
+        >
           <Stat
             label={`CBAM certificates, ${d.period.year}`}
             value={fmt(d.exposure.netCertificates)}
@@ -270,7 +273,7 @@ export default async function OverviewPage() {
             summary="More detail"
             hint="Where the emissions come from, the cost to 2034, readiness in detail and the source files"
           >
-            <div className="grid grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               <div>
                 <h3 className="text-[15px] font-semibold text-ink">
                   Where the emissions come from
@@ -465,7 +468,7 @@ function GettingStarted({ name, hasProcesses }: { name: string; hasProcesses: bo
         description="Three steps from spreadsheets to a verifiable CBAM report. Want to see a finished example first? Create the demo workspace from the workspace menu."
       />
       <Page>
-        <ol className="grid grid-cols-3 gap-6" data-tour="status">
+        <ol className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6" data-tour="status">
           {steps.map((s, i) => (
             <li key={s.title}>
               <Link

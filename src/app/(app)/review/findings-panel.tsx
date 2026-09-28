@@ -128,8 +128,8 @@ export function FindingsPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1">
           {(["all", "blocker", "warning", "info"] as const).map((key) => (
             <button
               key={key}
@@ -138,12 +138,14 @@ export function FindingsPanel({
               className={cn(
                 "rounded-full px-4 py-1.5 text-[13.5px] font-medium capitalize transition-colors",
                 filter === key
-                  ? "bg-ink text-white"
+                  ? "bg-inverse text-on-inverse"
                   : "text-ink-2 hover:bg-surface-2 hover:text-ink",
               )}
             >
               {key}{" "}
-              <span className={cn("tnum ml-0.5", filter === key ? "text-white/70" : "text-muted")}>
+              <span
+                className={cn("tnum ml-0.5", filter === key ? "text-on-inverse/70" : "text-muted")}
+              >
                 {counts[key]}
               </span>
             </button>
@@ -183,12 +185,12 @@ export function FindingsPanel({
               key={key}
               data-tour={i === 0 ? "findings" : undefined}
               className={cn(
-                "rounded-2xl border bg-surface p-6 shadow-[var(--shadow-card)]",
+                "rounded-2xl border bg-surface p-5 shadow-[var(--shadow-card)] md:p-6",
                 f.severity === "blocker" ? "border-critical/30" : "border-line",
                 (excluded || f.acknowledged) && "opacity-60",
               )}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <div className="flex min-w-0 items-start gap-3">
                   <SeverityBadge severity={f.severity} />
                   <div className="min-w-0">
@@ -224,7 +226,7 @@ export function FindingsPanel({
                         "shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-40",
                         excluded
                           ? "border-line-strong bg-surface text-ink-2 hover:text-ink"
-                          : "border-critical bg-critical text-white hover:opacity-90",
+                          : "border-critical bg-critical text-on-inverse hover:opacity-90",
                       )}
                     >
                       {busy === key

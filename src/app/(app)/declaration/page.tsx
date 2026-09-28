@@ -92,7 +92,7 @@ export default async function DeclarationPage() {
           title="Downloads"
           subtitle="Generated from the current data every time you download."
         >
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {EXPORTS.map((x) => (
               <a
                 key={x.format}
@@ -223,8 +223,8 @@ export default async function DeclarationPage() {
           </Card>
         </div>
 
-        <div className="mt-8 grid grid-cols-3 gap-7">
-          <div className="col-span-2">
+        <div className="mt-8 grid grid-cols-1 gap-7 lg:grid-cols-3">
+          <div className="lg:col-span-2">
             <Card
               title="Certificate cost"
               subtitle="Certificates are bought and surrendered by the EU importer; this is the cost your data implies for them."
@@ -333,7 +333,7 @@ export default async function DeclarationPage() {
               </Table>
             </Card>
 
-            <div className="grid grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               <Card title="Engine notes">
                 {e.notes.length === 0 ? (
                   <p className="text-[13px] text-muted">No notes.</p>

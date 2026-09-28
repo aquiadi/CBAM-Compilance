@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mark } from "@/components/app-shell";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { env } from "@/config/env";
 import { optionalUser } from "@/lib/auth/context";
 
@@ -20,7 +21,7 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-plane text-ink">
       <header className="sticky top-0 z-20 border-b border-line/70 bg-plane/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between px-8 py-4">
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-5 py-3.5 md:px-8 md:py-4">
           <Link href="/" className="flex items-center gap-3">
             <Mark />
             <span className="font-display text-[22px] leading-none">CarbonPass</span>
@@ -39,7 +40,10 @@ export default async function LandingPage() {
               Questions
             </a>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="hidden sm:block">
+              <ThemeToggle compact />
+            </div>
             {signedIn ? (
               <Link href="/overview" className="btn-primary">
                 Open your workspace <span aria-hidden>→</span>
@@ -66,17 +70,17 @@ export default async function LandingPage() {
       {/* ------------------------------------------------------------ hero */}
       <section className="relative overflow-hidden">
         <div className="ledger pointer-events-none absolute inset-0 opacity-50 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
-        <div className="relative mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-16 px-8 pb-24 pt-20 lg:grid-cols-[1.15fr_1fr]">
+        <div className="relative mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-12 px-5 pb-16 pt-12 md:px-8 md:pb-24 md:pt-20 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
           <div className="animate-rise">
             <div className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-[13px] text-ink-2">
               <span className="h-1.5 w-1.5 rounded-full bg-series-1" aria-hidden />
               EU CBAM · the cost phase began on 1 January 2026
             </div>
-            <h1 className="mt-7 font-display text-[64px] leading-[1.02] tracking-[-0.02em]">
+            <h1 className="mt-7 font-display text-[40px] leading-[1.04] tracking-[-0.02em] sm:text-[52px] lg:text-[64px] lg:leading-[1.02]">
               Your EU buyers now pay for your carbon.{" "}
               <span className="italic text-ink-2">Give them the real number.</span>
             </h1>
-            <p className="mt-7 max-w-[54ch] text-[18px] leading-[1.65] text-ink-2">
+            <p className="mt-6 max-w-[54ch] text-[16.5px] leading-[1.65] text-ink-2 md:mt-7 md:text-[18px]">
               CarbonPass turns the spreadsheets your plant already keeps into the verified emissions
               data EU importers need under CBAM - so they are not forced onto the EU&apos;s default
               values, which are set high on purpose.
@@ -151,7 +155,7 @@ export default async function LandingPage() {
             {
               n: "01",
               title: "Reads your files the way they are",
-              body: "SAP extracts, electricity-board bills, despatch registers, in tonnes, kilolitres, MU and lakhs. It finds the header row, works out what each column means, and shows you before anything counts.",
+              body: "SAP extracts and despatch registers in tonnes, kilolitres, MU and lakhs - and the paper behind them: invoices, electricity bills and phone photos of weighbridge slips, read by AI and checked by you. Nothing counts until you have seen how it was read.",
             },
             {
               n: "02",
@@ -290,7 +294,7 @@ export default async function LandingPage() {
             },
             {
               q: "What files can I upload?",
-              a: "CSV and Excel (.xlsx) exports, as they come out of SAP, Tally, your electricity board's portal or your despatch register. PDFs such as bills and verification reports can be stored as evidence.",
+              a: "CSV and Excel (.xlsx) exports from SAP, Tally, your electricity board's portal or your despatch register - and PDFs or photos of bills, invoices, receipts and weighbridge slips. With an AI key those documents are read for you, each figure shown with the words it came from; you confirm every line.",
             },
             {
               q: "Where does my data live?",
@@ -314,14 +318,14 @@ export default async function LandingPage() {
       </Section>
 
       {/* ------------------------------------------------------------ cta */}
-      <section className="px-8 pb-24">
-        <div className="mx-auto max-w-[1180px] rounded-3xl bg-ink px-12 py-16 text-white">
+      <section className="px-5 pb-16 md:px-8 md:pb-24">
+        <div className="mx-auto max-w-[1180px] rounded-3xl bg-panel px-7 py-12 text-on-panel md:px-12 md:py-16">
           <div className="grid items-center gap-10 md:grid-cols-[1.4fr_1fr]">
             <div>
-              <h2 className="font-display text-[44px] leading-[1.08]">
+              <h2 className="font-display text-[32px] leading-[1.08] md:text-[44px]">
                 See it on a real-shaped steel plant in two minutes.
               </h2>
-              <p className="mt-4 max-w-[52ch] text-[16.5px] leading-[1.65] text-white/70">
+              <p className="mt-4 max-w-[52ch] text-[16.5px] leading-[1.65] text-on-panel/70">
                 Create a free account, open the demo, and follow the tour. Nothing to install, and
                 you can delete it whenever you like.
               </p>
@@ -329,7 +333,7 @@ export default async function LandingPage() {
             <div className="flex md:justify-end">
               <Link
                 href={signedIn ? "/overview" : open ? "/signup" : "/login"}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-[15.5px] font-medium text-ink transition-transform hover:-translate-y-px"
+                className="inline-flex items-center gap-2 rounded-full bg-on-panel px-7 py-3.5 text-[15.5px] font-medium text-panel transition-transform hover:-translate-y-px"
               >
                 {signedIn ? "Open your workspace" : open ? "Start with the demo" : "Sign in"}{" "}
                 <span aria-hidden>→</span>
@@ -340,7 +344,7 @@ export default async function LandingPage() {
       </section>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-8 py-8 text-[13px] text-muted">
+        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-5 py-8 md:px-8 text-[13px] text-muted">
           <div className="flex items-center gap-2.5">
             <Mark size={22} />
             <span>CarbonPass · open source (MIT)</span>
@@ -374,7 +378,8 @@ function Section({
     <section
       id={id}
       className={
-        "scroll-mt-20 px-8 py-24 " + (tone === "white" ? "border-y border-line bg-surface" : "")
+        "scroll-mt-20 px-5 py-16 md:px-8 md:py-24 " +
+        (tone === "white" ? "border-y border-line bg-surface" : "")
       }
     >
       <div className="mx-auto max-w-[1180px]">
@@ -382,12 +387,12 @@ function Section({
           <div className="text-[13px] font-medium uppercase tracking-[0.16em] text-muted">
             {eyebrow}
           </div>
-          <h2 className="mt-4 font-display text-[44px] leading-[1.08] tracking-[-0.015em]">
+          <h2 className="mt-4 font-display text-[32px] leading-[1.08] tracking-[-0.015em] md:text-[44px]">
             {title}
           </h2>
           {lede ? <p className="mt-5 text-[17px] leading-[1.65] text-ink-2">{lede}</p> : null}
         </div>
-        <div className="mt-14">{children}</div>
+        <div className="mt-10 md:mt-14">{children}</div>
       </div>
     </section>
   );
@@ -401,7 +406,7 @@ function DemoReceipt() {
         className="absolute -inset-3 rotate-[1.5deg] rounded-[28px] border border-line bg-surface-2"
         aria-hidden
       />
-      <div className="relative rounded-3xl border border-line bg-surface p-8 shadow-[var(--shadow-float)]">
+      <div className="relative rounded-3xl border border-line bg-surface p-6 shadow-[var(--shadow-float)] md:p-8">
         <div className="flex items-center justify-between text-[12.5px] text-muted">
           <span className="font-medium uppercase tracking-[0.14em]">Demo plant · 2026</span>
           <span>Jan – Aug</span>

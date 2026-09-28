@@ -143,7 +143,7 @@ export function SupplierManager({
             title="Request data from a supplier"
             subtitle="Creates a link to send to the supplier. Accepted values apply to every delivery of that good from that supplier in this workspace."
           >
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Field label="Supplier name" hint="Exactly as it appears in your receipts file.">
                 <Input
                   value={form.supplierName}
@@ -164,7 +164,7 @@ export function SupplierManager({
                   placeholder="e.g. 7203 10 00"
                 />
               </Field>
-              <Field label="Message to the supplier (optional)" className="col-span-3">
+              <Field label="Message to the supplier (optional)" className="md:col-span-3">
                 <Textarea
                   value={form.message}
                   onChange={(e) => setForm({ ...form, message: e.target.value })}

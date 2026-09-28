@@ -4,6 +4,7 @@ import { isAiAvailable, MODEL } from "@/lib/ai/client";
 import { workspaceContext } from "@/lib/auth/context";
 import { DATASET_SCHEMAS } from "@/lib/ingest/schema";
 import { Badge, Card, Empty, fmt, Note, Page, PageHeader, Table, Td, Th } from "@/components/ui";
+import { DocumentReader } from "./document-reader";
 import { UploadForm } from "./upload-form";
 
 /**
@@ -23,15 +24,15 @@ export default async function IngestPage() {
         title="Data"
         description={
           <>
-            Files straight out of the plant&apos;s systems - SAP or Tally consumption extracts,
-            DISCOM bills, despatch registers, precursor receipts. Each column is mapped onto the
-            engine&apos;s schema and every free-text value resolved against the engine&apos;s own
-            tables; you review the mapping before a file counts.
+            Spreadsheets straight out of the plant&apos;s systems - SAP or Tally extracts, DISCOM
+            bills, despatch registers - and the paper trail behind them: invoices, receipts and
+            photos. Every column and every figure is checked against the engine&apos;s own tables,
+            and you review it before it counts.
           </>
         }
         actions={
           <Badge tone={isAiAvailable() ? "accent" : "neutral"}>
-            {isAiAvailable() ? `${MODEL} available` : "Deterministic mapper"}
+            {isAiAvailable() ? `AI: ${MODEL}` : "Rule-based mapping"}
           </Badge>
         }
       />
@@ -56,6 +57,26 @@ export default async function IngestPage() {
           >
             <UploadForm aiAvailable={isAiAvailable()} maxMb={env.CARBONPASS_MAX_UPLOAD_MB} />
           </Card>
+        ) : null}
+
+        {ctx.canWrite ? (
+          <div className="mt-8">
+            <Card
+              tour="documents"
+              title="Read a bill, receipt or photo"
+              subtitle={
+                isAiAvailable()
+                  ? "Fuel invoices, electricity bills, material receipts and weighbridge slips - as PDFs, scans or phone photos. The AI proposes each figure with the text it read it from; you check every line before it becomes a draft dataset."
+                  : "Fuel invoices, electricity bills, material receipts and weighbridge slips. With an AI key set the figures are read for you; without one you type them in next to the document, which is kept as evidence."
+              }
+            >
+              <DocumentReader
+                processes={state.installation.processes.map((p) => ({ id: p.id, name: p.name }))}
+                aiAvailable={isAiAvailable()}
+                maxMb={env.CARBONPASS_MAX_UPLOAD_MB}
+              />
+            </Card>
+          </div>
         ) : null}
 
         <div className="mt-8">

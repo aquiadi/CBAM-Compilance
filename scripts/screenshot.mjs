@@ -35,17 +35,40 @@ const SCREENS = [
 
 mkdirSync(OUT, { recursive: true });
 
+// SHOT_THEME=dark|light and SHOT_DEVICE=phone|tablet|desktop cover the
+// combinations a real visitor brings; the defaults are desktop, light.
+const THEME = process.env.SHOT_THEME ?? "light";
+const DEVICES = {
+  desktop: { viewport: { width: 1600, height: 1100 }, deviceScaleFactor: 2 },
+  tablet: {
+    viewport: { width: 820, height: 1180 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+  },
+  phone: {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  },
+};
+const DEVICE = DEVICES[process.env.SHOT_DEVICE ?? "desktop"] ?? DEVICES.desktop;
+
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 const browser = await chromium.launch(executablePath ? { executablePath } : {});
 const context = await browser.newContext({
-  viewport: { width: 1600, height: 1100 },
-  deviceScaleFactor: 2,
+  ...DEVICE,
+  colorScheme: THEME === "dark" ? "dark" : "light",
 });
 const page = await context.newPage();
 
 const errors = [];
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 page.on("pageerror", (e) => errors.push(String(e)));
+page.on("response", (r) => {
+  if (r.status() >= 400) errors.push(`${r.status()} ${r.request().method()} ${r.url()}`);
+});
 
 let failures = 0;
 
@@ -87,6 +110,21 @@ for (const [path, name] of SCREENS) {
     });
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    if (overflow > 1) {
+      failures++;
+      const culprits = await page.evaluate(() => {
+        const w = document.documentElement.clientWidth;
+        return [...document.querySelectorAll("body *")]
+          .filter((el) => el.getBoundingClientRect().right > w + 1)
+          .filter((el) => !el.parentElement?.closest(".overflow-x-auto"))
+          .slice(0, 4)
+          .map((el) => `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 80)}`);
+      });
+      console.error(`OVERFLOW ${path}: page is ${overflow}px wider than the screen`, culprits);
+    }
     const status = response?.status() ?? 0;
     if (status !== 200) failures++;
     console.log(`${status} ${path.padEnd(22)} -> ${name}.png`);

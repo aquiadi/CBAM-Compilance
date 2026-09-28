@@ -50,7 +50,7 @@ export function Button({
   variant?: "primary" | "secondary" | "danger" | "ghost";
 }) {
   const styles = {
-    primary: "border border-ink bg-ink text-white hover:bg-black",
+    primary: "border border-inverse bg-inverse text-on-inverse hover:opacity-90",
     secondary: "border border-line-strong bg-surface text-ink hover:border-ink",
     danger: "border border-critical/30 bg-critical/[0.06] text-critical hover:bg-critical/[0.12]",
     ghost: "border border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",

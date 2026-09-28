@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mark } from "@/components/app-shell";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-screen bg-plane lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <aside className="relative hidden overflow-hidden bg-ink px-14 py-12 text-white lg:flex lg:flex-col lg:justify-between">
+      <aside className="relative hidden overflow-hidden bg-panel px-14 py-12 text-on-panel lg:flex lg:flex-col lg:justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Mark onDark />
           <span className="font-display text-[22px] leading-none">CarbonPass</span>
@@ -26,24 +27,27 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               ["Set up your own plant", "Describe the processes, upload your files, review."],
             ].map(([t, b], i) => (
               <li key={t} className="flex gap-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/25 font-display text-[16px]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-on-panel/25 font-display text-[16px]">
                   {i + 1}
                 </span>
                 <span>
                   <span className="block text-[15.5px] font-medium">{t}</span>
-                  <span className="mt-0.5 block text-[14px] text-white/60">{b}</span>
+                  <span className="mt-0.5 block text-[14px] text-on-panel/60">{b}</span>
                 </span>
               </li>
             ))}
           </ol>
         </div>
-        <p className="max-w-[440px] text-[12.5px] leading-[1.6] text-white/45">
+        <p className="max-w-[440px] text-[12.5px] leading-[1.6] text-on-panel/50">
           Figures are computed by a deterministic engine from your data and the European
           Commission&apos;s published CBAM tables. A calculation aid, not legal advice.
         </p>
       </aside>
 
-      <main className="flex flex-col items-center justify-center px-6 py-16">
+      <main className="relative flex flex-col items-center justify-center px-5 py-16">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle compact />
+        </div>
         <Link href="/" className="mb-10 flex items-center gap-3 lg:hidden">
           <Mark />
           <span className="font-display text-[22px] leading-none text-ink">CarbonPass</span>

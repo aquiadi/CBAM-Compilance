@@ -3,34 +3,41 @@
 /*
  * CarbonPass design tokens.
  *
- * Paper, ink and one blue. The product is read by plant accountants and
- * sustainability leads who are new to CBAM, so the page should feel like a
- * well-set report rather than a control room: warm off-white paper, white
- * cards with generous padding, near-black ink, and colour spent only where it
- * carries meaning (a series in a chart, a status, the next action).
+ * Light: warm ochre paper, cream cards, warm near-black ink and one blue.
+ * Dark: the same warmth at night - brown-black paper rather than blue-black,
+ * cream ink, and every colour re-stepped for the dark surface rather than
+ * inverted. Colour is spent only where it means something: a chart series, a
+ * status, the next action.
  *
- * Series colours are the validated LIGHT categorical steps, checked against the
- * card surface (#ffffff): lightness band, chroma floor, adjacent-pair CVD and
- * normal-vision separation all pass. Aqua and yellow sit below 3:1 on white,
- * so every chart that uses them carries visible labels or a table view. The
- * order is the colourblind-safety mechanism; do not reassign a hue without
- * re-running the validator.
+ * Every text token clears WCAG AA (4.5:1) on the page, card and inset
+ * surfaces of its own mode. Chart series are the validated categorical steps
+ * for each mode (lightness band, chroma floor, adjacent-pair CVD and
+ * normal-vision separation all pass against the card surface); aqua and
+ * yellow sit below 3:1 on the light card, so charts carry visible labels.
+ * Series order is the colourblind-safety mechanism: re-run the validator
+ * before changing a hue.
  *
- * Status colours used for TEXT are darker steps of the chart status hues, so
- * a "Warning" label is legible on white. Chart marks keep the fixed status
- * steps from src/lib/palette.ts. Status never ships as colour alone.
+ * The theme follows the device unless the viewer picks one; the choice is
+ * stamped on <html data-theme> before first paint (see src/app/layout.tsx).
  */
 @theme {
-  --color-plane: #f6f5f1;
-  --color-surface: #ffffff;
-  --color-surface-2: #f4f3ee;
-  --color-surface-3: #ebe9e2;
-  --color-line: #e8e5dd;
-  --color-line-strong: #d6d2c7;
+  --color-plane: #ede3c8;
+  --color-surface: #fffbf0;
+  --color-surface-2: #f5edd8;
+  --color-surface-3: #eadfc2;
+  --color-line: #e3d7b8;
+  --color-line-strong: #cfc09b;
 
-  --color-ink: #16181c;
-  --color-ink-2: #4a4e56;
-  --color-muted: #686c74;
+  --color-ink: #1f1b13;
+  --color-ink-2: #4a4334;
+  --color-muted: #655c48;
+
+  /* Primary buttons: ink on paper in light mode, paper on ink in dark. */
+  --color-inverse: #1f1b13;
+  --color-on-inverse: #fffbf0;
+  /* Feature panels stay dark in both modes. */
+  --color-panel: #1f1b13;
+  --color-on-panel: #fffbf0;
 
   /* Categorical series - fixed order, never cycled. */
   --color-series-1: #eb6834; /* direct / combustion */
@@ -38,24 +45,90 @@
   --color-series-3: #1baf7a; /* precursors */
   --color-series-4: #eda100; /* other */
 
-  /* Status, as text and badge ink on white. */
-  --color-good: #117a2c;
-  --color-warning: #95610a;
-  --color-serious: #b04a1f;
-  --color-critical: #c0312f;
+  --color-chart-grid: #ebe2c9;
+  --color-chart-axis: #cfc09b;
 
-  --color-accent: #1f5bd8;
-  --color-accent-ink: #ffffff;
+  /* Status as text and badge ink. Chart marks use the fixed steps in palette.ts. */
+  --color-good: #1a6e2e;
+  --color-warning: #875600;
+  --color-serious: #a4441a;
+  --color-critical: #b42d2a;
+
+  --color-accent: #1f55c2;
 
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-display: "Newsreader Variable", "Newsreader", Georgia, "Times New Roman", serif;
 
-  --shadow-card: 0 1px 2px rgb(22 24 28 / 0.04), 0 1px 1px rgb(22 24 28 / 0.02);
-  --shadow-float: 0 12px 40px -12px rgb(22 24 28 / 0.28), 0 2px 6px rgb(22 24 28 / 0.06);
+  --shadow-card: 0 1px 2px rgb(60 45 10 / 0.06), 0 1px 1px rgb(60 45 10 / 0.03);
+  --shadow-float: 0 16px 48px -16px rgb(40 30 5 / 0.35), 0 2px 6px rgb(40 30 5 / 0.08);
 
   --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-fade: fade 0.3s ease-out both;
+}
+
+/* One definition of the dark palette, applied by choice or by the device. */
+@layer base {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-plane: #12100c;
+    --color-surface: #1c1914;
+    --color-surface-2: #24201a;
+    --color-surface-3: #2d2820;
+    --color-line: #2f2a21;
+    --color-line-strong: #463e30;
+    --color-ink: #f2ebdb;
+    --color-ink-2: #c9bfa8;
+    --color-muted: #9d937d;
+    --color-inverse: #f2ebdb;
+    --color-on-inverse: #12100c;
+    --color-panel: #221e17;
+    --color-on-panel: #f2ebdb;
+    --color-series-1: #d95926;
+    --color-series-2: #3987e5;
+    --color-series-3: #199e70;
+    --color-series-4: #c98500;
+    --color-chart-grid: #2a251d;
+    --color-chart-axis: #463e30;
+    --color-good: #63c982;
+    --color-warning: #e8b54f;
+    --color-serious: #f0a07a;
+    --color-critical: #f58a86;
+    --color-accent: #8db2ff;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+    --shadow-float: 0 20px 56px -16px rgb(0 0 0 / 0.7), 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --color-plane: #12100c;
+      --color-surface: #1c1914;
+      --color-surface-2: #24201a;
+      --color-surface-3: #2d2820;
+      --color-line: #2f2a21;
+      --color-line-strong: #463e30;
+      --color-ink: #f2ebdb;
+      --color-ink-2: #c9bfa8;
+      --color-muted: #9d937d;
+      --color-inverse: #f2ebdb;
+      --color-on-inverse: #12100c;
+      --color-panel: #221e17;
+      --color-on-panel: #f2ebdb;
+      --color-series-1: #d95926;
+      --color-series-2: #3987e5;
+      --color-series-3: #199e70;
+      --color-series-4: #c98500;
+      --color-chart-grid: #2a251d;
+      --color-chart-axis: #463e30;
+      --color-good: #63c982;
+      --color-warning: #e8b54f;
+      --color-serious: #f0a07a;
+      --color-critical: #f58a86;
+      --color-accent: #8db2ff;
+      --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+      --shadow-float: 0 20px 56px -16px rgb(0 0 0 / 0.7), 0 2px 8px rgb(0 0 0 / 0.4);
+    }
+  }
 }
 
 @keyframes rise {
@@ -81,6 +154,7 @@
 @layer base {
   html {
     color-scheme: light;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -88,6 +162,7 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 15px;
+    transition: background-color 0.2s ease;
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -156,8 +231,8 @@
     align-items: center;
     gap: 0.5rem;
     border-radius: 999px;
-    background: var(--color-ink);
-    color: #fff;
+    background: var(--color-inverse);
+    color: var(--color-on-inverse);
     padding: 0.7rem 1.35rem;
     font-size: 14.5px;
     font-weight: 500;
@@ -166,7 +241,7 @@
       background 0.15s ease;
   }
   .btn-primary:hover {
-    background: #000;
+    opacity: 0.9;
     transform: translateY(-1px);
   }
 

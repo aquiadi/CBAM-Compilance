@@ -21,22 +21,26 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="px-10 pb-2 pt-12" data-tour="page-header">
-      <div className="mx-auto flex max-w-[1180px] items-end justify-between gap-10">
+    <header className="px-5 pb-1 pt-8 md:px-10 md:pb-2 md:pt-12" data-tour="page-header">
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-10">
         <div className="min-w-0 animate-rise">
           {eyebrow ? (
             <div className="mb-3 text-[12px] font-medium uppercase tracking-[0.16em] text-muted">
               {eyebrow}
             </div>
           ) : null}
-          <h1 className="font-display text-[40px] font-normal leading-[1.08] text-ink">{title}</h1>
+          <h1 className="font-display text-[32px] font-normal leading-[1.08] text-ink md:text-[40px]">
+            {title}
+          </h1>
           {description ? (
-            <div className="mt-4 max-w-[68ch] text-[15.5px] leading-[1.65] text-ink-2">
+            <div className="mt-3 max-w-[68ch] text-[15px] leading-[1.65] text-ink-2 md:mt-4 md:text-[15.5px]">
               {description}
             </div>
           ) : null}
         </div>
-        {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>
+        ) : null}
       </div>
     </header>
   );
@@ -44,7 +48,7 @@ export function PageHeader({
 
 export function Page({ children }: { children: ReactNode }) {
   return (
-    <div className="px-10 pb-20 pt-8">
+    <div className="px-5 pb-16 pt-6 md:px-10 md:pb-20 md:pt-8">
       <div className="mx-auto max-w-[1180px]">{children}</div>
     </div>
   );
@@ -77,7 +81,7 @@ export function Card({
       )}
     >
       {title ? (
-        <div className="flex items-start justify-between gap-6 px-7 pb-1 pt-6">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-5 pb-1 pt-5 md:px-7 md:pt-6">
           <div className="min-w-0">
             <h2 className="text-[16px] font-semibold leading-snug text-ink">{title}</h2>
             {subtitle ? (
@@ -89,7 +93,7 @@ export function Card({
           {actions ? <div className="shrink-0">{actions}</div> : null}
         </div>
       ) : null}
-      <div className={padded ? "px-7 pb-7 pt-5" : "pt-3"}>{children}</div>
+      <div className={padded ? "px-5 pb-6 pt-4 md:px-7 md:pb-7 md:pt-5" : "pt-3"}>{children}</div>
     </section>
   );
 }
@@ -234,7 +238,7 @@ export function Th({
   return (
     <th
       className={cn(
-        "whitespace-nowrap border-b border-line px-4 py-3 text-[12px] font-medium text-muted first:pl-7 last:pr-7",
+        "whitespace-nowrap border-b border-line px-4 py-3 text-[12px] font-medium text-muted first:pl-5 last:pr-5 md:first:pl-7 md:last:pr-7",
         align === "right" && "text-right",
         align === "center" && "text-center",
         align === "left" && "text-left",
@@ -260,7 +264,7 @@ export function Td({
   return (
     <td
       className={cn(
-        "border-b border-line/70 px-4 py-3.5 align-top text-ink-2 first:pl-7 last:pr-7",
+        "border-b border-line/70 px-4 py-3.5 align-top text-ink-2 first:pl-5 last:pr-5 md:first:pl-7 md:last:pr-7",
         align === "right" && "text-right",
         align === "center" && "text-center",
         numeric && "tnum text-ink",
@@ -313,7 +317,7 @@ export function Disclosure({
       className="group rounded-2xl border border-line bg-surface shadow-[var(--shadow-card)]"
       open={defaultOpen}
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-6 px-7 py-5 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-6 px-5 py-5 md:px-7 [&::-webkit-details-marker]:hidden">
         <span>
           <span className="block text-[15px] font-semibold text-ink">{summary}</span>
           {hint ? <span className="mt-1 block text-[13px] text-muted">{hint}</span> : null}
@@ -325,7 +329,9 @@ export function Disclosure({
           +
         </span>
       </summary>
-      <div className="space-y-8 border-t border-line px-7 pb-7 pt-6">{children}</div>
+      <div className="space-y-8 border-t border-line px-5 pb-6 pt-6 md:px-7 md:pb-7">
+        {children}
+      </div>
     </details>
   );
 }

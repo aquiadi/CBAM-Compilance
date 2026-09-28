@@ -149,14 +149,14 @@ export function InstallationEditor({
         title="Installation details"
         subtitle="As communicated to importers (sheet A_InstData of the communication template)."
       >
-        <div className="grid grid-cols-4 gap-3">
-          <Field label="Installation name" className="col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <Field label="Installation name" className="md:col-span-2">
             <Input value={details.name} onChange={set("name")} disabled={ro} />
           </Field>
-          <Field label="Operator (legal entity)" className="col-span-2">
+          <Field label="Operator (legal entity)" className="md:col-span-2">
             <Input value={details.operator} onChange={set("operator")} disabled={ro} />
           </Field>
-          <Field label="Street" className="col-span-2">
+          <Field label="Street" className="md:col-span-2">
             <Input value={details.street} onChange={set("street")} disabled={ro} />
           </Field>
           <Field label="City">
@@ -210,7 +210,7 @@ export function InstallationEditor({
           </Field>
           <Field
             label="Economic activity"
-            className="col-span-2"
+            className="md:col-span-2"
             hint="e.g. Manufacture of basic iron and steel (NIC 2410)"
           >
             <Input
@@ -219,10 +219,10 @@ export function InstallationEditor({
               disabled={ro}
             />
           </Field>
-          <Field label="Contact name" className="col-span-2">
+          <Field label="Contact name" className="md:col-span-2">
             <Input value={details.contactName} onChange={set("contactName")} disabled={ro} />
           </Field>
-          <Field label="Contact e-mail" className="col-span-2">
+          <Field label="Contact e-mail" className="md:col-span-2">
             <Input value={details.contactEmail} onChange={set("contactEmail")} disabled={ro} />
           </Field>
         </div>
@@ -232,7 +232,7 @@ export function InstallationEditor({
         title="Reporting period"
         subtitle="Embedded emissions are determined per calendar year of production. A part-year is provisional."
       >
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Field label="Year">
             <Input
               type="number"
@@ -273,16 +273,16 @@ export function InstallationEditor({
           {processes.map((p, i) => (
             <div
               key={p.id}
-              className="grid grid-cols-12 gap-2 rounded-lg border border-line bg-surface-2 p-3"
+              className="grid grid-cols-1 md:grid-cols-12 gap-2 rounded-lg border border-line bg-surface-2 p-3"
             >
-              <Field label="Name" className="col-span-3">
+              <Field label="Name" className="md:col-span-3">
                 <Input
                   value={p.name}
                   disabled={ro}
                   onChange={(e) => updateProcess(i, { name: e.target.value })}
                 />
               </Field>
-              <Field label="Aggregated goods category" className="col-span-3">
+              <Field label="Aggregated goods category" className="md:col-span-3">
                 <Select
                   value={p.category}
                   disabled={ro}
@@ -295,7 +295,7 @@ export function InstallationEditor({
                   ))}
                 </Select>
               </Field>
-              <Field label="Route (description)" className="col-span-3">
+              <Field label="Route (description)" className="md:col-span-3">
                 <Input
                   value={p.route}
                   disabled={ro}
@@ -303,7 +303,7 @@ export function InstallationEditor({
                   placeholder="e.g. DRI-EAF with scrap"
                 />
               </Field>
-              <Field label="Benchmark route" className="col-span-3">
+              <Field label="Benchmark route" className="md:col-span-3">
                 <Select
                   value={p.benchmarkRoute}
                   disabled={ro}
@@ -317,7 +317,10 @@ export function InstallationEditor({
                   ))}
                 </Select>
               </Field>
-              <Field label="Section names in your files (comma-separated)" className="col-span-10">
+              <Field
+                label="Section names in your files (comma-separated)"
+                className="md:col-span-10"
+              >
                 <Input
                   value={p.aliases}
                   disabled={ro}
@@ -325,7 +328,7 @@ export function InstallationEditor({
                   placeholder="e.g. SMS, Melt Shop, Induction Furnace"
                 />
               </Field>
-              <div className="col-span-2 flex items-end justify-end">
+              <div className="md:col-span-2 flex items-end justify-end">
                 {canWrite ? (
                   <Button
                     variant="danger"
@@ -370,8 +373,8 @@ export function InstallationEditor({
       >
         <div className="space-y-2">
           {links.map((l, i) => (
-            <div key={i} className="grid grid-cols-12 items-end gap-2">
-              <Field label="From" className="col-span-4">
+            <div key={i} className="grid grid-cols-1 md:grid-cols-12 items-end gap-2">
+              <Field label="From" className="md:col-span-4">
                 <Select
                   value={l.fromProcessId}
                   disabled={ro}
@@ -389,7 +392,7 @@ export function InstallationEditor({
                   ))}
                 </Select>
               </Field>
-              <Field label="To" className="col-span-4">
+              <Field label="To" className="md:col-span-4">
                 <Select
                   value={l.toProcessId}
                   disabled={ro}
@@ -407,7 +410,7 @@ export function InstallationEditor({
                   ))}
                 </Select>
               </Field>
-              <Field label="CN code of the good" className="col-span-3">
+              <Field label="CN code of the good" className="md:col-span-3">
                 <Input
                   value={l.cnCode}
                   disabled={ro}
@@ -417,7 +420,7 @@ export function InstallationEditor({
                   placeholder="e.g. 7207 11 14"
                 />
               </Field>
-              <div className="col-span-1">
+              <div className="md:col-span-1">
                 {canWrite ? (
                   <Button variant="ghost" onClick={() => setLinks(links.filter((_, j) => j !== i))}>
                     ✕
@@ -445,7 +448,7 @@ export function InstallationEditor({
         title="Grid electricity factor"
         subtitle="Leave blank to use the CEA national average from the factor library. The definitive-period default is the Commission's Annex II country factor; enter it here with its source."
       >
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Field label="tCO₂e per MWh">
             <Input
               value={details.gridValue}
@@ -454,7 +457,7 @@ export function InstallationEditor({
               inputMode="decimal"
             />
           </Field>
-          <Field label="Source" className="col-span-3">
+          <Field label="Source" className="md:col-span-3">
             <Input
               value={details.gridSource}
               onChange={set("gridSource")}

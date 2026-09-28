@@ -53,7 +53,7 @@ export function SupplierForm({ token, supplierName }: { token: string; supplierN
         if (await send(`/api/supplier/${token}`, { form })) setDone(true);
       }}
     >
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Company">
           <Input required value={f.companyName} onChange={set("companyName")} />
         </Field>
@@ -95,7 +95,7 @@ export function SupplierForm({ token, supplierName }: { token: string; supplierN
           </Select>
         </Field>
         {f.verified === "yes" ? (
-          <Field label="Verifier" className="col-span-2">
+          <Field label="Verifier" className="md:col-span-2">
             <Input required value={f.verifierName} onChange={set("verifierName")} />
           </Field>
         ) : null}
@@ -111,7 +111,7 @@ export function SupplierForm({ token, supplierName }: { token: string; supplierN
               ? "Verification report (required)"
               : "Emissions report or communication (recommended)"
           }
-          className="col-span-2"
+          className="md:col-span-2"
           hint="PDF, spreadsheet or image, up to 4 MB."
         >
           <input
@@ -121,7 +121,7 @@ export function SupplierForm({ token, supplierName }: { token: string; supplierN
             className="block w-full text-[13.5px] text-ink-2"
           />
         </Field>
-        <Field label="Notes (optional)" className="col-span-2">
+        <Field label="Notes (optional)" className="md:col-span-2">
           <Textarea value={f.notes} onChange={set("notes")} />
         </Field>
       </div>

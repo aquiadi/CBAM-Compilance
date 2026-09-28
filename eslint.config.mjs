@@ -75,6 +75,8 @@ export default tseslint.config(
         fetch: "readonly",
         FormData: "readonly",
         Blob: "readonly",
+        // Code passed to Playwright's page.evaluate runs in the browser.
+        document: "readonly",
       },
     },
   },

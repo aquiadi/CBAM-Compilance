@@ -51,15 +51,15 @@ export function EvidenceManager({
     <div className="space-y-8">
       {canWrite ? (
         <Card title="Add evidence">
-          <div className="grid grid-cols-4 gap-3">
-            <Field label="File" className="col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Field label="File" className="md:col-span-2">
               <input
                 ref={file}
                 type="file"
                 className="block w-full text-[13.5px] text-ink-2 file:mr-3 file:rounded-lg file:border file:border-line-strong file:bg-surface-3 file:px-3 file:py-1.5 file:text-[13.5px] file:text-ink-2"
               />
             </Field>
-            <Field label="Category" className="col-span-2">
+            <Field label="Category" className="md:col-span-2">
               <Select value={category} onChange={(e) => setCategory(e.target.value)}>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -68,7 +68,7 @@ export function EvidenceManager({
                 ))}
               </Select>
             </Field>
-            <Field label="Label" className="col-span-2">
+            <Field label="Label" className="md:col-span-2">
               <Input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}

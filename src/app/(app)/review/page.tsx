@@ -48,8 +48,8 @@ export default async function ReviewPage() {
       />
 
       <Page>
-        <div className="grid grid-cols-4 gap-7">
-          <div className="col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-7">
+          <div className="lg:col-span-3">
             <FindingsPanel
               findings={d.findings.map((f) => ({
                 code: f.code,

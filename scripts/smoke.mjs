@@ -192,6 +192,56 @@ async function main() {
   assert(confirmed.totals.directT > after.totals.directT, "confirmed upload counts");
   step("upload -> review -> confirm");
 
+  // A bill as a PDF: stored as evidence, read (or, without a key, left for
+  // manual entry), and imported as a draft only after the lines are checked.
+  const pdf = [
+    "%PDF-1.4",
+    "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj",
+    "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj",
+    "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 200]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj",
+    "4 0 obj<</Length 52>>stream",
+    "BT /F1 12 Tf 20 150 Td (HSD 12.45 KL) Tj ET",
+    "endstream endobj",
+    "5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj",
+    "trailer<</Root 1 0 R>>",
+    "%%EOF",
+  ].join("\n");
+  const docForm = new FormData();
+  docForm.set("file", new Blob([pdf], { type: "application/pdf" }), "iocl-invoice.pdf");
+  const read = await owner.json("/api/documents", { method: "POST", form: docForm });
+  assert(read.fileId && Array.isArray(read.extraction.lines), "document stored and read");
+  const beforeDoc = await owner.json("/api/export?format=json");
+  const processId = beforeDoc.installation.processes[0].id;
+  const imported = await owner.json("/api/documents/import", {
+    method: "POST",
+    json: {
+      fileId: read.fileId,
+      processId,
+      lines: [
+        {
+          description: "HSD",
+          category: "fuel",
+          quantity: 12.45,
+          unit: "KL",
+          date: "2026-08",
+          origin: read.extraction.lines.length ? "model" : "manual",
+        },
+      ],
+    },
+  });
+  assert(
+    imported.datasets.length === 1 && imported.datasets[0].records === 1,
+    "document line imported",
+  );
+  const afterDoc = await owner.json("/api/export?format=json");
+  assert(
+    Math.abs(afterDoc.totals.directT - beforeDoc.totals.directT) < 1e-6,
+    "a document's draft does not count until confirmed",
+  );
+  step(
+    `document -> ${read.outcome.producedBy === "model" ? "read by model" : "manual entry"} -> draft dataset`,
+  );
+
   // Supplier portal round trip.
   const req = await owner.json("/api/suppliers/requests", {
     method: "POST",

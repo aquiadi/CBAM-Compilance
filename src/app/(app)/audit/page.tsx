@@ -104,7 +104,7 @@ export default async function AuditPage() {
       />
 
       <Page>
-        <div className="mb-8 grid grid-cols-4 gap-4">
+        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
             { label: "Activity records", value: fmt(rows.length) },
             {

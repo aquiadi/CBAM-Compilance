@@ -108,7 +108,7 @@ export function TeamManager({
           title="Invite someone"
           subtitle="An invitation link is created for you to send; it is valid for 14 days and only for that e-mail address."
         >
-          <div className="grid grid-cols-3 items-end gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-3">
             <Field label="E-mail">
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </Field>

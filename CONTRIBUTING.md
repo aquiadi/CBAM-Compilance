@@ -42,6 +42,14 @@ true })` (or `roles: ["owner"]`) from `src/lib/auth/context.ts`; it also refuses
 - **Design tokens live in `src/app/globals.css`.** The style is paper, ink and one blue, with
   generous space. Put new secondary detail behind a `Disclosure` rather than adding another card to
   the first screen.
+- **Document reading is a proposal, like mapping.** `src/lib/ai/extract.ts` validates the model's
+  reading and cross-checks it against the PDF's text. Lines then pass through a person and the
+  ordinary ingest path (`src/lib/workspace/documents.ts`). Never let an extracted figure skip either
+  step.
+- **Both themes, every width.** Colours are CSS variables with a light and a dark value in
+  `globals.css`; use the tokens (`bg-surface`, `text-ink`, `bg-inverse`...), never a hex or
+  `text-white` in a component. Check a change with `SHOT_THEME=dark SHOT_DEVICE=phone npm run
+screenshots`, which also fails if a page scrolls sideways.
 - **Keep the guided tour working.** Its steps (`src/components/tour.tsx`) point at `data-tour`
   attributes. If you move or rename one of those elements, move the attribute with it; a missing
   target falls back to a centred card, but the step then loses its highlight.

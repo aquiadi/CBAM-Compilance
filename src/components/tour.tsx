@@ -79,6 +79,13 @@ const STEPS: Step[] = [
   },
   {
     path: "/ingest",
+    target: "documents",
+    placement: "top",
+    title: "…or read a bill, receipt or photo",
+    body: "Upload an invoice, an electricity bill or a phone photo of a weighbridge slip. The AI proposes each figure with the words it read it from, PDF figures are checked against the document's own text, and you confirm every line.",
+  },
+  {
+    path: "/ingest",
     target: "datasets",
     placement: "top",
     title: "Every file, and how it was read",
@@ -246,7 +253,7 @@ function TourStep({
     let tries = 0;
     const find = () => {
       if (cancelled) return;
-      const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`);
+      const el = visibleTarget(step.target!);
       if (el) {
         const r = el.getBoundingClientRect();
         const inView = r.top >= 80 && r.bottom <= window.innerHeight - 40;
@@ -272,7 +279,7 @@ function TourStep({
   useEffect(() => {
     if (!ready || !step.target) return;
     const measure = () => {
-      const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`);
+      const el = visibleTarget(step.target!);
       if (!el) return setRect(null);
       const r = el.getBoundingClientRect();
       const maxH = window.innerHeight - 2 * PAD;
@@ -342,7 +349,7 @@ function TourStep({
           ref={cardRef}
           key={index}
           className="fixed animate-rise rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-float)]"
-          style={{ top: pos.top, left: pos.left, width: CARD_W }}
+          style={{ top: pos.top, left: pos.left, width: cardWidth() }}
         >
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
@@ -391,7 +398,7 @@ function TourStep({
                 type="button"
                 onClick={next}
                 autoFocus
-                className="rounded-full bg-ink px-5 py-2 text-[13.5px] font-medium text-white hover:bg-black"
+                className="rounded-full bg-inverse px-5 py-2 text-[13.5px] font-medium text-on-inverse hover:opacity-90"
               >
                 {last ? "Finish" : index === 0 ? "Start the tour" : "Next"}
               </button>
@@ -403,22 +410,43 @@ function TourStep({
   );
 }
 
+/**
+ * The target if it is actually on screen. On a phone the menu lives in a
+ * closed drawer, so its steps fall back to a centred card instead of pointing
+ * at something off-canvas.
+ */
+function visibleTarget(name: string): HTMLElement | null {
+  const el = document.querySelector<HTMLElement>(`[data-tour="${name}"]`);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return null;
+  if (r.right <= 0 || r.left >= window.innerWidth) return null;
+  return el;
+}
+
+function cardWidth(): number {
+  return Math.min(CARD_W, window.innerWidth - 32);
+}
+
 function placeCard(rect: Rect | null, placement: Placement, cardH: number) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const gap = 16;
-  const clampX = (x: number) => Math.min(Math.max(16, x), vw - CARD_W - 16);
+  const w = cardWidth();
+  const clampX = (x: number) => Math.min(Math.max(16, x), vw - w - 16);
   const clampY = (y: number) => Math.min(Math.max(16, y), vh - cardH - 16);
   if (!rect || placement === "center") {
-    return { top: clampY((vh - cardH) / 2), left: clampX((vw - CARD_W) / 2) };
+    return { top: clampY((vh - cardH) / 2), left: clampX((vw - w) / 2) };
   }
   const below = rect.top + rect.height + gap;
   const above = rect.top - cardH - gap;
+  // Side placements need room beside the target; on a phone use above/below.
+  if ((placement === "right" || placement === "left") && vw < 900) placement = "bottom";
   switch (placement) {
     case "right":
       return { top: clampY(rect.top), left: clampX(rect.left + rect.width + gap) };
     case "left":
-      return { top: clampY(rect.top), left: clampX(rect.left - CARD_W - gap) };
+      return { top: clampY(rect.top), left: clampX(rect.left - w - gap) };
     case "top":
       return above >= 16
         ? { top: above, left: clampX(rect.left) }

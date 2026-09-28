@@ -62,9 +62,9 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
             setLimit(50);
           }}
           placeholder="Search files, sections, materials, raw cell values…"
-          className="min-w-[280px] flex-1 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-[13.5px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+          className="w-full min-w-0 flex-1 rounded-lg sm:min-w-[280px] border border-line bg-surface-2 px-3 py-1.5 text-[13.5px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
         />
-        <div className="flex gap-1">
+        <div className="flex max-w-full gap-1 overflow-x-auto">
           {kinds.map((k) => (
             <button
               key={k}
@@ -149,7 +149,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
                     <div className="mb-2 text-[12px] font-medium uppercase tracking-[0.12em] text-muted">
                       Raw source row — {r.fileName} line {r.row}
                     </div>
-                    <div className="grid grid-cols-4 gap-x-6 gap-y-1.5">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 md:grid-cols-4">
                       {Object.entries(r.raw).map(([k, v]) => (
                         <div key={k} className="min-w-0 text-[12.5px]">
                           <div className="truncate text-muted">{k}</div>

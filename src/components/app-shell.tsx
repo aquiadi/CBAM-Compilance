@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { ThemeToggle } from "./theme-toggle";
 import { TourProvider, useTour } from "./tour";
 
 /**
@@ -71,6 +72,9 @@ function Shell({
   const [switching, setSwitching] = useState(false);
   const moreActive = MORE.some((m) => isActive(m.href));
   const [moreOpen, setMoreOpen] = useState(moreActive);
+  // The drawer on phones and tablets; the sidebar is always visible from lg up.
+  const [drawer, setDrawer] = useState(false);
+  const close = () => setDrawer(false);
 
   function isActive(href: string) {
     if (href === "/settings") return pathname === "/settings";
@@ -99,8 +103,51 @@ function Shell({
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 left-0 flex w-[272px] flex-col border-r border-line bg-surface">
+    <div className="min-h-screen">
+      {/* Top bar below lg: the menu button, the mark and the theme. */}
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-plane/90 px-4 py-3 backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={() => setDrawer(true)}
+          aria-label="Open menu"
+          aria-expanded={drawer}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-surface text-ink"
+        >
+          <MenuIcon />
+        </button>
+        <Link href="/overview" className="flex items-center gap-2.5">
+          <Mark size={26} />
+          <span className="font-display text-[19px] leading-none text-ink">CarbonPass</span>
+        </Link>
+        <ThemeToggle compact />
+      </header>
+
+      {drawer ? (
+        <div
+          className="fixed inset-0 z-40 bg-[rgb(10_8_4/0.45)] animate-fade lg:hidden"
+          onClick={close}
+          aria-hidden
+        />
+      ) : null}
+
+      <aside
+        className={
+          "fixed inset-y-0 left-0 z-50 flex w-[288px] max-w-[85vw] flex-col border-r border-line bg-surface transition-transform duration-300 ease-out lg:w-[272px] lg:translate-x-0 " +
+          (drawer ? "translate-x-0 shadow-[var(--shadow-float)]" : "-translate-x-full")
+        }
+        aria-label="Main menu"
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest("a")) close();
+        }}
+      >
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Close menu"
+          className="absolute right-3 top-5 flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
+        >
+          ✕
+        </button>
         <div className="px-6 pb-5 pt-6">
           <Link href="/overview" className="flex items-center gap-3">
             <Mark />
@@ -154,7 +201,7 @@ function Shell({
                       className={
                         "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold " +
                         (active
-                          ? "bg-ink text-white"
+                          ? "bg-inverse text-on-inverse"
                           : "border border-line-strong bg-surface text-ink-2")
                       }
                       aria-hidden
@@ -221,7 +268,7 @@ function Shell({
             className="mb-4 flex w-full items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-left transition-colors hover:border-line-strong"
           >
             <span
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[13px] text-white"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-inverse text-[13px] text-on-inverse"
               aria-hidden
             >
               ?
@@ -246,6 +293,9 @@ function Shell({
               Sign out
             </button>
           </div>
+          <div className="mt-4 hidden px-1 lg:block">
+            <ThemeToggle />
+          </div>
           <p className="mt-3 px-1 text-[11.5px] leading-[1.5] text-muted">
             {model ? `AI: ${model}` : "Rule-based mapping"} ·{" "}
             {database === "postgres" ? "Postgres" : "Embedded database"}
@@ -253,7 +303,7 @@ function Shell({
         </div>
       </aside>
 
-      <main className="ml-[272px] min-w-0 flex-1 bg-plane">{children}</main>
+      <main className="min-w-0 bg-plane lg:ml-[272px]">{children}</main>
     </div>
   );
 }
@@ -284,6 +334,19 @@ function NavLink({
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M4 12h16M4 17h10"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function HomeIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -301,10 +364,15 @@ function HomeIcon() {
 export function Mark({ size = 30, onDark = false }: { size?: number; onDark?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden>
-      <rect width="26" height="26" rx="7" fill={onDark ? "#ffffff" : "#16181c"} />
+      <rect
+        width="26"
+        height="26"
+        rx="7"
+        style={{ fill: onDark ? "var(--color-on-panel)" : "var(--color-inverse)" }}
+      />
       <path
         d="M13 4.5v17"
-        stroke={onDark ? "#16181c" : "#ffffff"}
+        style={{ stroke: onDark ? "var(--color-panel)" : "var(--color-on-inverse)" }}
         strokeWidth="1.4"
         strokeDasharray="2.5 2.5"
       />

@@ -41,7 +41,7 @@ export function UploadForm({ aiAvailable, maxMb }: { aiAvailable: boolean; maxMb
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 items-end gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-3">
         <Field label="File" hint={`CSV or Excel (.xlsx), up to ${maxMb} MB.`}>
           <input
             ref={input}
