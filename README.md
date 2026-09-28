@@ -6,9 +6,9 @@
 Plant spreadsheets, bills and phone photos in - specific embedded emissions, the free-allocation
 adjustment, the certificate cost and a verifier-ready evidence pack out.
 
-[![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml?query=branch%3Amain)
+[![CI](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 [![Nightly document gate](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/nightly.yml/badge.svg)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/nightly.yml)
-[![CodeQL](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/codeql.yml)
+[![CodeQL](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/codeql.yml/badge.svg?branch=main&event=push)](https://github.com/aquiadi/CBAM-Compilance/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6e7682)](LICENSE)
 
 [![Figures read exactly](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Faquiadi%2FCBAM-Compilance%2Fmain%2Fevals%2Fdocuments%2Fbaseline.json&query=%24.badges.lineRecall&label=figures%20read%20exactly&color=1baf7a)](#the-document-reading-gate)
