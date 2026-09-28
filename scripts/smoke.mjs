@@ -327,6 +327,40 @@ async function main() {
   });
   step("invitation refused for another address; viewer can read, cannot write");
 
+  // A forgotten password: the owner issues a one-time link; using it changes
+  // the password and ends the viewer's other sessions.
+  const { members } = await owner.json("/api/team/members");
+  const viewerMember = members.find((m) => m.email === `viewer-${stamp}@example.com`);
+  assert(viewerMember, "viewer listed as a member");
+  const me = await viewer.json("/api/export?format=json");
+  assert(me.installation, "viewer session works before the reset");
+  const forgot = await new Client().json("/api/auth/forgot", {
+    method: "POST",
+    json: { email: `viewer-${stamp}@example.com` },
+  });
+  assert(forgot.ok === true, "forgot-password answers without revealing the account");
+  const issued = await owner.json(`/api/team/members/${viewerMember.userId}/reset`, {
+    method: "POST",
+  });
+  const resetToken = issued.link.split("/reset/")[1];
+  const fresh = new Client();
+  await fresh.request(`/reset/${resetToken}`);
+  await fresh.json("/api/auth/reset", {
+    method: "POST",
+    json: { token: resetToken, password: "a new password after reset" },
+  });
+  await viewer.request("/api/export?format=json", { expect: [401] });
+  await fresh.request("/api/auth/reset", {
+    method: "POST",
+    json: { token: resetToken, password: "trying the link twice" },
+    expect: [410],
+  });
+  await new Client().json("/api/auth/login", {
+    method: "POST",
+    json: { email: `viewer-${stamp}@example.com`, password: "a new password after reset" },
+  });
+  step("owner-issued reset link: new password works, old sessions end, link works once");
+
   const log = await owner.request("/activity");
   const html = await log.text();
   assert(

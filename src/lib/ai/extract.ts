@@ -183,10 +183,12 @@ Return one line per consumed or delivered item. Rules:
 - If a figure is unreadable, handwritten, crossed out or ambiguous, set quantity to null or lower the confidence, and say why in warnings. Never guess.
 - category: fuel (burned on site: coal, coke, diesel/HSD, furnace oil, LPG, natural gas), electricity, process_material (limestone, dolomite, electrodes, fluxes, ore), precursor (bought-in CBAM goods such as sponge iron/DRI, pig iron, billets, clinker, ammonia), otherwise other.`;
 
-function buildContent(
+/** The document as a content block, followed by the instruction. */
+export function documentContent(
   bytes: Uint8Array,
   mediaType: DocumentMediaType,
   fileName: string,
+  instruction = "Extract every consumed or delivered item from this document.",
 ): Anthropic.Beta.BetaContentBlockParam[] {
   const data = Buffer.from(bytes).toString("base64");
   const kind = DOCUMENT_MEDIA_TYPES[mediaType];
@@ -214,7 +216,7 @@ function buildContent(
     source,
     {
       type: "text",
-      text: `File name: ${fileName}\nExtract every consumed or delivered item from this document.`,
+      text: `File name: ${fileName}\n${instruction}`,
     },
   ];
 }
@@ -264,7 +266,7 @@ export async function extractDocument(args: {
       thinking: { type: "adaptive" },
       system: SYSTEM,
       messages: [
-        { role: "user", content: buildContent(args.bytes, args.mediaType, args.fileName) },
+        { role: "user", content: documentContent(args.bytes, args.mediaType, args.fileName) },
       ],
       output_config: { format: betaZodOutputFormat(ExtractionSchema) },
     });
@@ -390,14 +392,23 @@ function renderings(q: number): string[] {
  * Look for every quantity in the document's own text. Photos and scans have
  * no text layer, so their lines stay "no_text" and are checked by eye.
  */
+/**
+ * Whether `value` is written anywhere in `text` as a whole number (not inside
+ * a longer one), however its thousands are grouped. Shared by every reader
+ * that checks a model's figure against the document it came from.
+ */
+export function numberInText(text: string, value: number): boolean {
+  const haystack = numeric(text);
+  return renderings(value).some((r) =>
+    new RegExp(`(^|[^\\d.])${r.replace(".", "\\.")}(?![\\d])`).test(haystack),
+  );
+}
+
 export function crossCheck(extraction: Extraction, text: string | null): Extraction {
   if (text === null || text.trim() === "") return { ...extraction, textChecked: false };
-  const haystack = numeric(text);
   const lines = extraction.lines.map((l) => {
     if (l.quantity === null) return { ...l, check: "not_found" as const };
-    const found = renderings(l.quantity).some((r) =>
-      new RegExp(`(^|[^\\d.])${r.replace(".", "\\.")}(?![\\d])`).test(haystack),
-    );
+    const found = numberInText(text, l.quantity);
     return { ...l, check: found ? ("found" as const) : ("not_found" as const) };
   });
   const missing = lines.filter((l) => l.check === "not_found" && l.quantity !== null).length;

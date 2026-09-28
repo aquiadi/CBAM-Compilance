@@ -37,7 +37,9 @@ number traceable to the source file and row it came from.
   flagged. A person checks every line next to the document. Only then does it become a draft
   dataset, which still goes through mapping, unit resolution, the rules and confirmation like any
   spreadsheet. Without a key the same screen is for typing the figures in. Either way the document
-  is kept as evidence and linked to what was read from it.
+  is kept as evidence and linked to what was read from it. Choose several documents at once and
+  they are read and checked one after another. Indian trade names (LDO, LSHS, HSD, FO) are
+  recognised when figures are matched to emission factors.
 - **Calculate.** It applies the definitive-period methodology (Implementing Regulation (EU)
   2025/2547) to reach attributed emissions per process, then specific embedded emissions per CN
   code, resolving on-site precursors in dependency order: DRI → billets → rebar.
@@ -54,7 +56,10 @@ number traceable to the source file and row it came from.
   recorded reason, or to correct the data.
 - **Suppliers.** It sends precursor suppliers a private link where they submit their SEE, SEFA and
   verification status, with evidence. Accepted submissions replace default values in the
-  calculation.
+  calculation. A supplier that sends its CBAM communication as a PDF or spreadsheet screenshot
+  instead can be read the same way as a bill: the model proposes CN code, SEE and SEFA per good,
+  each figure is checked against the document's text, and a person confirms before the values are
+  applied and the document is filed as evidence.
 - **Evidence and outputs.** It exports:
   - an emissions report (.xlsx), structured after the Commission's communication template;
   - the communication data as JSON;
@@ -62,7 +67,9 @@ number traceable to the source file and row it came from.
   - a **verifier pack** (.zip) holding every export, every source file and every piece of evidence,
     each with a SHA-256 checksum.
 - **Teams.** Organisations, several installations and years each, and four roles: owner, editor,
-  viewer and verifier. An append-only activity log records who changed what.
+  viewer and verifier. An append-only activity log records who changed what. Forgotten passwords
+  are reset by e-mail when mail is configured; without mail, an owner creates a one-time reset link
+  for the member and passes it on.
 
 ## Finding your way around
 
@@ -181,17 +188,19 @@ Every variable is optional except `DATABASE_URL` on Vercel. [`src/config/env.ts`
 validates them all at startup; a bad value stops the process with the variable named.
 [`.env.example`](.env.example) documents each one.
 
-| Variable                   | Default           | Purpose                                                           |
-| -------------------------- | ----------------- | ----------------------------------------------------------------- |
-| `DATABASE_URL`             | embedded database | Postgres connection string. `POSTGRES_URL` is accepted as well    |
-| `CARBONPASS_DATA_DIR`      | `.data`           | Where the embedded database lives when `DATABASE_URL` is unset    |
-| `CARBONPASS_SIGNUP`        | `open`            | `invite` allows new accounts only through an invitation link      |
-| `APP_URL`                  | from the request  | Base URL for invitation and supplier links                        |
-| `CARBONPASS_MAX_UPLOAD_MB` | `4`               | Largest accepted upload                                           |
-| `ANTHROPIC_API_KEY`        | unset             | Enables document reading, and the model for mapping, triage, memo |
-| `CARBONPASS_MODEL`         | `claude-opus-5`   | Model used when a key is set                                      |
-| `CARBONPASS_ETS_PRICE_EUR` | `75`              | Price for quarters not yet published; each workspace can override |
-| `CARBONPASS_INR_PER_EUR`   | `92`              | For showing cost in rupees                                        |
+| Variable                   | Default           | Purpose                                                                     |
+| -------------------------- | ----------------- | --------------------------------------------------------------------------- |
+| `DATABASE_URL`             | embedded database | Postgres connection string. `POSTGRES_URL` is accepted as well              |
+| `CARBONPASS_DATA_DIR`      | `.data`           | Where the embedded database lives when `DATABASE_URL` is unset              |
+| `CARBONPASS_SIGNUP`        | `open`            | `invite` allows new accounts only through an invitation link                |
+| `APP_URL`                  | from the request  | Base URL for invitation and supplier links                                  |
+| `CARBONPASS_MAX_UPLOAD_MB` | `4`               | Largest accepted upload                                                     |
+| `ANTHROPIC_API_KEY`        | unset             | Enables document reading, and the model for mapping, triage, memo           |
+| `CARBONPASS_MODEL`         | `claude-opus-5`   | Model used when a key is set                                                |
+| `SMTP_URL`                 | unset             | `smtps://user:pass@host:465`: e-mails invitations, supplier and reset links |
+| `MAIL_FROM`                | unset             | Sender, e.g. `CarbonPass <cbam@yourplant.in>`; needed with `SMTP_URL`       |
+| `CARBONPASS_ETS_PRICE_EUR` | `75`              | Price for quarters not yet published; each workspace can override           |
+| `CARBONPASS_INR_PER_EUR`   | `92`              | For showing cost in rupees                                                  |
 
 ---
 
@@ -331,18 +340,36 @@ says which one produced each result.
   `Secure` over HTTPS.
 - **Writes** are refused unless they come from the app's own origin.
 - **Sign-in** is rate-limited per IP and per e-mail, and **sign-up** per IP.
+- **Password resets** are one-time tokens stored hashed: an hour when e-mailed, a day when an owner
+  issues one. The forgot-password form answers the same whether or not the address has an account.
+  Using a reset signs the person out everywhere.
 - **Responses** carry a strict Content-Security-Policy and `frame-ancestors 'none'`.
 - **Roles** are checked on every route. Viewers and verifiers can read and download but cannot
   change anything.
 - **The supplier portal** needs no account. Each request gets an unguessable link that expires
   and can be revoked. The supplier can correct a submission until you accept or reject it.
 
+### Backups
+
+Everything lives in the one database, so backing up the database backs up the product.
+
+- **Railway Postgres**: enable backups on the Postgres service (Backups tab), or run
+  `pg_dump "$DATABASE_URL" > carbonpass.sql` on a schedule.
+- **Neon (Vercel)**: point-in-time restore is built in; its window depends on the plan.
+- **Embedded database** (Docker or a single server): stop the app and copy `CARBONPASS_DATA_DIR`,
+  or mount it on a volume that is snapshotted.
+- **A readable copy per workspace**: the verifier pack (Outputs) holds every source file, every piece
+  of evidence and every export with checksums. Download it at each milestone; it is also the record
+  to hand over if you ever leave the tool.
+
+Restore by pointing `DATABASE_URL` at the restored database; migrations only ever add.
+
 ---
 
 ## Development
 
 ```bash
-make check       # lint, format, types, fixture checksums, 138 tests, mapping eval
+make check       # lint, format, types, fixture checksums, 149 tests, mapping eval
 make build && make start          # production build, served the way the container serves it
 make smoke                        # end-to-end over HTTP against the running server
 ```
@@ -411,8 +438,12 @@ src/
   and figures are entered by hand. Photos and scans have no text layer, so their figures cannot be
   cross-checked automatically and are marked "check by eye". iPhone HEIC photos must be shared as
   JPEG. Word files must be saved as PDF.
-- **It sends no e-mail.** Invitation and supplier links are copied and sent by you. There is no
-  self-service password reset yet.
+- **E-mail is optional.** With `SMTP_URL` and `MAIL_FROM` set, invitations, supplier requests and password resets
+  are e-mailed. Without it, links are shown to copy and send yourself, and "Forgot password" tells
+  the person to ask an owner for a reset link.
+- **No single sign-on yet.** Accounts are e-mail and password. SAML or OIDC sign-in (Azure AD,
+  Google Workspace, Okta) is the next step for larger groups; sessions are already separate from
+  sign-in, so it adds a route rather than a rewrite. There is no two-factor authentication yet.
 - **Production route per process is operator-configured** (Settings → Installation), and it selects
   the benchmark. A wrong route gives a wrong SEFA. The full calculation export records the benchmark
   value, column and route indicator used for each good.

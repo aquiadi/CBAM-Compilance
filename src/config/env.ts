@@ -67,6 +67,19 @@ const EnvSchema = z.object({
   /** Largest accepted upload. Serverless hosts cap request bodies at about 4.5 MB. */
   CARBONPASS_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(4),
 
+  /**
+   * Outgoing mail, optional: smtp://user:password@host:587 (STARTTLS) or
+   * smtps://...:465. When set, password resets, invitations and supplier
+   * requests are e-mailed; when unset, links are shown for you to send.
+   */
+  SMTP_URL: z
+    .string()
+    .regex(/^smtps?:\/\//, "must be an smtp:// or smtps:// URL")
+    .optional(),
+
+  /** The From address for outgoing mail, e.g. "CarbonPass <cbam@yourcompany.com>". */
+  MAIL_FROM: z.string().min(3).max(200).optional(),
+
   /** Set by Vercel on its build and runtime; used to require an external database there. */
   VERCEL: z.string().optional(),
 });

@@ -102,10 +102,13 @@ export function DocumentReader({
   const [supplier, setSupplier] = useState("");
   const [created, setCreated] = useState<Created[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  // Several documents at once: the rest wait here, read one at a time so each
+  // gets its own check before the next.
+  const [queue, setQueue] = useState<File[]>([]);
+  const [batch, setBatch] = useState({ index: 0, total: 0 });
 
-  function reset() {
+  function clearCurrent() {
     if (preview) URL.revokeObjectURL(preview);
-    setFile(null);
     setPreview(null);
     setResult(null);
     setRows([]);
@@ -113,10 +116,36 @@ export function DocumentReader({
     setProblem(null);
   }
 
-  async function read() {
-    if (!file) return;
+  function reset() {
+    clearCurrent();
+    setFile(null);
+    setQueue([]);
+    setBatch({ index: 0, total: 0 });
+  }
+
+  function choose(files: File[]) {
+    clearCurrent();
+    setFile(files[0] ?? null);
+    setPreview(files[0] ? URL.createObjectURL(files[0]) : null);
+    setQueue(files.slice(1));
+    setBatch({ index: files.length > 0 ? 1 : 0, total: files.length });
+  }
+
+  async function nextDocument() {
+    const [next, ...rest] = queue;
+    clearCurrent();
+    if (!next) return reset();
+    setFile(next);
+    setPreview(URL.createObjectURL(next));
+    setQueue(rest);
+    setBatch((b) => ({ ...b, index: b.index + 1 }));
+    await read(next);
+  }
+
+  async function read(target: File | null = file) {
+    if (!target) return;
     const form = new FormData();
-    form.set("file", file);
+    form.set("file", target);
     const r = await reading.send<ReadResponse>("/api/documents", { form });
     if (!r) return;
     setResult(r);
@@ -214,7 +243,16 @@ export function DocumentReader({
             </li>
           ))}
         </ul>
-        <Button onClick={reset}>Read another document</Button>
+        {queue.length > 0 ? (
+          <Button variant="primary" disabled={reading.pending} onClick={nextDocument}>
+            {reading.pending
+              ? "Reading…"
+              : `Next document (${queue.length} left): ${queue[0]!.name}`}
+          </Button>
+        ) : (
+          <Button onClick={reset}>Read another document</Button>
+        )}
+        <FormError>{reading.error}</FormError>
       </div>
     );
   }
@@ -225,21 +263,17 @@ export function DocumentReader({
       <div className="space-y-4">
         <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[1fr_auto]">
           <Field
-            label="Bill, receipt, invoice or photo"
-            hint={`PDF, JPEG, PNG or WebP, up to ${maxMb} MB (photos up to 5 MB). On a phone you can take the photo directly.`}
+            label="Bills, receipts, invoices or photos"
+            hint={`PDF, JPEG, PNG or WebP, up to ${maxMb} MB each (photos up to 5 MB). Pick several to work through them one by one. On a phone you can take the photo directly.`}
           >
             <Input
               type="file"
+              multiple
               accept={ACCEPT}
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                if (preview) URL.revokeObjectURL(preview);
-                setFile(f);
-                setPreview(f ? URL.createObjectURL(f) : null);
-              }}
+              onChange={(e) => choose([...(e.target.files ?? [])].slice(0, 25))}
             />
           </Field>
-          <Button variant="primary" disabled={!file || reading.pending} onClick={read}>
+          <Button variant="primary" disabled={!file || reading.pending} onClick={() => read()}>
             {reading.pending
               ? aiAvailable
                 ? "Reading… (up to a minute)"
@@ -273,6 +307,23 @@ export function DocumentReader({
 
   return (
     <div className="space-y-6">
+      {batch.total > 1 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-2.5 text-[13.5px] text-ink-2">
+          <span>
+            Document <span className="font-medium text-ink">{batch.index}</span> of {batch.total}
+          </span>
+          {queue.length > 0 ? (
+            <button
+              type="button"
+              onClick={nextDocument}
+              disabled={reading.pending}
+              className="text-accent hover:underline disabled:opacity-50"
+            >
+              Skip to the next one →
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,260px)_1fr]">
         <div className="space-y-3">
           {isImage && preview ? (

@@ -218,30 +218,76 @@ const FACTOR_HINTS: { factorId: string; any: string[]; not?: string[] }[] = [
     factorId: "coal_bituminous_in",
     any: ["non coking", "non-coking", "steam coal", "thermal coal", "coal", "slack coal"],
   },
-  { factorId: "furnace_oil", any: ["furnace oil", "fo ", "lsho", "residual fuel", "heavy oil"] },
-  { factorId: "diesel", any: ["diesel", "hsd", "gas oil", "dg set"] },
+  {
+    factorId: "furnace_oil",
+    any: [
+      "furnace oil",
+      "fo",
+      "f.o.",
+      "lshs",
+      "low sulphur heavy stock",
+      "lsho",
+      "hfo",
+      "heavy fuel oil",
+      "residual fuel",
+      "heavy oil",
+    ],
+  },
+  {
+    factorId: "diesel",
+    // LDO (light diesel oil) and HSD (high speed diesel) are both gas/diesel
+    // oil in the IPCC classification.
+    any: [
+      "diesel",
+      "hsd",
+      "high speed diesel",
+      "ldo",
+      "light diesel oil",
+      "gas oil",
+      "gasoil",
+      "dg set",
+    ],
+  },
   { factorId: "natural_gas", any: ["natural gas", "png", "lng", "rlng", "cng", "producer gas"] },
   { factorId: "lpg", any: ["lpg", "propane", "butane"] },
-  { factorId: "petroleum_coke", any: ["pet coke", "petcoke", "petroleum coke"] },
+  { factorId: "petroleum_coke", any: ["pet coke", "petcoke", "pet-coke", "petroleum coke"] },
   {
     factorId: "biomass_agri_residue",
-    any: ["biomass", "briquette", "husk", "agri residue", "bagasse"],
+    any: ["biomass", "briquette", "briquettes", "husk", "agri residue", "bagasse"],
   },
-  { factorId: "limestone", any: ["limestone", "lime", "caco3", "flux"] },
-  { factorId: "dolomite", any: ["dolomite", "dolo"] },
-  { factorId: "graphite_electrode", any: ["graphite", "electrode"] },
+  {
+    factorId: "limestone",
+    any: ["limestone", "lime stone", "lime", "caco3", "flux"],
+    // Burnt lime is already calcined: no carbonate left to release.
+    not: ["burnt lime", "burned lime", "quick lime", "quicklime", "calcined lime", "hydrated lime"],
+  },
+  { factorId: "dolomite", any: ["dolomite", "dolo", "raw dolomite"], not: ["calcined dolo"] },
+  {
+    factorId: "graphite_electrode",
+    any: ["graphite", "electrode", "electrodes"],
+    not: ["welding"],
+  },
   { factorId: "carbon_anode_paste", any: ["anode", "soderberg", "paste"] },
 ];
+
+/**
+ * Whole-word match: "dolo" must not fire inside "Dolochar" (spent kiln char,
+ * a fuel), and "fo" must not fire inside "form" or "foundry".
+ */
+function mentions(text: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`).test(text);
+}
 
 export function resolveFactor(value: string): {
   id: string | null;
   confidence: number;
   why: string;
 } {
-  const v = ` ${value.toLowerCase()} `;
+  const v = value.toLowerCase();
   for (const hint of FACTOR_HINTS) {
-    if (hint.not?.some((n) => v.includes(n))) continue;
-    const hit = hint.any.find((a) => v.includes(a));
+    if (hint.not?.some((n) => mentions(v, n))) continue;
+    const hit = hint.any.find((a) => mentions(v, a));
     if (hit) {
       return {
         id: hint.factorId,

@@ -49,11 +49,15 @@ export function SupplierManager({
     message: "",
   });
   const [link, setLink] = useState<string | null>(null);
+  const [emailedTo, setEmailedTo] = useState<string | null>(null);
 
   async function create() {
-    const r = await send<{ link: string }>("/api/suppliers/requests", { json: form });
+    const r = await send<{ link: string; emailed: boolean }>("/api/suppliers/requests", {
+      json: form,
+    });
     if (r) {
       setLink(r.link);
+      setEmailedTo(r.emailed ? form.supplierEmail : null);
       router.refresh();
     }
   }
@@ -184,7 +188,11 @@ export function SupplierManager({
               <div className="mt-3">
                 <CopyLink
                   link={link}
-                  note="Send this link to the supplier. It is shown only once and is valid for 60 days."
+                  note={
+                    emailedTo
+                      ? `Request e-mailed to ${emailedTo}. The link is also here to send another way; it is shown only once and is valid for 60 days.`
+                      : "Send this link to the supplier. It is shown only once and is valid for 60 days."
+                  }
                 />
               </div>
             ) : null}

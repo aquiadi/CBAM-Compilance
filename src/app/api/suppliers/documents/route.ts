@@ -1,29 +1,19 @@
 import { NextResponse } from "next/server";
-import { extractDocument } from "@/lib/ai/extract";
+import { readSupplierCommunication } from "@/lib/ai/extract-supplier";
 import { recordAudit } from "@/lib/audit";
 import { apiWorkspaceContext, jsonError } from "@/lib/auth/context";
 import { takeDocument } from "@/lib/document-upload";
-import { storeFile, type EvidenceCategory } from "@/lib/files";
+import { storeFile } from "@/lib/files";
 import { errorResponse } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
-// Reading a long PDF with the model can take a minute (Vercel's default is lower).
 export const maxDuration = 120;
 
-const CATEGORY_FOR_TYPE: Record<string, EvidenceCategory> = {
-  fuel_invoice: "fuel_invoice",
-  electricity_bill: "electricity_bill",
-  material_receipt: "purchase_receipt",
-  weighbridge_slip: "purchase_receipt",
-  delivery_note: "purchase_receipt",
-  supplier_emissions_communication: "supplier_communication",
-};
-
 /**
- * Reads a bill, receipt or photo. The document is stored as evidence first, so
- * it is kept whatever happens next; the model's reading comes back as proposed
- * lines for a person to check. Nothing is added to a dataset here.
+ * Reads a supplier's CBAM communication. The document is stored as evidence;
+ * the values come back as a proposal for a person to check - nothing is
+ * applied here.
  */
 export async function POST(request: Request) {
   const r = await apiWorkspaceContext(request, { write: true });
@@ -36,36 +26,35 @@ export async function POST(request: Request) {
   }
   const doc = await takeDocument(form);
   if (!doc.ok) return jsonError(doc.status, doc.message);
-
   try {
     const limit = await rateLimit(r.ctx.db, `documents:${r.ctx.user.id}`, 60, 3600);
-    if (!limit.allowed) {
+    if (!limit.allowed)
       return jsonError(429, "Too many documents in the last hour. Try again later.");
-    }
-    const { extraction, outcome } = await extractDocument(doc);
+    const { communication, outcome } = await readSupplierCommunication(doc);
     const stored = await storeFile(r.ctx.db, {
       workspaceId: r.ctx.workspace.id,
       purpose: "evidence",
       fileName: doc.fileName,
       contentType: doc.mediaType,
       bytes: doc.bytes,
-      label:
-        [extraction.issuer, extraction.documentNumber].filter(Boolean).join(" · ") || doc.fileName,
-      category: CATEGORY_FOR_TYPE[extraction.documentType] ?? "other",
+      label: communication.supplierName
+        ? `${communication.supplierName} - CBAM communication`
+        : doc.fileName,
+      category: communication.verified ? "verification_report" : "supplier_communication",
+      links: communication.supplierName ? { supplierName: communication.supplierName } : {},
       actor: r.ctx.actor,
     });
     await recordAudit(r.ctx.db, {
       orgId: r.ctx.org.id,
       workspaceId: r.ctx.workspace.id,
       actor: r.ctx.actor,
-      action: "document.read",
+      action: "supplier.document_read",
       detail: {
         fileId: stored.id,
         fileName: stored.fileName,
         sha256: stored.sha256,
         readBy: outcome.producedBy === "model" ? outcome.model : "nobody (manual entry)",
-        lines: extraction.lines.length,
-        notFoundInText: extraction.lines.filter((l) => l.check === "not_found").length,
+        goods: communication.goods.length,
       },
     });
     return NextResponse.json({
@@ -73,7 +62,7 @@ export async function POST(request: Request) {
       fileId: stored.id,
       fileName: stored.fileName,
       mediaType: doc.mediaType,
-      extraction,
+      communication,
       outcome,
     });
   } catch (error) {

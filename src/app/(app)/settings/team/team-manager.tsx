@@ -22,15 +22,30 @@ export function TeamManager({
   const { send, pending, error } = useRequest();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("editor");
-  const [link, setLink] = useState<string | null>(null);
+  const [link, setLink] = useState<{ url: string; emailedTo: string | null } | null>(null);
+  const [resetLink, setResetLink] = useState<{
+    email: string;
+    url: string;
+    emailed: boolean;
+  } | null>(null);
 
   async function invite() {
-    const r = await send<{ link: string }>("/api/team/invitations", { json: { email, role } });
+    const r = await send<{ link: string; emailed: boolean }>("/api/team/invitations", {
+      json: { email, role },
+    });
     if (r) {
-      setLink(r.link);
+      setLink({ url: r.link, emailedTo: r.emailed ? email : null });
       setEmail("");
       router.refresh();
     }
+  }
+
+  async function issueReset(member: { userId: string; email: string }) {
+    const r = await send<{ link: string; emailed: boolean }>(
+      `/api/team/members/${member.userId}/reset`,
+      { method: "POST" },
+    );
+    if (r) setResetLink({ email: member.email, url: r.link, emailed: r.emailed });
   }
 
   return (
@@ -79,6 +94,16 @@ export function TeamManager({
                 </Td>
                 <Td className="text-[12.5px]">{m.since.slice(0, 10)}</Td>
                 <Td align="right">
+                  {isOwner && m.userId !== currentUserId ? (
+                    <Button
+                      variant="ghost"
+                      disabled={pending}
+                      title="Create a one-time link for this person to choose a new password"
+                      onClick={() => issueReset(m)}
+                    >
+                      Reset link
+                    </Button>
+                  ) : null}
                   {isOwner || m.userId === currentUserId ? (
                     <Button
                       variant="ghost"
@@ -101,12 +126,24 @@ export function TeamManager({
             ))}
           </tbody>
         </Table>
+        {resetLink ? (
+          <div className="px-5 pb-6 pt-4 md:px-7">
+            <CopyLink
+              link={resetLink.url}
+              note={
+                resetLink.emailed
+                  ? `Also e-mailed to ${resetLink.email}. It works once, within 24 hours.`
+                  : `Send this to ${resetLink.email} yourself. It works once, within 24 hours, and signs them out everywhere else.`
+              }
+            />
+          </div>
+        ) : null}
       </Card>
 
       {isOwner ? (
         <Card
           title="Invite someone"
-          subtitle="An invitation link is created for you to send; it is valid for 14 days and only for that e-mail address."
+          subtitle="The invitation is valid for 14 days and only for that e-mail address. It is e-mailed when this installation has mail set up; you also get the link to send yourself."
         >
           <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-3">
             <Field label="E-mail">
@@ -130,8 +167,12 @@ export function TeamManager({
           {link ? (
             <div className="mt-3">
               <CopyLink
-                link={link}
-                note="Send this link to the person you invited. It is shown only once."
+                link={link.url}
+                note={
+                  link.emailedTo
+                    ? `Invitation e-mailed to ${link.emailedTo}. The link is also here if you want to send it another way; it is shown only once.`
+                    : "Send this link to the person you invited. It is shown only once."
+                }
               />
             </div>
           ) : null}

@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import * as z from "zod/v4";
-import { createInvitation, normaliseEmail, orgMembers, validEmail } from "@/lib/auth/accounts";
+import {
+  createInvitation,
+  INVITATION_DAYS,
+  normaliseEmail,
+  orgMembers,
+  ROLES,
+  validEmail,
+} from "@/lib/auth/accounts";
 import { apiContext, jsonError, publicBaseUrl } from "@/lib/auth/context";
 import { errorResponse, parseJson } from "@/lib/http";
+import { sendMail } from "@/lib/mail";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +20,9 @@ const Body = z.object({
 });
 
 /**
- * Invites someone to the organisation. The link is returned for the owner to
- * send; this installation does not send e-mail, so no mail service is needed
- * to run it.
+ * Invites someone to the organisation. The link is always returned for the
+ * owner to pass on, and also e-mailed when mail is configured, so no mail
+ * service is needed to run it.
  */
 export async function POST(request: Request) {
   const r = await apiContext(request, { roles: ["owner"] });
@@ -33,11 +41,20 @@ export async function POST(request: Request) {
       role: body.data.role,
       invitedBy: r.ctx.user,
     });
-    return NextResponse.json({
-      ok: true,
-      link: `${publicBaseUrl(request)}/invite/${inv.token}`,
-      expiresAt: inv.expiresAt,
+    const link = `${publicBaseUrl(request)}/invite/${inv.token}`;
+    const emailed = await sendMail({
+      to: body.data.email,
+      subject: `${r.ctx.user.name} invited you to ${r.ctx.org.name} on CarbonPass`,
+      text: [
+        `${r.ctx.user.name} invited you to join ${r.ctx.org.name} on CarbonPass as ${ROLES[body.data.role].label.toLowerCase()}.`,
+        "",
+        "CarbonPass prepares the CBAM emissions data EU importers and verifiers need.",
+        `Accept the invitation (valid for ${INVITATION_DAYS} days, for this e-mail address only):`,
+        "",
+        link,
+      ].join("\n"),
     });
+    return NextResponse.json({ ok: true, link, expiresAt: inv.expiresAt, emailed });
   } catch (error) {
     return errorResponse(error);
   }

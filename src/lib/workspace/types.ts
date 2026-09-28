@@ -51,7 +51,8 @@ export interface SupplierData {
   verified: boolean;
   /** Supporting document: the supplier's communication or verification report. */
   evidenceFileId?: string;
-  source: "supplier_portal" | "manual";
+  /** How the values arrived: the supplier portal, or a supplier document read and checked here. */
+  source: "supplier_portal" | "manual" | "document";
   requestId?: string;
   acceptedAt: string;
   acceptedBy: string;

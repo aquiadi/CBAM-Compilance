@@ -1,8 +1,11 @@
+import { env } from "@/config/env";
+import { isAiAvailable } from "@/lib/ai/client";
 import { workspaceContext } from "@/lib/auth/context";
 import { lookupGoods } from "@/lib/cbam/goods";
 import { listSupplierRequests } from "@/lib/suppliers";
 import { computeDeclaration } from "@/lib/workspace/declaration";
-import { Page, PageHeader } from "@/components/ui";
+import { Card, Page, PageHeader } from "@/components/ui";
+import { SupplierDocumentReader } from "./supplier-document-reader";
 import { SupplierManager } from "./supplier-manager";
 
 export default async function SuppliersPage() {
@@ -69,6 +72,27 @@ export default async function SuppliersPage() {
         }
       />
       <Page>
+        {ctx.canWrite ? (
+          <div className="mb-8">
+            <Card
+              tour="supplier-documents"
+              title="Read a supplier's CBAM communication"
+              subtitle={
+                isAiAvailable()
+                  ? "Already have the supplier's communication or verification report? The AI proposes each good's SEE and SEFA with the words it read them from; you check and apply them."
+                  : "Already have the supplier's communication or verification report? Enter its values next to the document, which is kept as evidence. With an AI key set they are read for you."
+              }
+            >
+              <SupplierDocumentReader
+                knownSuppliers={[
+                  ...new Set([...seen.values()].map((s) => s.supplierName).filter(Boolean)),
+                ]}
+                aiAvailable={isAiAvailable()}
+                maxMb={env.CARBONPASS_MAX_UPLOAD_MB}
+              />
+            </Card>
+          </div>
+        ) : null}
         <SupplierManager
           canWrite={ctx.canWrite}
           seen={[...seen.values()].map((s) => ({ ...s, basis: [...s.basis] }))}

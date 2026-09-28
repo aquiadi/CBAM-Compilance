@@ -40,9 +40,104 @@ export function LoginForm({ next }: { next?: string }) {
           onChange={(e) => setPassword(e.target.value)}
         />
       </Field>
+      <div className="-mt-1 text-right">
+        <Link href="/forgot" className="text-[13px] text-accent hover:underline">
+          Forgot password?
+        </Link>
+      </div>
       <FormError>{error}</FormError>
       <Button type="submit" variant="primary" disabled={pending} className="w-full py-2">
         {pending ? "Signing in…" : "Sign in"}
+      </Button>
+    </form>
+  );
+}
+
+export function ForgotForm() {
+  const { send, pending, error } = useRequest();
+  const [email, setEmail] = useState("");
+  const [result, setResult] = useState<{ mailConfigured: boolean } | null>(null);
+
+  if (result) {
+    return result.mailConfigured ? (
+      <p className="text-[14.5px] leading-[1.65] text-ink-2">
+        If <span className="text-ink">{email}</span> has an account, a reset link is on its way. It
+        works once, within an hour. Check your spam folder if it does not arrive in a few minutes.
+      </p>
+    ) : (
+      <p className="text-[14.5px] leading-[1.65] text-ink-2">
+        This installation does not send e-mail. Ask an <span className="text-ink">owner</span> of
+        your organisation to create a reset link for you under Settings → Team; it works once,
+        within a day.
+      </p>
+    );
+  }
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const r = await send<{ mailConfigured: boolean }>("/api/auth/forgot", { json: { email } });
+        if (r) setResult({ mailConfigured: r.mailConfigured });
+      }}
+    >
+      <Field label="E-mail">
+        <Input
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </Field>
+      <FormError>{error}</FormError>
+      <Button type="submit" variant="primary" disabled={pending} className="w-full py-2">
+        {pending ? "Sending…" : "Send reset link"}
+      </Button>
+    </form>
+  );
+}
+
+export function ResetForm({ token }: { token: string }) {
+  const router = useRouter();
+  const { send, pending, error, setError } = useRequest();
+  const [password, setPassword] = useState("");
+  const [again, setAgain] = useState("");
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (password !== again) return setError("The two passwords are different.");
+        if (await send("/api/auth/reset", { json: { token, password } })) {
+          router.push("/overview");
+          router.refresh();
+        }
+      }}
+    >
+      <Field label="New password" hint="At least 10 characters.">
+        <Input
+          type="password"
+          autoComplete="new-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </Field>
+      <Field label="New password, again">
+        <Input
+          type="password"
+          autoComplete="new-password"
+          required
+          value={again}
+          onChange={(e) => setAgain(e.target.value)}
+        />
+      </Field>
+      <FormError>{error}</FormError>
+      <Button type="submit" variant="primary" disabled={pending} className="w-full py-2">
+        {pending ? "Saving…" : "Set password and sign in"}
       </Button>
     </form>
   );

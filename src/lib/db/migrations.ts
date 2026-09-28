@@ -129,4 +129,20 @@ export const MIGRATIONS: { version: number; name: string; sql: string }[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: "password resets",
+    sql: `
+      CREATE TABLE password_resets (
+        id text PRIMARY KEY,
+        user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash text NOT NULL UNIQUE,
+        issued_by text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        expires_at timestamptz NOT NULL,
+        used_at timestamptz
+      );
+      CREATE INDEX password_resets_user_idx ON password_resets(user_id);
+    `,
+  },
 ];
